@@ -1,0 +1,20 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-billing.css' %}">{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">SUA OPERAÇÃO, NO SEU RITMO</span><h1>Plano e assinatura</h1><p>JUMBI é um serviço pago. A ativação é realizada pela administração após a contratação.</p></div></div>
+<section class="panel subscription-panel">
+{% if subscription %}<span class="status-badge">{{ subscription.get_status_display }}</span><h2>JUMBI {{ subscription.limits.name }}</h2><p><strong class="subscription-price">R$ {{ subscription.limits.price_label }}</strong> / mês</p>
+{% if subscription.status == 'demo' %}<p>Demonstração para avaliação com dados fictícios. Não representa uma assinatura contratada.</p>{% endif %}
+{% if not subscription.is_available %}<div class="alert">O acesso operacional aguarda ativação ou renovação da assinatura. Seu cadastro foi preservado.</div>{% endif %}
+<p>{{ usage.members }} de {{ subscription.limits.members }} usuários ativos · {{ usage.matters }} de {{ subscription.limits.matters }} pastas ativas · {{ usage.versions }} de {{ subscription.limits.versions }} versões de documentos.</p>
+<p>{% if subscription.limits.advanced %}Todos os módulos desta versão, incluindo CRM e financeiro.{% else %}Pessoas, pastas, processos, tarefas, prazos manuais, agenda e documentos. CRM e financeiro estão no Max.{% endif %} Auditoria e exportação incluídas nos dois planos.</p>
+{% if subscription.expires_at %}<p>Vigência do acesso: {{ subscription.expires_at|date:'d/m/Y H:i' }}.</p>{% endif %}
+{% if subscription.requested_plan %}<p>Solicitação em análise: {{ subscription.get_requested_plan_display }}.</p>{% endif %}
+{% else %}<p>Aguardando definição e ativação do plano pela administração.</p>{% endif %}
+{% if membership.role == 'owner' %}<hr><h3>Solicitar contratação ou mudança</h3><form method="post" class="auth-form">{% csrf_token %}{{ form.as_p }}<button class="button button-primary" type="submit">Registrar solicitação</button></form>{% endif %}
+<p class="muted">Converse com a equipe pelo WhatsApp para contratar ou acompanhar a ativação. A mensagem será preenchida com o plano escolhido; basta conferir e enviar.</p>
+{% if subscription %}<a class="button button-primary" href="{% url 'billing:contact' subscription.requested_plan|default:subscription.plan %}" target="_blank" rel="noopener noreferrer">Continuar pelo WhatsApp ↗</a>{% else %}<a class="button button-primary" href="{% url 'billing:contact' 'start' %}" target="_blank" rel="noopener noreferrer">Contratar pelo WhatsApp ↗</a>{% endif %}
+<p class="muted">Não há cobrança automática. Solicitar outro plano não altera o acesso vigente.</p>
+<a href="{% url 'legal:export' %}" class="text-link">Exportar os dados permitidos do escritório</a>
+</section>{% endblock %}

@@ -1,0 +1,32 @@
+<article class="kanban-card priority-{{ task.priority }}" id="task-{{ task.id }}">
+  <div class="kanban-card-top">
+    <span>{{ task.project.name }}</span>
+    <strong>{{ task.get_priority_display }}</strong>
+  </div>
+  <h3>{{ task.title }}</h3>
+  {% if task.description %}<p>{{ task.description }}</p>{% endif %}
+  <div class="kanban-card-meta">
+    <span><i data-lucide="calendar-days"></i>{% if task.due_date %}{{ task.due_date|date:"d/m/Y" }}{% else %}Sem prazo{% endif %}</span>
+    <span><i data-lucide="user-round"></i>{{ task.assignee.email|default:"Sem responsável" }}</span>
+  </div>
+  <form
+    method="post"
+    action="{% url 'engineering:task-status' task.id %}"
+    class="task-status-form"
+    hx-post="{% url 'engineering:task-status' task.id %}"
+    hx-target="closest article"
+    hx-select="unset"
+    hx-select-oob="unset"
+    hx-swap="outerHTML"
+    hx-push-url="false"
+  >
+    {% csrf_token %}
+    <label for="task-status-{{ task.id }}">Mover tarefa</label>
+    <select id="task-status-{{ task.id }}" name="status">
+      {% for value,label in task.Status.choices %}
+        <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" title="Atualizar status"><i data-lucide="move-right"></i><span>Mover</span></button>
+  </form>
+</article>

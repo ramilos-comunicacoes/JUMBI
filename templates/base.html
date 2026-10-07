@@ -1,0 +1,27 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>{% block title %}Jumbi Gestão Jurídica{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}?v=20260728-jumbi-2">
+    <link rel="apple-touch-icon" href="{% static 'img/favicon.png' %}?v=20260728-jumbi-2">
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260728-jumbi-2">
+    <link rel="stylesheet" href="{% static 'css/system-polish.css' %}?v=20260728-jumbi-1">
+    <link rel="stylesheet" href="{% static 'css/navie-legal.css' %}?v=20260729-partners-1">
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="{% block body_class %}{% endblock %}">
+    <div id="app-messages" class="messages" aria-live="polite" {% if is_htmx %}hx-swap-oob="outerHTML"{% endif %}>{% if messages %}{% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}{% endif %}</div>
+    {% block content %}{% endblock %}
+    <script src="{% static 'js/lucide.min.js' %}"></script>
+    <script src="{% static 'js/htmx.min.js' %}?v=2.0.10"></script>
+    <script src="{% static 'js/theme.js' %}?v=20260729-partners-1"></script>
+    <script src="{% static 'js/app.js' %}?v=20260729-jumbi-1"></script>
+    <script>if (window.lucide) { window.lucide.createIcons(); }</script>
+    {% block extra_scripts %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,51 @@
+{% extends "app/base_shell.html" %}
+{% block title %}{{ current_section_label }} | Controle Jumbi{% endblock %}
+{% block app_content %}
+{% if current_section == "overview" %}
+  <section class="workspace-hero control-hero">
+    <div>
+      <span class="eyebrow">CONTROLE DA PLATAFORMA</span>
+      <h1>Administração central do Jumbi.</h1>
+      <p>Crie escritórios, atribua usuários ao ambiente jurídico e acompanhe a governança da plataforma.</p>
+    </div>
+    <div class="workspace-hero-actions">
+      <a class="button button-secondary" href="{% url 'core:control-section' 'accesses' %}"><i data-lucide="key-round"></i> Novo acesso</a>
+      <a class="button button-primary" href="{% url 'core:control-section' 'organizations' %}"><i data-lucide="building-2"></i> Nova organização</a>
+    </div>
+  </section>
+  <section class="ops-stat-grid">
+    <article class="ops-stat-card"><span><i data-lucide="building-2"></i> Organizações</span><strong>{{ organizations_count }}</strong><small>Empresas cadastradas</small></article>
+    <article class="ops-stat-card"><span><i data-lucide="users"></i> Usuários</span><strong>{{ users_count }}</strong><small>Contas na plataforma</small></article>
+    <article class="ops-stat-card"><span><i data-lucide="key-round"></i> Acessos ativos</span><strong>{{ active_accesses_count }}</strong><small>Vínculos por empresa</small></article>
+    <article class="ops-stat-card"><span><i data-lucide="shield-check"></i> Governança</span><strong>Ativa</strong><small>Permissões por papel</small></article>
+  </section>
+  <section class="control-products single-product">
+    <article><i data-lucide="scale"></i><span>JUMBI GESTÃO JURÍDICA</span><strong>{{ organizations|length }} escritórios jurídicos</strong><p>Clientes, processos, prazos, documentos, honorários, equipe e governança em uma única plataforma.</p></article>
+  </section>
+  <section class="ops-panel">
+    <div class="panel-title"><div><span>ÚLTIMAS ORGANIZAÇÕES</span><h2>Ambientes criados recentemente</h2></div><a href="{% url 'core:control-section' 'organizations' %}">Gerenciar</a></div>
+    <div class="data-list">{% for organization in organizations|slice:":6" %}<article class="data-row"><div><strong>{{ organization.name }}</strong><span>{{ organization.get_business_type_display }}{% if organization.city %} · {{ organization.city }}/{{ organization.state }}{% endif %}</span></div><span class="status {{ organization.status }}">{{ organization.get_status_display }}</span></article>{% empty %}<p class="empty-state">Nenhuma organização cadastrada.</p>{% endfor %}</div>
+  </section>
+
+{% elif current_section == "organizations" %}
+  <section class="module-page-header"><div><span class="module-icon"><i data-lucide="building-2"></i></span><div><span class="eyebrow">CLIENTES JUMBI</span><h1>Escritórios jurídicos</h1><p>Cadastre a organização que utilizará o ambiente de gestão jurídica.</p></div></div></section>
+  <section class="module-layout">
+    <article class="ops-panel module-form-card"><div class="panel-title"><div><span>NOVO AMBIENTE</span><h2>Cadastrar organização</h2></div><i data-lucide="building-2"></i></div><form method="post" class="stack-form compact-form">{% csrf_token %}<input type="hidden" name="action" value="organization">{% for field in organization_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<button type="submit"><i data-lucide="save"></i> Criar organização</button></form></article>
+    <article class="ops-panel module-list-card"><div class="panel-title"><div><span>BASE DE CLIENTES</span><h2>{{ organizations_count }} organizações</h2></div><a href="/admin/core/organization/">Admin avançado</a></div><div class="data-list">{% for organization in organizations %}<article class="data-row"><div><strong>{{ organization.name }}</strong><span>{{ organization.get_business_type_display }} · {{ organization.contact_email|default:"Sem e-mail" }}{% if organization.city %} · {{ organization.city }}/{{ organization.state }}{% endif %}</span></div><span class="status {{ organization.status }}">{{ organization.get_status_display }}</span></article>{% empty %}<p class="empty-state">Nenhuma organização cadastrada.</p>{% endfor %}</div></article>
+  </section>
+
+{% elif current_section == "accesses" %}
+  <section class="module-page-header"><div><span class="module-icon"><i data-lucide="key-round"></i></span><div><span class="eyebrow">PROVISIONAMENTO</span><h1>Usuários e acessos</h1><p>Crie uma conta e vincule-a ao escritório jurídico e ao papel correto.</p></div></div></section>
+  <section class="module-layout">
+    <article class="ops-panel module-form-card"><div class="panel-title"><div><span>NOVO LOGIN</span><h2>Criar acesso de cliente</h2></div><i data-lucide="user-plus"></i></div><form method="post" class="stack-form compact-form">{% csrf_token %}<input type="hidden" name="action" value="access">{% for field in access_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}{{ field.errors }}</p>{% endfor %}<button type="submit"><i data-lucide="key-round"></i> Criar login e vincular</button></form></article>
+    <article class="ops-panel module-list-card"><div class="panel-title"><div><span>ACESSOS CONCEDIDOS</span><h2>{{ active_accesses_count }} vínculos ativos</h2></div><a href="/admin/core/membership/">Admin avançado</a></div><div class="data-list">{% for membership in memberships %}<article class="data-row"><div><strong>{{ membership.user.get_full_name|default:membership.user.email }}</strong><span>{{ membership.user.email }} · {{ membership.organization.name }} · {{ membership.organization.get_business_type_display }}</span></div><span class="status {% if membership.is_active %}active{% else %}inactive{% endif %}">{{ membership.get_role_display }}</span></article>{% empty %}<p class="empty-state">Nenhum acesso vinculado.</p>{% endfor %}</div></article>
+  </section>
+
+{% elif current_section == "audit" %}
+  <section class="module-page-header"><div><span class="module-icon"><i data-lucide="scroll-text"></i></span><div><span class="eyebrow">GOVERNANÇA</span><h1>Auditoria</h1><p>Histórico das alterações críticas executadas nos sistemas internos.</p></div></div></section>
+  <section class="ops-panel module-list-card audit-panel">
+    <div class="panel-title"><div><span>EVENTOS</span><h2>Últimos 100 registros</h2></div><i data-lucide="shield-check"></i></div>
+    <div class="data-list">{% for log in audit_logs %}<article class="data-row"><div><strong>{{ log.action }}</strong><span>{{ log.organization.name }} · {{ log.actor.email|default:"Sistema" }}</span></div><span>{{ log.created_at|date:"d/m/Y H:i" }}</span></article>{% empty %}<p class="empty-state">Nenhum evento crítico registrado.</p>{% endfor %}</div>
+  </section>
+{% endif %}
+{% endblock %}

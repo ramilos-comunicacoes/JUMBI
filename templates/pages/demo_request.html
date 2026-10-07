@@ -1,0 +1,5 @@
+{% extends "public/base.html" %}
+{% block title %}Falar com um especialista | Jumbi{% endblock %}
+{% block public_content %}
+<main class="public-form-page"><section class="public-form-intro"><span class="eyebrow">IMPLANTAÇÃO GUIADA</span><h1>Vamos entender o seu escritório.</h1><p>Conte como a equipe trabalha e quais desafios jurídicos precisam de mais controle. Depois do diagnóstico, criamos a organização, os acessos iniciais e o ambiente Jumbi.</p></section><section class="public-form-card"><h2>Falar com um especialista</h2><form method="post" class="stack-form">{% csrf_token %}{% for field in form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<button class="button button-primary" type="submit">Enviar contato</button></form></section></main>
+{% endblock %}

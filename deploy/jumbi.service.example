@@ -1,0 +1,21 @@
+[Unit]
+Description=JUMBI Gestao Juridica
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=jumbi
+Group=jumbi
+WorkingDirectory=/srv/jumbi/current
+EnvironmentFile=/srv/jumbi/shared/.env
+ExecStart=/srv/jumbi/venv/bin/gunicorn config.wsgi:application --bind 127.0.0.1:8041 --workers 3 --timeout 60 --access-logfile - --error-logfile -
+Restart=on-failure
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/jumbi/shared
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,171 @@
+{% extends "public/base.html" %}
+{% block title %}Jumbi | Gestão jurídica profissional{% endblock %}
+{% block public_content %}
+<main>
+  <section class="public-hero" id="inicio">
+    <div class="hero-copy" data-reveal>
+      <span class="eyebrow">GESTÃO JURÍDICA COM VISÃO DE NEGÓCIO</span>
+      <h1 data-assemble-title>Seu escritório sob controle.</h1>
+      <p>O Jumbi reúne clientes, processos, prazos, documentos, honorários e equipe em um ambiente jurídico seguro, elegante e preparado para crescer com o seu escritório.</p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="https://wa.me/5588993345111?text=Ol%C3%A1%21%20Conheci%20o%20Jumbi%20e%20quero%20organizar%20a%20gest%C3%A3o%20do%20meu%20escrit%C3%B3rio%20jur%C3%ADdico." target="_blank" rel="noopener">Conversar com a equipe</a>
+        <a class="button button-secondary" href="{% url 'core:login' %}">Acessar o Jumbi</a>
+      </div>
+      <div class="hero-trust">
+        <span><i data-lucide="shield-check"></i> Dados isolados por escritório</span>
+        <span><i data-lucide="key-round"></i> Permissões por cargo e perfil</span>
+      </div>
+    </div>
+    <div class="hero-visual legal-hero-visual" data-reveal data-reveal-delay="2">
+      <div class="hero-orbit" aria-hidden="true">
+        <span class="orbit orbit-one"><i data-lucide="scale"></i></span>
+        <span class="orbit orbit-two"><i data-lucide="calendar-clock"></i></span>
+        <span class="orbit orbit-three"><i data-lucide="file-check-2"></i></span>
+      </div>
+      <div class="hero-console" aria-label="Prévia do painel jurídico Jumbi" data-parallax-card>
+        <div class="hero-console-top"><span></span><span></span><span></span><b><i></i> jumbi · gestão jurídica</b></div>
+        <div class="hero-console-body">
+          <div class="hero-console-sidebar">
+            <i data-lucide="layout-dashboard"></i><i data-lucide="briefcase-business"></i><i data-lucide="calendar-clock"></i><i data-lucide="circle-dollar-sign"></i>
+          </div>
+          <div class="hero-console-content">
+            <span class="eyebrow">VISÃO DO ESCRITÓRIO</span>
+            <strong>Decisões claras. Prazos visíveis.</strong>
+            <div class="legal-console-stats">
+              <article><small>Processos ativos</small><b>128</b><span>+8 este mês</span></article>
+              <article><small>Prazos próximos</small><b>12</b><span>3 prioritários</span></article>
+              <article><small>Honorários</small><b>R$ 84k</b><span>previsão mensal</span></article>
+            </div>
+            <div class="legal-console-agenda">
+              <span><i></i><b>Contestação · Cliente Andrade</b><small>Hoje, 14:30</small></span>
+              <span><i></i><b>Audiência de conciliação</b><small>Amanhã, 09:00</small></span>
+              <span><i></i><b>Revisão contratual · Grupo Lume</b><small>Sex, 16:00</small></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="public-signal-rail" aria-label="Módulos do Jumbi">
+    <div class="signal-track">
+      {% for copy in "123" %}
+        <div class="signal-group" {% if not forloop.first %}aria-hidden="true"{% endif %}>
+          <span>Processos</span><i></i><span>Clientes</span><i></i><span>Prazos</span><i></i><span>Audiências</span><i></i><span>Documentos</span><i></i><span>Honorários</span><i></i><span>Financeiro</span><i></i><span>Agenda</span><i></i><span>Equipe</span><i></i><span>Contratos</span><i></i><span>Auditoria</span><i></i><span>Relatórios</span><i></i>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <section class="public-section proof-section">
+    <div data-reveal>
+      <span class="eyebrow">POR QUE JUMBI</span>
+      <h2>Rotina organizada. Decisões com contexto.</h2>
+    </div>
+    <div class="value-grid" data-reveal data-reveal-delay="1">
+      <article data-spotlight><span>01</span><h3>Operação jurídica</h3><p>Processos, tarefas, documentos, prazos e responsáveis conectados ao mesmo fluxo.</p></article>
+      <article data-spotlight><span>02</span><h3>Gestão financeira</h3><p>Honorários, receitas, despesas e compras visíveis ao lado do trabalho jurídico.</p></article>
+      <article data-spotlight><span>03</span><h3>Governança</h3><p>Hierarquia, permissões e auditoria para proteger cada decisão do escritório.</p></article>
+    </div>
+  </section>
+
+  <section class="public-section solutions-section legal-solutions" id="solucoes">
+    <div class="legal-solutions-intro" data-reveal>
+      <div>
+        <span class="eyebrow">PLATAFORMA JURÍDICA INTEGRADA</span>
+        <h2>Cada informação no lugar certo. Cada decisão com contexto.</h2>
+      </div>
+      <div class="legal-solutions-summary">
+        <p>O Jumbi conecta atendimento, processos, prazos, documentos, financeiro e equipe em uma única operação — sem planilhas paralelas nem históricos fragmentados.</p>
+        <ul aria-label="Benefícios da plataforma">
+          <li><i data-lucide="circle-check"></i>Visão única por cliente</li>
+          <li><i data-lucide="circle-check"></i>Responsáveis definidos</li>
+          <li><i data-lucide="circle-check"></i>Histórico rastreável</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="legal-suite-layout">
+      <article class="legal-suite-feature" data-reveal>
+        <header>
+          <span class="legal-suite-number">01</span>
+          <span class="legal-suite-icon"><i data-lucide="briefcase-business"></i></span>
+        </header>
+        <div class="legal-suite-copy">
+          <span>FLUXO PRINCIPAL</span>
+          <h3>Processos e casos</h3>
+          <strong>Da entrada do cliente ao encerramento, sem perder contexto.</strong>
+          <p>Partes, número processual, tribunal, responsável, status, prazos, tarefas e documentos permanecem ligados ao mesmo histórico.</p>
+        </div>
+        <ul class="legal-suite-capabilities" aria-label="Dados do processo">
+          <li>Partes e cliente</li>
+          <li>Responsável</li>
+          <li>Prazos e tarefas</li>
+          <li>Documentos</li>
+        </ul>
+        <div class="legal-lifecycle" aria-label="Etapas do fluxo jurídico">
+          <span><b>01</b>Atendimento</span>
+          <span><b>02</b>Estratégia</span>
+          <span><b>03</b>Execução</span>
+          <span><b>04</b>Encerramento</span>
+        </div>
+      </article>
+
+      <div class="legal-suite-list" data-reveal data-reveal-delay="1">
+        <article>
+          <span class="legal-suite-icon"><i data-lucide="users-round"></i></span>
+          <div><span>02 · CLIENTES</span><h3>Relacionamento com contexto.</h3><p>Cadastro centralizado com acesso imediato a casos, documentos e movimentações.</p></div>
+        </article>
+        <article>
+          <span class="legal-suite-icon"><i data-lucide="calendar-clock"></i></span>
+          <div><span>03 · AGENDA E PRAZOS</span><h3>Prioridades visíveis para toda a equipe.</h3><p>Compromissos, prazos processuais, responsáveis e andamento em uma rotina clara.</p></div>
+        </article>
+        <article>
+          <span class="legal-suite-icon"><i data-lucide="files"></i></span>
+          <div><span>04 · DOCUMENTOS</span><h3>Arquivos vinculados ao que importa.</h3><p>Contratos, petições e anexos organizados por cliente e processo.</p></div>
+        </article>
+        <article>
+          <span class="legal-suite-icon"><i data-lucide="circle-dollar-sign"></i></span>
+          <div><span>05 · FINANCEIRO</span><h3>Honorários e custos no mesmo fluxo.</h3><p>Receitas, despesas e compras relacionadas ao trabalho que gerou cada lançamento.</p></div>
+        </article>
+        <article>
+          <span class="legal-suite-icon"><i data-lucide="shield-check"></i></span>
+          <div><span>06 · EQUIPE E GOVERNANÇA</span><h3>Acesso certo para cada papel.</h3><p>Logins individuais, hierarquia, permissões e auditoria para ações críticas.</p></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="public-section how-section" id="como-funciona">
+    <div class="how-intro" data-reveal><span class="eyebrow">IMPLANTAÇÃO ASSISTIDA</span><h2>Você cuida do Direito. Nós preparamos a operação.</h2></div>
+    <ol data-reveal data-reveal-delay="1">
+      <li><strong>01</strong><div><h3>Entendemos o escritório</h3><p>Mapeamos equipe, rotina jurídica, responsabilidades e módulos prioritários.</p></div></li>
+      <li><strong>02</strong><div><h3>Criamos o ambiente</h3><p>A equipe Jumbi configura a organização, personaliza a identidade e provisiona os acessos.</p></div></li>
+      <li><strong>03</strong><div><h3>O time começa com contexto</h3><p>Cada pessoa entra com seu login e acessa somente as funções autorizadas para o seu cargo.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="public-section security-section" id="seguranca">
+    <div data-reveal>
+      <span class="eyebrow">SEGURANÇA E GOVERNANÇA</span>
+      <h2>Sigilo profissional tratado como requisito de produto.</h2>
+      <p>O Jumbi isola os dados por escritório, valida permissões em ações sensíveis e mantém a experiência interna protegida por autenticação.</p>
+    </div>
+    <ul data-reveal data-reveal-delay="1">
+      <li>Separação de dados por organização</li>
+      <li>Perfis de direção, gestão, operação e consulta</li>
+      <li>HTTPS, cookies seguros e proteção de sessão</li>
+      <li>Registro de auditoria para ações críticas</li>
+    </ul>
+  </section>
+
+  <section class="public-section final-cta" data-reveal>
+    <span class="eyebrow">JUMBI GESTÃO JURÍDICA</span>
+    <h2>Seu escritório pronto para operar melhor.</h2>
+    <p>Conte como sua equipe trabalha. Nós criamos o ambiente, os acessos e a estrutura inicial.</p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="https://wa.me/5588993345111?text=Ol%C3%A1%21%20Conheci%20o%20Jumbi%20e%20quero%20organizar%20a%20gest%C3%A3o%20do%20meu%20escrit%C3%B3rio%20jur%C3%ADdico." target="_blank" rel="noopener">Entrar em contato agora</a>
+    </div>
+  </section>
+</main>
+{% endblock %}

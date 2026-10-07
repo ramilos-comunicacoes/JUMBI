@@ -1,0 +1,224 @@
+/* JUMBI app mobile: a touch-first composition, loaded only through 720 px.
+   Records become labelled cards; their table headers remain accessible.
+   Content is never scaled down to imitate the desktop canvas. */
+@media screen and (max-width: 720px) {
+  :root { --mobile-gutter: 16px; --mobile-control: 44px; }
+  html { scroll-padding-top: 88px; }
+  .app-body { font-size: 15px; line-height: 1.55; }
+  .app-body .app-main { width: 100%; min-width: 0; margin-left: 0; }
+  .app-body .page-content {
+    width: 100%; min-width: 0; max-width: 100%;
+    padding: 24px max(var(--mobile-gutter), env(safe-area-inset-right))
+      28px max(var(--mobile-gutter), env(safe-area-inset-left));
+  }
+  .app-body .page-content > * { min-width: 0; max-width: 100%; }
+  .app-body h1 { font-size: 28px; line-height: 1.18; letter-spacing: -.03em; overflow-wrap: anywhere; }
+  .app-body h2 { font-size: 19px; line-height: 1.3; }
+  .app-body h3 { font-size: 17px; }
+  .app-body p, .app-body dd, .app-body .table-secondary { overflow-wrap: anywhere; }
+  .app-body .button, .app-body .icon-button, .app-body .text-link,
+  .app-body .table-action, .app-body .back-link {
+    min-height: var(--mobile-control); font-size: 14px;
+  }
+  .app-body .button { white-space: normal; padding: 12px 16px; }
+  .app-body .icon-button { width: 44px; height: 44px; }
+  .app-body .button:hover, .j-glass-app .stat-card:hover,
+  .j-glass-app .nav-link:hover { transform: none; }
+
+  /* One compact toolbar; the full page title stays in the main heading. */
+  .app-body .topbar {
+    position: sticky; top: 0; z-index: 35; height: auto; min-height: 64px;
+    padding: max(8px, env(safe-area-inset-top)) 12px 8px; gap: 8px;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  }
+  .app-body .topbar-location { flex: 1; gap: 8px; min-width: 0; }
+  .app-body .topbar-product { display: inline; color: var(--strong); font-size: 13px; letter-spacing: .08em; }
+  .app-body .topbar-location > span:last-child,
+  .app-body .breadcrumb-divider, .app-body .today-label { display: none; }
+  .app-body .topbar-actions { gap: 0; }
+  .app-body .topbar .icon-button { width: 44px; height: 44px; }
+  .app-body .account { border: 0; padding: 0; margin: 0 2px; }
+  .app-body .account-copy { display: none; }
+  .app-body .account .avatar { width: 44px; height: 44px; font-size: 14px; }
+  .app-body .logout-form { margin: 0; }
+
+  /* Drawer is a full-size navigation surface, with a visible dismissal area. */
+  .app-body .sidebar, .sidebar-collapsed .app-body .sidebar {
+    width: min(336px, calc(100vw - 24px)); padding: 0 16px;
+    padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+    z-index: 60; overscroll-behavior: contain;
+  }
+  .app-body .sidebar-brand, .sidebar-collapsed .app-body .sidebar-brand {
+    height: 88px; min-height: 88px; margin: 0; gap: 16px;
+  }
+  .app-body .sidebar-brand > a, .sidebar-collapsed .app-body .sidebar-brand > a { width: 172px; height: 78px; }
+  .app-body .workspace, .sidebar-collapsed .app-body .workspace { padding: 16px 4px 22px; }
+  .app-body .workspace-copy strong { font-size: 15px; white-space: normal; line-height: 1.4; }
+  .app-body .workspace-copy > span { font-size: 12px; }
+  .app-body .nav-label { font-size: 10px; margin: 8px 12px 12px; letter-spacing: .1em; }
+  .app-body .main-nav { gap: 5px; }
+  .app-body .nav-link, .sidebar-collapsed .app-body .nav-link {
+    min-height: 48px; padding: 12px 14px; gap: 13px; font-size: 15px;
+  }
+  .app-body .sidebar-bottom { padding: 20px 4px 12px; }
+  .app-body .sidebar-note { font-size: 12px; }
+  .app-body .sidebar-note span { font-size: 11px; }
+  .app-body .sidebar-backdrop { z-index: 55; }
+  .app-body .workspace-switch { margin-bottom: 16px; }
+  .app-body .workspace-switch select { min-height: 48px; font-size: 16px; }
+
+  /* Mobile headings put the current task before secondary navigation. */
+  .app-body .page-heading { display: flex; flex-direction: column; align-items: stretch; gap: 18px; margin-bottom: 24px; }
+  .app-body .page-heading p { font-size: 14px; line-height: 1.65; margin-bottom: 0; }
+  .app-body .eyebrow { font-size: 10px; line-height: 1.65; letter-spacing: .1em; flex-wrap: wrap; }
+  .app-body .heading-actions { width: 100%; display: flex; flex-wrap: wrap; gap: 10px; }
+  .app-body .heading-actions .button { flex: 1 1 150px; }
+  .app-body .heading-actions .badge { align-self: center; }
+  .app-body .page-heading > .button { width: 100%; }
+  .app-body .panel { min-width: 0; border-radius: 18px; }
+  .app-body .page-content > .panel + .panel { margin-top: 20px; }
+  .app-body .panel-heading { padding: 20px 18px; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  .app-body .panel-heading > div { min-width: 0; }
+  .app-body .panel-heading .small, .app-body .section-kicker { font-size: 11px; }
+  .app-body .panel-heading .text-link { justify-content: flex-start; }
+  .app-body .section-kicker { letter-spacing: .07em; line-height: 1.5; }
+  .app-body .demo-banner { align-items: flex-start; padding: 14px; margin-bottom: 22px; font-size: 12px; line-height: 1.65; }
+  .app-body .demo-banner .icon { margin-top: 3px; width: 18px; height: 18px; }
+  .app-body .alert { white-space: normal; overflow-wrap: anywhere; }
+
+  /* Four readable indicators, followed by one operational section at a time. */
+  .app-body .stats-grid, .app-body .stats-grid-three { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .app-body .stat-card { padding: 17px 14px; min-height: 154px; }
+  .app-body .stat-top { gap: 6px; align-items: flex-start; margin-bottom: 15px; }
+  .app-body .stat-top > span:first-child { font-size: 13px; line-height: 1.4; }
+  .app-body .stat-icon { width: 25px; height: 25px; min-width: 25px; }
+  .app-body .stat-icon .icon { width: 17px; height: 17px; }
+  .app-body .stat-number { font-size: 36px; line-height: 1.15; letter-spacing: -.04em; }
+  .app-body .stat-currency { font-size: 25px; line-height: 1.45; overflow-wrap: anywhere; }
+  .app-body .stat-currency small { font-size: 12px; }
+  .app-body .stat-bottom { margin-top: 12px; font-size: 11px; line-height: 1.45; gap: 8px; align-items: flex-start; }
+  .app-body .stat-bottom > .icon { width: 15px; height: 15px; }
+  .app-body .dashboard-grid, .app-body .matter-grid, .app-body .team-grid,
+  .app-body .form-layout, .app-body .document-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .app-body .dashboard-grid > *, .app-body .matter-grid > * { grid-column: 1; min-width: 0; }
+  .app-body .task-item, .app-body .deadline-item { padding: 16px 18px; gap: 12px; align-items: flex-start; }
+  .app-body .item-main { min-width: 0; }
+  .app-body .item-main strong { font-size: 15px; line-height: 1.5; white-space: normal; overflow: visible; text-overflow: clip; }
+  .app-body .item-main > span { font-size: 12px; line-height: 1.6; white-space: normal; }
+  .app-body .task-item > .table-action, .app-body .deadline-item > .table-action { min-width: 58px; }
+  .app-body .timeline { padding: 4px 20px 20px 30px; }
+  .app-body .timeline strong { font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+  .app-body .timeline p, .app-body .timeline time { font-size: 12px; line-height: 1.6; }
+  .app-body .empty-state { padding: 30px 20px; }
+  .app-body .empty-state p { font-size: 14px; }
+
+  /* Search is an explicit vertical flow; no cramped toolbar or hidden filter. */
+  .app-body .filter-bar { display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: 12px; padding: 18px; }
+  .app-body .search-field, .app-body .status-filter { width: 100%; min-width: 0; max-width: none; }
+  .app-body .filter-bar .search-field { grid-column: 1 / -1; }
+  .app-body .filter-bar:not(:has(.status-filter)) .search-field { grid-column: 1; }
+  .app-body .search-field input[type=search] { padding-left: 44px; }
+  .app-body .filter-bar > .button { padding: 12px 10px; }
+  .app-body .filter-bar .clear-filter { grid-column: 1 / -1; }
+  .app-body .filter-bar .button, .app-body .clear-filter { width: 100%; }
+  .app-body .results-heading { padding: 15px 18px; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+  .app-body .pagination { padding: 20px 18px; display: grid; gap: 14px; font-size: 13px; }
+  .app-body .pagination > div { display: flex; flex-wrap: wrap; gap: 10px; }
+  .app-body .pagination .button { flex: 1 1 120px; }
+
+  /* Explicit table roles and visually clipped headers preserve accessible
+     table navigation while every visual row becomes a self-contained card. */
+  .app-body .table-scroll:has(> .mobile-records) { overflow: visible; width: 100%; max-width: 100%; }
+  .app-body table.mobile-records { display: block; width: 100%; min-width: 0; border: 0; }
+  .app-body .mobile-records thead {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  .app-body .mobile-records tbody { display: grid; gap: 12px; padding: 0 14px 16px; }
+  .app-body .mobile-records tbody > tr {
+    display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0;
+    border: 1px solid var(--border-soft); border-radius: 13px; padding: 16px;
+    background: var(--surface); box-shadow: 0 4px 14px rgba(0, 0, 0, .035);
+  }
+  .app-body .mobile-records td {
+    display: grid; grid-template-columns: minmax(78px, .75fr) minmax(0, 1.4fr);
+    align-items: start; gap: 4px 12px; padding: 10px 0; border: 0;
+    min-width: 0; max-width: 100%; font-size: 14px; line-height: 1.55;
+    white-space: normal; text-align: left; overflow-wrap: anywhere;
+  }
+  .app-body .mobile-records td::before { content: attr(data-label); color: var(--muted); font-size: 12px; line-height: 1.65; font-weight: 500; }
+  .app-body .mobile-records td > * { min-width: 0; max-width: 100%; }
+  .app-body .mobile-records td > .table-secondary { grid-column: 2; }
+  .app-body .mobile-records td:first-child { display: block; padding: 0 0 13px; margin-bottom: 3px; border-bottom: 1px solid var(--border-soft); }
+  .app-body .mobile-records td:first-child::before { display: block; margin-bottom: 5px; font-size: 11px; letter-spacing: .035em; }
+  .app-body .mobile-records td:first-child .table-primary,
+  .app-body .mobile-records td:first-child > strong { display: block; font-size: 16px; font-weight: 650; line-height: 1.5; }
+  .app-body .mobile-records .table-secondary { margin-top: 5px; font-size: 12px; line-height: 1.6; white-space: normal; }
+  .app-body .mobile-records td[data-label="Ações"],
+  .app-body .mobile-records td[data-label="Ação"],
+  .app-body .mobile-records td[data-label="Acesso"],
+  .app-body .mobile-records td[data-label="Acessar"] { display: block; padding: 13px 0 0; }
+  .app-body .mobile-records td[data-label="Ações"]::before,
+  .app-body .mobile-records td[data-label="Ação"]::before,
+  .app-body .mobile-records td[data-label="Acesso"]::before,
+  .app-body .mobile-records td[data-label="Acessar"]::before { display: block; margin-bottom: 7px; }
+  .app-body .row-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
+  .app-body .table-action { display: inline-flex; justify-content: center; align-items: center; padding: 10px 13px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-soft); font-weight: 600; line-height: 1.5; white-space: normal; }
+  .app-body .row-actions > .table-action { flex: 1 1 104px; }
+  .app-body .mobile-records td > form, .app-body .mobile-records td > form > .table-action { width: 100%; }
+  .app-body .badge { font-size: 12px; line-height: 1.5; white-space: normal; overflow-wrap: anywhere; width: fit-content; }
+
+  /* Native-size form controls prevent iOS focus zoom and keep labels readable. */
+  .app-body input:not([type=checkbox]):not([type=radio]):not([type=hidden]),
+  .app-body select, .app-body textarea { min-height: 48px; max-width: 100%; min-width: 0; font-size: 16px; line-height: 1.5; border-radius: 10px; }
+  .app-body textarea { min-height: 140px; }
+  .app-body input[type=file] { padding: 10px; font-size: 16px; }
+  .app-body .form-grid, .app-body .team-grid .form-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .app-body .record-form, .app-body .team-grid .record-form { padding: 20px 18px; }
+  .app-body .form-field { min-width: 0; }
+  .app-body .form-field > label { font-size: 14px; line-height: 1.5; margin-bottom: 9px; }
+  .app-body .field-help, .app-body .field-error, .app-body .invite-help { font-size: 12px; line-height: 1.65; }
+  .app-body .checkbox-label { min-height: 44px; align-items: center; gap: 12px; }
+  .app-body .checkbox-label label { padding: 10px 0; font-size: 14px; }
+  .app-body .form-actions { display: grid; gap: 14px; padding-top: 24px; margin-top: 24px; }
+  .app-body .form-actions > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; }
+  .app-body .form-actions .button { width: 100%; padding: 12px; }
+  .app-body .form-required-hint { font-size: 12px; }
+  .app-body .form-context { padding: 16px 4px; max-width: none; }
+  .app-body .form-context p, .app-body .form-context p.small { font-size: 13px; }
+  .app-body .form-context h2 { font-size: 17px; }
+
+  /* Matter detail uses a compact section index instead of a scrolling tab rail. */
+  .app-body .matter-summary { padding: 20px 18px; }
+  .app-body .detail-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .app-body .detail-grid dt { font-size: 12px; margin-bottom: 5px; }
+  .app-body .detail-grid dd { font-size: 15px; }
+  .app-body .matter-description { padding-top: 20px; }
+  .app-body .matter-description p { font-size: 14px; }
+  .app-body .detail-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; overflow: visible; white-space: normal; padding: 0; border: 0; margin: 20px 0; }
+  .app-body .detail-tabs > a { min-height: 48px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 13px; line-height: 1.45; }
+  .app-body .matter-grid [id] { scroll-margin-top: 86px; }
+  .app-body .matter-grid .panel-heading .small { display: inline; }
+  .app-body .document-grid { padding: 0 16px 18px; gap: 14px; }
+  .app-body .document-card { padding: 16px; min-width: 0; grid-template-columns: 28px minmax(0, 1fr); }
+  .app-body .document-card h3 { font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; }
+  .app-body .document-card p { font-size: 12px; }
+  .app-body .document-actions { display: flex; gap: 8px; flex-wrap: wrap; grid-column: 1 / -1; }
+  .app-body .document-actions .table-action { flex: 1 1 100px; }
+  .app-body .document-versions { grid-column: 1 / -1; min-width: 0; }
+  .app-body .document-versions summary { min-height: 44px; font-size: 13px; padding: 12px 0; }
+  .app-body .document-versions li { flex-wrap: wrap; gap: 10px; }
+  .app-body .document-versions li > div { min-width: 0; flex: 1 1 160px; overflow-wrap: anywhere; }
+  .app-body .document-versions li > div > span { font-size: 12px; }
+  .app-body .invite-result { display: grid; gap: 12px; padding: 18px; }
+  .app-body .invite-result .button { width: 100%; }
+  .app-body .subscription-panel { max-width: none; padding: 20px; }
+  .app-body .subscription-panel p { font-size: 14px; }
+  .app-body .subscription-panel > .button { width: 100%; margin: 8px 0 14px; }
+  .app-body .app-footer { padding: 18px 16px max(22px, env(safe-area-inset-bottom)); gap: 6px; flex-direction: column; align-items: flex-start; font-size: 11px; }
+  .app-body .app-footer > span:last-child { display: inline; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app-body *, .app-body *::before, .app-body *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+}

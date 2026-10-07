@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Portal de Parceiros | Jumbi{% endblock %}
+{% block body_class %}partner-portal-page{% endblock %}
+{% block content %}
+<div class="partner-portal-shell">
+  <header class="partner-portal-header">
+    <a href="{% url 'partners:portal' %}" class="partner-portal-brand">
+      <img src="{% static 'img/jumbi-logo.png' %}" alt="Jumbi Gestão Jurídica">
+      <span><strong>{{ partner_network.public_name|default:"Rede de Parceiros" }}</strong><small>{{ partner.organization.name }}</small></span>
+    </a>
+    <nav>
+      <a href="#portal-overview">Visão geral</a>
+      <a href="#portal-opportunities">Oportunidades</a>
+      <a href="#portal-materials">Materiais</a>
+    </nav>
+    <div class="partner-portal-account">
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Alternar tema"><i data-lucide="sun-moon"></i></button>
+      <span>{{ partner.display_name|slice:":1"|upper }}</span>
+      <form action="{% url 'core:logout' %}" method="post">{% csrf_token %}<button type="submit" title="Sair"><i data-lucide="log-out"></i></button></form>
+    </div>
+  </header>
+
+  <main>
+    <section class="partner-portal-hero" id="portal-overview">
+      <div>
+        <span class="partner-portal-kicker"><i data-lucide="handshake"></i>PORTAL SEGURO DO PARCEIRO</span>
+        <h1>Olá, {{ partner.display_name }}.</h1>
+        <p>{{ partner_network.presentation|default:"Registre oportunidades e acompanhe somente as informações autorizadas pelo escritório." }}</p>
+        <div class="partner-portal-badges"><span><i data-lucide="building-2"></i>{{ partner.organization.name }}</span><span><i data-lucide="tags"></i>{{ partner.category.name|default:"Parceiro institucional" }}</span><span class="status-{{ partner.status }}"><i data-lucide="shield-check"></i>{{ partner.get_status_display }}</span></div>
+      </div>
+      {% if partner.status == "approved" and partner_network.is_enabled and partner_network.compliance_acknowledged and partner.terms_accepted_at and partner.privacy_accepted_at %}
+        <button class="partner-portal-primary" type="button" data-dialog-open="portal-opportunity-dialog"><i data-lucide="plus"></i>Registrar oportunidade</button>
+      {% elif partner.status == "approved" and partner_network.is_enabled and partner_network.compliance_acknowledged %}
+        <aside class="partner-terms-card"><i data-lucide="file-check-2"></i><form method="post">{% csrf_token %}<input type="hidden" name="action" value="accept_terms"><strong>Conclua o primeiro acesso</strong>{% for field in terms_form %}<label>{{ field }}<span>{{ field.label }}</span>{{ field.errors }}</label>{% endfor %}<button type="submit">Aceitar e continuar</button></form></aside>
+      {% else %}
+        <aside><i data-lucide="clock-3"></i><span><strong>Acesso em preparação</strong><small>O escritório precisa concluir a aprovação e a governança da rede.</small></span></aside>
+      {% endif %}
+    </section>
+
+    <section class="partner-portal-metrics">
+      <article><span>Oportunidades enviadas</span><strong>{{ opportunities|length }}</strong><i data-lucide="send"></i></article>
+      <article><span>Em atendimento</span><strong>{{ opportunities_in_progress_count }}</strong><small>Consulte os status abaixo</small></article>
+      <article><span>Campanhas ativas</span><strong>{{ campaigns|length }}</strong><i data-lucide="megaphone"></i></article>
+    </section>
+
+    <section class="partner-portal-grid" id="portal-opportunities">
+      <article class="partner-portal-panel partner-portal-opportunities">
+        <header><div><span>ACOMPANHAMENTO SIMPLIFICADO</span><h2>Suas oportunidades</h2></div><label><i data-lucide="search"></i><input type="search" placeholder="Buscar..." data-list-filter="portal-opportunity-list"></label></header>
+        <div id="portal-opportunity-list">
+          {% for opportunity in opportunities %}
+            <details data-search-item="{{ opportunity.interested_party_name }} {{ opportunity.practice_area.name }} {{ opportunity.public_status }}">
+              <summary>
+                <span class="partner-portal-person">{{ opportunity.interested_party_name|slice:":2"|upper }}</span>
+                <span><strong>{{ opportunity.interested_party_name }}</strong><small>{{ opportunity.practice_area.name|default:"Área em triagem" }} · {{ opportunity.created_at|date:"d/m/Y" }}</small></span>
+                <span class="partner-public-status">{{ opportunity.public_status }}</span>
+                <i data-lucide="chevron-down"></i>
+              </summary>
+              <div>
+                <p>{{ opportunity.description|truncatewords:32 }}</p>
+                {% if opportunity.partner_message %}<aside><i data-lucide="message-square-text"></i><span><strong>Mensagem do escritório</strong>{{ opportunity.partner_message }}</span></aside>{% endif %}
+                <small>Por segurança, documentos internos, estratégia, honorários e dados de outros clientes não são exibidos neste portal.</small>
+              </div>
+            </details>
+          {% empty %}
+            <div class="partner-portal-empty"><i data-lucide="inbox"></i><strong>Nenhuma oportunidade enviada</strong><p>Quando a rede estiver ativa, use “Registrar oportunidade” para iniciar.</p></div>
+          {% endfor %}
+        </div>
+      </article>
+
+      <aside class="partner-portal-side">
+        <article class="partner-portal-panel">
+          <header><div><span>SEUS DADOS</span><h2>Perfil de contato</h2></div><i data-lucide="contact-round"></i></header>
+          <form method="post" class="partner-portal-form">{% csrf_token %}<input type="hidden" name="action" value="profile">{% for field in profile_form %}<label>{{ field.label }}{{ field }}{{ field.errors }}</label>{% endfor %}<button type="submit">Atualizar dados</button></form>
+        </article>
+        <article class="partner-portal-panel partner-privacy-card"><i data-lucide="lock-keyhole"></i><div><strong>Privacidade por padrão</strong><p>Você acessa apenas seus próprios registros e as mensagens autorizadas pelo escritório.</p></div></article>
+      </aside>
+    </section>
+
+    <section class="partner-portal-content" id="portal-materials">
+      <header><span>CONTEÚDO AUTORIZADO</span><h2>Campanhas e materiais</h2><p>Orientações para registrar oportunidades com contexto e responsabilidade.</p></header>
+      <div class="partner-portal-content-grid">
+        {% for campaign in campaigns %}
+          <article><span class="partner-content-icon"><i data-lucide="megaphone"></i></span><small>{{ campaign.practice_area.name|default:"Relacionamento" }}</small><h3>{{ campaign.name }}</h3><p>{{ campaign.description|truncatewords:24 }}</p>{% if campaign.ends_at %}<time>Disponível até {{ campaign.ends_at|date:"d/m/Y" }}</time>{% endif %}</article>
+        {% endfor %}
+        {% for material in materials %}
+          <a href="{{ material.url }}" target="_blank" rel="noopener"><span class="partner-content-icon"><i data-lucide="book-open-text"></i></span><small>{{ material.get_kind_display }}</small><h3>{{ material.title }}</h3><p>{{ material.description }}</p><b>Abrir material <i data-lucide="arrow-up-right"></i></b></a>
+        {% empty %}
+          {% if not campaigns %}<div class="partner-portal-empty"><i data-lucide="library"></i><strong>Biblioteca em preparação</strong><p>O escritório publicará aqui campanhas e materiais autorizados.</p></div>{% endif %}
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+
+  <footer class="partner-portal-footer"><span>Jumbi · infraestrutura de gestão jurídica</span><span>Ambiente protegido de {{ partner.organization.name }}</span></footer>
+</div>
+
+<dialog class="legal-dialog partner-portal-dialog" id="portal-opportunity-dialog" {% if opportunity_form.errors %}open{% endif %}>
+  <div class="legal-dialog-card">
+    <header><div><span>NOVA OPORTUNIDADE</span><h2>Registrar com consentimento</h2><p>Envie apenas dados necessários à triagem inicial.</p></div><button type="button" data-dialog-close><i data-lucide="x"></i></button></header>
+    <form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="opportunity">{% for field in opportunity_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit"><i data-lucide="shield-check"></i>Enviar com segurança</button></footer></form>
+  </div>
+</dialog>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% load static %}
+<section class="module-page-header">
+  <div>
+    <span class="module-icon"><i data-lucide="palette"></i></span>
+    <div>
+      <span class="eyebrow">IDENTIDADE DA ORGANIZAÇÃO</span>
+      <h1>Personalização</h1>
+      <p>Adapte a área de trabalho à marca de {{ organization.name }}.</p>
+    </div>
+  </div>
+</section>
+
+<section class="branding-layout">
+  <article class="ops-panel branding-preview-panel">
+    <div class="panel-title">
+      <div><span>PRÉ-VISUALIZAÇÃO</span><h2>Marca aplicada ao sistema</h2></div>
+      <i data-lucide="monitor-smartphone"></i>
+    </div>
+    <div
+      class="branding-preview"
+      style="--preview-primary: {{ organization.brand_primary_color }}; --preview-accent: {{ organization.brand_accent_color }}; --preview-sidebar: {{ organization.brand_sidebar_color }};"
+    >
+      <aside>
+        {% if organization.brand_logo %}
+          <img src="{{ organization.brand_logo.url }}" alt="Logo de {{ organization.name }}">
+        {% else %}
+          <img src="{% static 'img/jumbi-logo.png' %}" alt="Jumbi">
+        {% endif %}
+        <span class="branding-preview-active"><i data-lucide="layout-dashboard"></i> Visão geral</span>
+        <span><i data-lucide="users"></i> Cadastros</span>
+        <span><i data-lucide="circle-dollar-sign"></i> Financeiro</span>
+      </aside>
+      <div>
+        <small>{{ app_label }}</small>
+        <strong>{{ organization.name }}</strong>
+        <p>Sua logo e suas cores aparecem nos principais pontos da área de trabalho.</p>
+        <button type="button">Ação principal</button>
+      </div>
+    </div>
+  </article>
+
+  <article class="ops-panel branding-form-panel">
+    <div class="panel-title">
+      <div><span>CONFIGURAÇÃO</span><h2>Logo e paleta de cores</h2></div>
+      <i data-lucide="swatch-book"></i>
+    </div>
+    {% if can_manage_branding %}
+      <form method="post" enctype="multipart/form-data" class="stack-form branding-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="branding">
+        {{ branding_form.non_field_errors }}
+        {% for field in branding_form %}
+          <p class="{% if 'color' in field.name %}branding-color-field{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+            {{ field.errors }}
+          </p>
+        {% endfor %}
+        <button type="submit"><i data-lucide="save"></i> Salvar identidade visual</button>
+      </form>
+    {% else %}
+      <div class="permission-note">
+        <i data-lucide="lock-keyhole"></i>
+        <div><strong>Configuração protegida</strong><p>Somente proprietários e gestores podem alterar a identidade visual.</p></div>
+      </div>
+    {% endif %}
+  </article>
+</section>

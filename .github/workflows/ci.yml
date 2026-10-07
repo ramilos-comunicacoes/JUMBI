@@ -1,0 +1,37 @@
+name: JUMBI checks
+on: [push, pull_request]
+jobs:
+  django:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_DB: jumbi_test
+          POSTGRES_USER: jumbi
+          POSTGRES_PASSWORD: ci-only-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    env:
+      DJANGO_DEBUG: 'True'
+      DJANGO_SECRET_KEY: ci-only-not-for-production-7a4d2d3322439119403703508e366706bb9d9eb18
+      DJANGO_DB_ENGINE: postgresql
+      POSTGRES_DB: jumbi_test
+      POSTGRES_USER: jumbi
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_HOST: 127.0.0.1
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py migrate --noinput
+      - run: python manage.py test apps.legal apps.billing apps.core.test_workspace apps.core.test_platform apps.core.test_legacy_isolation
+      - run: python manage.py collectstatic --noinput

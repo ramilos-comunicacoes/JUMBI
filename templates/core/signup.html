@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Criar conta | Jumbi{% endblock %}
+{% block content %}
+<main class="auth-page"><section class="auth-card auth-card-wide">
+  <a class="auth-brand" href="{% url 'pages:home' %}">JUMBI</a><span class="eyebrow">COMECE COM SEGURANÇA</span><h1>Crie seu escritório no Jumbi.</h1><p class="auth-intro">Comece com um contexto de organização preparado para evoluir com a operação jurídica.</p>
+  <form method="post" class="stack-form">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.help_text }}{{ field.errors }}</p>{% endfor %}<button type="submit">Criar conta</button></form>
+  <p class="auth-footer">Já tem uma conta? <a href="{% url 'core:login' %}">Entrar</a></p>
+</section></main>
+{% endblock %}

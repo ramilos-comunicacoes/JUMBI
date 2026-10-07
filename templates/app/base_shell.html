@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body_class %}app-page app-{{ app_key|default:"core" }}{% endblock %}
+{% block content %}
+<style id="organization-brand-style" {% if is_htmx %}hx-swap-oob="outerHTML"{% endif %}>
+  #app-shell {
+    --tenant-primary: {{ active_organization.brand_primary_color|default:"#F5A000" }};
+    --tenant-accent: {{ active_organization.brand_accent_color|default:"#0F4050" }};
+    --tenant-sidebar: {{ active_organization.brand_sidebar_color|default:"#0B1320" }};
+  }
+</style>
+<div class="app-shell" id="app-shell" data-app-shell data-current-module="{{ current_section }}" hx-history="false">
+  <button class="sidebar-backdrop" type="button" data-app-menu-close aria-label="Fechar menu"></button>
+  <aside class="app-sidebar" aria-label="Navegação do sistema">
+    <div class="sidebar-brand-row" id="sidebar-brand-row" {% if is_htmx %}hx-swap-oob="outerHTML"{% endif %}>
+      <a class="sidebar-logo" href="{{ app_home_url|default:'/' }}">
+        <img class="sidebar-logo-mark" src="{% static 'img/favicon.png' %}?v=20260728-jumbi-2" alt="Jumbi" width="34" height="34">
+        {% if active_organization.brand_logo and app_key != "control" %}
+          <img class="sidebar-logo-full sidebar-logo-client" src="{{ active_organization.brand_logo.url }}" alt="{{ active_organization.name }}">
+        {% else %}
+          <img class="sidebar-logo-full" src="{% static 'img/jumbi-logo.png' %}" alt="Jumbi Gestão Jurídica">
+        {% endif %}
+      </a>
+      <button class="sidebar-mobile-close" type="button" data-app-menu-close aria-label="Fechar menu">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <nav
+      class="sidebar-nav"
+      id="sidebar-nav"
+      aria-label="Funções do sistema"
+      hx-boost="true"
+      hx-target="#app-main"
+      hx-select="#app-main"
+      hx-swap="outerHTML"
+      hx-push-url="true"
+      hx-indicator="#app-loading"
+      {% if is_htmx %}hx-swap-oob="outerHTML"{% endif %}
+    >
+      {% for item in sidebar_items %}
+        <a class="{% if current_section == item.key %}is-active{% endif %}" href="{{ item.url }}" title="{{ item.label }}" data-app-module="{{ item.key }}" {% if current_section == item.key %}aria-current="page"{% endif %}>
+          <i data-lucide="{{ item.icon }}"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      {% endfor %}
+      <a href="{% url 'core:password-change' %}" title="Segurança da conta" hx-boost="false">
+        <i data-lucide="shield-check"></i>
+        <span>Segurança da conta</span>
+      </a>
+    </nav>
+
+    <footer class="sidebar-account" title="{{ request.user.email }}">
+      <form class="sidebar-signout" action="{% url 'core:logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" title="Sair do sistema">
+          <i data-lucide="log-out"></i>
+          <span>Sair do sistema</span>
+        </button>
+      </form>
+    </footer>
+  </aside>
+
+  <section
+    class="app-content"
+    hx-boost="true"
+    hx-target="#app-main"
+    hx-select="#app-main"
+    hx-swap="outerHTML"
+    hx-push-url="true"
+    hx-indicator="#app-loading"
+  >
+    <header class="app-topbar">
+      <div class="topbar-leading">
+        <button class="mobile-menu" type="button" data-app-menu aria-label="Abrir menu" aria-expanded="false">
+          <i data-lucide="menu"></i>
+          <span>Menu</span>
+        </button>
+        <div class="breadcrumb" id="app-breadcrumb" {% if is_htmx %}hx-swap-oob="outerHTML"{% endif %}>
+          <span>{% if app_key == "control" %}Administração da plataforma{% else %}{{ active_organization.name|default:app_label }}{% endif %}</span>
+          <strong>{{ current_section_label|default:"Visão geral" }}</strong>
+        </div>
+        <span class="app-loading htmx-indicator" id="app-loading" aria-label="Carregando"></span>
+      </div>
+      <div class="topbar-actions">
+        <span class="topbar-date" title="Data de hoje">
+          <i data-lucide="calendar-days"></i>
+          <span>{% now "d/m" %}</span>
+        </span>
+        {% if active_organization and app_key != "control" %}
+          <form class="organization-switch" id="organization-switcher" action="{% url 'core:switch-organization' %}" method="post" {% if is_htmx %}hx-swap-oob="outerHTML"{% endif %}>
+            {% csrf_token %}
+            <select name="organization_id" aria-label="Trocar organização" onchange="this.form.submit()">
+              {% for option in available_organizations %}
+                <option value="{{ option.id }}" {% if option.id == active_organization.id %}selected{% endif %}>{{ option.name }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        {% endif %}
+        <button class="topbar-icon-button" type="button" data-app-fullscreen aria-label="Alternar tela cheia" title="Tela cheia">
+          <i data-lucide="maximize-2"></i>
+        </button>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Alternar entre tema claro e escuro">
+          <i data-lucide="sun-moon"></i>
+          <span>Tema</span>
+        </button>
+        {% if app_key == "juridico" %}
+          <details class="topbar-notifications">
+            <summary class="topbar-icon-button" aria-label="Notificações e prazos" title="Notificações">
+              <i data-lucide="bell"></i>
+              {% if open_tasks %}<span class="notification-dot">{{ open_tasks }}</span>{% endif %}
+            </summary>
+            <div class="notification-popover">
+              <span>Central de atenção</span>
+              <strong>{{ open_tasks|default:0 }} atividade{{ open_tasks|default:0|pluralize }} aberta{{ open_tasks|default:0|pluralize }}</strong>
+              <p>{{ overdue_tasks_count|default:0 }} prazo{{ overdue_tasks_count|default:0|pluralize }} vencido{{ overdue_tasks_count|default:0|pluralize }}.</p>
+              <a href="{% url 'office:section' 'tasks' %}">Abrir agenda <i data-lucide="arrow-up-right"></i></a>
+            </div>
+          </details>
+        {% endif %}
+        <span class="user-avatar" aria-label="{{ request.user.email }}">{{ request.user.email|slice:":1"|upper }}</span>
+      </div>
+    </header>
+    <main class="app-main" id="app-main" data-app-main data-module="{{ current_section }}" tabindex="-1">{% block app_content %}{% endblock %}</main>
+  </section>
+</div>
+{% endblock %}

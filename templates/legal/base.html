@@ -1,0 +1,48 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0b1320">
+  <title>{% block title %}{{ page_title|default:"Visão geral" }}{% endblock %} · JUMBI</title>
+  <link rel="icon" type="image/png" href="{% static 'brand/favicon.png' %}">
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('jumbi-theme')||'dark';if(localStorage.getItem('jumbi-sidebar')==='collapsed')document.documentElement.classList.add('sidebar-collapsed')}catch(e){}</script>
+  <link rel="stylesheet" href="{% static 'css/jumbi.css' %}">
+  {% block extra_css %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'css/jumbi-mobile-app.css' %}" media="(max-width: 720px)">
+  <script src="{% static 'js/jumbi.js' %}" defer></script>
+</head>
+<body class="app-body j-glass-app">
+  <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
+  {% include 'legal/includes/icons.html' %}
+  <div class="sidebar-backdrop" data-sidebar-close hidden></div>
+  <aside class="sidebar" id="main-sidebar" aria-label="Menu principal">
+    <div class="sidebar-brand"><a href="{% url 'legal:dashboard' %}" aria-label="JUMBI — visão geral"><img src="{% static 'brand/logo.png' %}" alt="JUMBI Gestão Jurídica" class="brand-logo"></a><button class="icon-button mobile-only" data-sidebar-close aria-label="Fechar menu"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <div class="workspace"><span class="workspace-mark">{{ organization.name|default:"J"|slice:":1"|upper }}</span><div class="workspace-copy"><strong>{{ organization.name|default:"Meu escritório" }}</strong><span>Espaço de trabalho</span></div><span class="workspace-dot" aria-label="Conectado"></span></div>
+    {% if workspace_memberships|length > 1 %}<form class="workspace-switch" action="{% url 'core:switch_organization' %}" method="post">{% csrf_token %}<label for="workspace-select">Trocar escritório</label><div><select id="workspace-select" name="organization_id">{% for item in workspace_memberships %}<option value="{{ item.organization_id }}" {% if item.organization_id == organization.pk %}selected{% endif %}>{{ item.organization.name }}</option>{% endfor %}</select><button type="submit" class="icon-button" aria-label="Acessar escritório selecionado"><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div></form>{% endif %}
+    <div class="nav-label">GESTÃO DO ESCRITÓRIO</div>
+    <nav class="main-nav" aria-label="Principal">
+    {% for item in nav %}<a href="{{ item.url }}" class="nav-link {% if active_nav == item.key %}is-active{% endif %}" {% if active_nav == item.key %}aria-current="page"{% endif %} title="{{ item.label }}"><svg class="icon" aria-hidden="true"><use href="#i-{{ item.key }}"/></svg><span>{{ item.label }}</span>{% if active_nav == item.key %}<span class="nav-active-dot"></span>{% endif %}</a>{% empty %}
+      <a href="{% url 'legal:dashboard' %}" class="nav-link {% if active_nav == 'dashboard' %}is-active{% endif %}"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"/></svg><span>Visão geral</span></a>
+      <a href="{% url 'legal:list' 'matters' %}" class="nav-link"><svg class="icon" aria-hidden="true"><use href="#i-matters"/></svg><span>Pastas jurídicas</span></a>
+      <a href="{% url 'legal:list' 'contacts' %}" class="nav-link"><svg class="icon" aria-hidden="true"><use href="#i-contacts"/></svg><span>Pessoas</span></a>
+      <a href="{% url 'legal:list' 'cases' %}" class="nav-link"><svg class="icon" aria-hidden="true"><use href="#i-cases"/></svg><span>Processos</span></a>
+      <a href="{% url 'legal:list' 'tasks' %}" class="nav-link"><svg class="icon" aria-hidden="true"><use href="#i-tasks"/></svg><span>Tarefas</span></a>
+      <a href="{% url 'legal:list' 'deadlines' %}" class="nav-link"><svg class="icon" aria-hidden="true"><use href="#i-deadlines"/></svg><span>Prazos</span></a>
+      <a href="{% url 'legal:list' 'appointments' %}" class="nav-link"><svg class="icon" aria-hidden="true"><use href="#i-appointments"/></svg><span>Agenda</span></a>
+      <a href="{% url 'legal:list' 'documents' %}" class="nav-link"><svg class="icon" aria-hidden="true"><use href="#i-documents"/></svg><span>Documentos</span></a>
+      <a href="{% url 'legal:list' 'finance' %}" class="nav-link"><svg class="icon" aria-hidden="true"><use href="#i-finance"/></svg><span>Financeiro</span></a>
+      <a href="{% url 'legal:list' 'crm' %}" class="nav-link"><svg class="icon" aria-hidden="true"><use href="#i-crm"/></svg><span>Relacionamento</span></a>
+      <a href="{% url 'core:team' %}" class="nav-link"><svg class="icon" aria-hidden="true"><use href="#i-team"/></svg><span>Equipe</span></a>
+    {% endfor %}</nav>
+    <div class="sidebar-bottom"><div class="sidebar-note"><svg class="icon" aria-hidden="true"><use href="#i-audit"/></svg><div>Organização que acompanha<span>Sua rotina jurídica, conectada.</span></div></div><button class="sidebar-collapse" data-sidebar-toggle aria-label="Recolher menu lateral" aria-expanded="true" aria-controls="main-sidebar"><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg><span>Recolher menu</span></button></div>
+  </aside>
+  <div class="app-main">
+    <header class="topbar"><div class="topbar-location"><button class="icon-button mobile-only" data-sidebar-open aria-label="Abrir menu" aria-expanded="false" aria-controls="main-sidebar"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button><span class="topbar-product">JUMBI</span><span class="breadcrumb-divider">/</span><span>{{ page_title|default:"Visão geral" }}</span></div><div class="topbar-actions"><span class="today-label">{% now "d M Y" %}</span><button class="icon-button theme-toggle" data-theme-toggle aria-label="Alternar tema" title="Alternar tema"><svg class="icon" aria-hidden="true"><use href="#i-sun"/></svg></button><div class="account"><a class="avatar" href="{% url 'core:password_change' %}" aria-label="Minha conta e senha">{{ request.user.first_name|default:request.user.email|slice:":1"|upper }}</a><div class="account-copy"><strong>{{ request.user.get_full_name|default:request.user.email }}</strong><a href="{% url 'core:password_change' %}">{{ membership.get_role_display|default:"Minha conta" }}</a></div></div><form action="{% url 'core:logout' %}" method="post" class="logout-form">{% csrf_token %}<button class="icon-button" title="Sair da conta" aria-label="Sair da conta"><svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg></button></form></div></header>
+    <main id="main-content" class="page-content" tabindex="-1">
+      {% if messages %}<div class="message-stack" aria-live="polite">{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}"><span>{{ message }}</span><button type="button" class="icon-button" data-dismiss-message aria-label="Dispensar aviso"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>{% endfor %}</div>{% endif %}
+      {% if is_demo %}<div class="alert demo-banner"><svg class="icon" aria-hidden="true"><use href="#i-audit"/></svg>Ambiente de demonstração · As pessoas, demandas e valores exibidos são fictícios.</div>{% endif %}{% block content %}{% endblock %}
+    </main>
+    <footer class="app-footer"><span>JUMBI <span class="footer-dot">·</span> Gestão jurídica</span><span>Clareza para cada próximo passo.</span></footer>
+  </div>
+  {% block extra_js %}{% endblock %}
+</body></html>

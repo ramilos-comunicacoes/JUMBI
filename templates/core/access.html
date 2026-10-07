@@ -1,0 +1,5 @@
+{% extends "public/base.html" %}
+{% block title %}Acessar o sistema | Jumbi{% endblock %}
+{% block public_content %}
+<main class="access-page"><div class="section-heading"><span class="eyebrow">ACESSO AO SISTEMA</span><h1>Escolha o ambiente da sua operação.</h1><p>O contexto visual é definido pelo segmento; suas permissões continuam sendo verificadas após o login.</p></div><div class="segment-grid">{% for key, app in super_apps.items %}<a class="segment-card {{ key }}" href="{% url 'core:segment-login' key %}"><span>{{ app.label }}</span><h2>{{ app.description }}</h2><b>Continuar →</b></a>{% endfor %}</div><p class="access-generic"><a href="{% url 'core:login' %}">Não sei meu segmento</a></p></main>
+{% endblock %}

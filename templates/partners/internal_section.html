@@ -1,0 +1,184 @@
+<section class="legal-page-heading partner-heading">
+  <div>
+    <span class="legal-kicker">RELACIONAMENTO & ORIGEM</span>
+    <h1>Rede de Parceiros</h1>
+    <p>Um CRM isolado para receber, qualificar e converter oportunidades sem expor os dados internos do escritório.</p>
+  </div>
+  <div class="legal-heading-actions">
+    <button class="legal-action secondary" type="button" data-dialog-open="partner-campaign-dialog"><i data-lucide="megaphone"></i>Nova campanha</button>
+    <button class="legal-action primary" type="button" data-dialog-open="partner-create-dialog"><i data-lucide="handshake"></i>Novo parceiro</button>
+  </div>
+</section>
+
+{% if not partner_network.is_enabled or not partner_network.compliance_acknowledged %}
+  <aside class="partner-compliance-banner">
+    <span><i data-lucide="shield-alert"></i></span>
+    <div>
+      <strong>A rede ainda não está liberada para receber oportunidades.</strong>
+      <p>Revise os critérios, o aviso de privacidade e a conformidade ética antes de ativar acessos externos.</p>
+    </div>
+    <a href="#partner-governance">Configurar governança</a>
+  </aside>
+{% endif %}
+
+<section class="legal-metric-strip partner-metrics">
+  <article class="metric-revenue"><span>Parceiros ativos</span><strong>{{ partners_active_count }}</strong><small>{{ partners_pending_count }} aguardando análise</small></article>
+  <article class="metric-info"><span>Oportunidades</span><strong>{{ partner_opportunity_count }}</strong><small>Registros recebidos pela rede</small></article>
+  <article class="metric-purple"><span>Conversões</span><strong>{{ partner_conversion_count }}</strong><small>Clientes e casos originados</small></article>
+  <article class="metric-warning"><span>Taxa de conversão</span><strong>{{ partner_conversion_rate }}%</strong><small>Sobre a base registrada</small></article>
+</section>
+
+<nav class="legal-context-tabs partner-anchor-nav" aria-label="Áreas da Rede de Parceiros">
+  <a class="is-active" href="#partner-opportunities"><i data-lucide="inbox"></i>Oportunidades</a>
+  <a href="#partner-directory"><i data-lucide="users-round"></i>Parceiros</a>
+  <a href="#partner-campaigns"><i data-lucide="megaphone"></i>Campanhas</a>
+  <a href="#partner-governance"><i data-lucide="shield-check"></i>Governança</a>
+</nav>
+
+<section class="legal-panel partner-section" id="partner-opportunities">
+  <header class="legal-panel-heading">
+    <span class="panel-icon amber"><i data-lucide="inbox"></i></span>
+    <div><span>FUNIL AUDITADO</span><h2>Oportunidades recebidas</h2><p>Cada mudança de etapa fica registrada e o parceiro vê apenas um resumo autorizado.</p></div>
+    <span class="legal-count">{{ partner_opportunity_count }} registro{{ partner_opportunity_count|pluralize }}</span>
+  </header>
+  <div class="legal-toolbar">
+    <label class="legal-search"><i data-lucide="search"></i><input type="search" placeholder="Buscar pessoa, parceiro, área ou campanha..." data-list-filter="partner-opportunity-list"></label>
+  </div>
+  <div class="partner-opportunity-list" id="partner-opportunity-list">
+    {% for opportunity in partner_opportunities %}
+      <details class="partner-opportunity-card" data-search-item="{{ opportunity.interested_party_name }} {{ opportunity.partner.display_name }} {{ opportunity.practice_area.name }} {{ opportunity.campaign.name }} {{ opportunity.get_status_display }}">
+        <summary>
+          <span class="partner-opportunity-main">
+            <span class="legal-person-avatar">{{ opportunity.interested_party_name|slice:":2"|upper }}</span>
+            <span><strong>{{ opportunity.interested_party_name }}</strong><small>{{ opportunity.partner.display_name }}{% if opportunity.practice_area %} · {{ opportunity.practice_area.name }}{% endif %}</small></span>
+          </span>
+          <span class="partner-opportunity-meta">
+            {% if opportunity.possible_duplicate %}<span class="legal-status status-urgent">Revisar duplicidade</span>{% endif %}
+            <span class="legal-status {% if opportunity.status == 'case_created' or opportunity.status == 'converted' %}status-active{% elif opportunity.status == 'lost' or opportunity.status == 'cancelled' %}status-closed{% else %}status-waiting{% endif %}">{{ opportunity.get_status_display }}</span>
+            <time>{{ opportunity.created_at|date:"d/m/Y H:i" }}</time>
+            <i data-lucide="chevron-down"></i>
+          </span>
+        </summary>
+        <div class="partner-opportunity-detail">
+          <div class="partner-opportunity-copy">
+            <dl>
+              <div><dt>Contato</dt><dd>{{ opportunity.phone|default:opportunity.email }}</dd></div>
+              <div><dt>Localidade</dt><dd>{{ opportunity.city|default:"Não informada" }}{% if opportunity.state %}/{{ opportunity.state }}{% endif %}</dd></div>
+              <div><dt>Campanha</dt><dd>{{ opportunity.campaign.name|default:"Origem espontânea" }}</dd></div>
+              <div><dt>Consentimento</dt><dd>{% if opportunity.consent_confirmed %}Confirmado · v{{ opportunity.consent_version }}{% else %}Não confirmado{% endif %}</dd></div>
+            </dl>
+            <p>{{ opportunity.description }}</p>
+            {% if opportunity.partner_message %}<aside><strong>Última mensagem pública</strong>{{ opportunity.partner_message }}</aside>{% endif %}
+          </div>
+          <div class="partner-opportunity-actions">
+            {% if opportunity.allowed_transitions %}
+              <form method="post" action="{% url 'partners:opportunity-status' opportunity.id %}" class="partner-status-form">
+                {% csrf_token %}
+                <label>Próxima etapa
+                  <select name="status" required>
+                    <option value="">Selecione</option>
+                    {% for value, label in opportunity.allowed_transitions %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                  </select>
+                </label>
+                <label>Mensagem visível ao parceiro
+                  <textarea name="public_message" rows="2" placeholder="Informe somente o necessário."></textarea>
+                </label>
+                <label>Nota interna
+                  <textarea name="internal_message" rows="2" placeholder="Não será exibida no portal externo."></textarea>
+                </label>
+                <button class="legal-action secondary" type="submit"><i data-lucide="git-branch"></i>Atualizar etapa</button>
+              </form>
+            {% endif %}
+            {% if not opportunity.converted_case and opportunity.status != 'lost' and opportunity.status != 'cancelled' and opportunity.status != 'duplicate' %}
+              <form method="post" action="{% url 'partners:opportunity-convert' opportunity.id %}">
+                {% csrf_token %}
+                <button class="legal-action primary" type="submit"><i data-lucide="user-round-check"></i>Converter em cliente e caso</button>
+              </form>
+            {% elif opportunity.converted_case %}
+              <a class="legal-action secondary" href="{% url 'office:section' 'cases' %}"><i data-lucide="briefcase-business"></i>Abrir carteira jurídica</a>
+            {% endif %}
+          </div>
+        </div>
+      </details>
+    {% empty %}
+      <div class="legal-empty"><i data-lucide="inbox"></i><p>Nenhuma oportunidade recebida. Aprove um parceiro e habilite a rede para começar.</p></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="legal-panel partner-section" id="partner-directory">
+  <header class="legal-panel-heading">
+    <span class="panel-icon blue"><i data-lucide="users-round"></i></span>
+    <div><span>DIRETÓRIO</span><h2>Parceiros cadastrados</h2><p>Aprovação manual, categoria, acesso individual e desempenho por origem.</p></div>
+    <button class="legal-action secondary" type="button" data-dialog-open="partner-category-dialog"><i data-lucide="tags"></i>Nova categoria</button>
+  </header>
+  <div class="partner-directory-grid">
+    {% for partner in partners %}
+      <article class="partner-directory-card">
+        <header><span class="legal-person-avatar">{{ partner.display_name|slice:":2"|upper }}</span><span class="legal-status {% if partner.status == 'approved' %}status-active{% elif partner.status == 'pending' %}status-waiting{% else %}status-closed{% endif %}">{{ partner.get_status_display }}</span></header>
+        <h3>{{ partner.display_name }}</h3>
+        <p>{{ partner.category.name|default:"Sem categoria" }}</p>
+        <dl><div><dt>Oportunidades</dt><dd>{{ partner.opportunity_count }}</dd></div><div><dt>Conversões</dt><dd>{{ partner.conversion_count }}</dd></div></dl>
+        <small>{{ partner.email }}{% if partner.whatsapp %} · {{ partner.whatsapp }}{% endif %}</small>
+        <form method="post" action="{% url 'partners:partner-status' partner.id %}">
+          {% csrf_token %}
+          <select name="status" aria-label="Alterar status de {{ partner.display_name }}">
+            {% for value, label in partner_status_choices %}<option value="{{ value }}" {% if value == partner.status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <button type="submit" aria-label="Salvar status"><i data-lucide="check"></i></button>
+        </form>
+      </article>
+    {% empty %}
+      <div class="legal-empty"><i data-lucide="handshake"></i><p>Nenhum parceiro cadastrado.</p></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="partner-two-column" id="partner-campaigns">
+  <article class="legal-panel partner-section">
+    <header class="legal-panel-heading">
+      <span class="panel-icon purple"><i data-lucide="megaphone"></i></span>
+      <div><span>ORIENTAÇÃO POR ÁREA</span><h2>Campanhas</h2><p>Critérios claros para melhorar a qualidade da origem.</p></div>
+    </header>
+    <div class="partner-simple-list">
+      {% for campaign in partner_campaigns %}
+        <article><span><strong>{{ campaign.name }}</strong><small>{{ campaign.practice_area.name|default:"Todas as áreas" }} · {{ campaign.get_status_display }}</small></span><b>{{ campaign.opportunities.count }}</b></article>
+      {% empty %}<div class="legal-empty"><p>Nenhuma campanha criada.</p></div>{% endfor %}
+    </div>
+  </article>
+  <article class="legal-panel partner-section">
+    <header class="legal-panel-heading">
+      <span class="panel-icon blue"><i data-lucide="library"></i></span>
+      <div><span>CONTEÚDO AUTORIZADO</span><h2>Materiais</h2><p>Guias, políticas e treinamentos visíveis no portal.</p></div>
+      <button class="legal-action secondary" type="button" data-dialog-open="partner-material-dialog"><i data-lucide="plus"></i>Publicar</button>
+    </header>
+    <div class="partner-simple-list">
+      {% for material in partner_materials %}
+        <a href="{{ material.url }}" target="_blank" rel="noopener"><span><strong>{{ material.title }}</strong><small>{{ material.get_kind_display }}{% if material.campaign %} · {{ material.campaign.name }}{% endif %}</small></span><i data-lucide="external-link"></i></a>
+      {% empty %}<div class="legal-empty"><p>Nenhum material publicado.</p></div>{% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="legal-panel partner-section partner-governance" id="partner-governance">
+  <header class="legal-panel-heading">
+    <span class="panel-icon amber"><i data-lucide="shield-check"></i></span>
+    <div><span>POLÍTICAS DO ESCRITÓRIO</span><h2>Governança e conformidade</h2><p>O escritório controla a rede, os critérios de aceite e qualquer política contratual.</p></div>
+  </header>
+  <div class="partner-governance-layout">
+    <form method="post" class="stack-form legal-form partner-governance-form">
+      {% csrf_token %}<input type="hidden" name="action" value="partner_network">
+      {% for field in partner_network_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>{% endfor %}
+      <footer><button class="legal-action primary" type="submit"><i data-lucide="save"></i>Salvar governança</button></footer>
+    </form>
+    <aside class="partner-ethics-note">
+      <i data-lucide="scale"></i>
+      <div><strong>Infraestrutura, não captação.</strong><p>A rede organiza relacionamentos e oportunidades. A advocacia continua sujeita às regras da OAB, sem mercantilização ou oferta indevida de serviços.</p><a href="https://www.oab.org.br/leisnormas/legislacao/provimentos/205-2021" target="_blank" rel="noopener">Provimento 205/2021</a><a href="https://www.oab.org.br/leisnormas/legislacao/resolucoes/02-2015" target="_blank" rel="noopener">Código de Ética</a></div>
+    </aside>
+  </div>
+</section>
+
+<dialog class="legal-dialog" id="partner-create-dialog" {% if partner_form.errors %}open{% endif %}><div class="legal-dialog-card"><header><div><span>NOVO ACESSO EXTERNO</span><h2>Cadastrar parceiro</h2></div><button type="button" data-dialog-close><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="partner">{% for field in partner_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit">Criar acesso</button></footer></form></div></dialog>
+<dialog class="legal-dialog" id="partner-category-dialog" {% if partner_category_form.errors %}open{% endif %}><div class="legal-dialog-card"><header><div><span>CLASSIFICAÇÃO</span><h2>Nova categoria</h2></div><button type="button" data-dialog-close><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="partner_category">{% for field in partner_category_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action primary" type="submit">Salvar categoria</button></footer></form></div></dialog>
+<dialog class="legal-dialog" id="partner-campaign-dialog" {% if partner_campaign_form.errors %}open{% endif %}><div class="legal-dialog-card"><header><div><span>NOVA ORIENTAÇÃO</span><h2>Criar campanha</h2></div><button type="button" data-dialog-close><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="partner_campaign">{% for field in partner_campaign_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action primary" type="submit">Criar campanha</button></footer></form></div></dialog>
+<dialog class="legal-dialog" id="partner-material-dialog" {% if partner_material_form.errors %}open{% endif %}><div class="legal-dialog-card"><header><div><span>BIBLIOTECA</span><h2>Publicar material</h2></div><button type="button" data-dialog-close><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="partner_material">{% for field in partner_material_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action primary" type="submit">Publicar material</button></footer></form></div></dialog>

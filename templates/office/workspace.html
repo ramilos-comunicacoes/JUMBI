@@ -1,0 +1,444 @@
+{% extends "app/base_shell.html" %}
+{% block title %}{{ current_section_label }} | Jumbi Gestão Jurídica{% endblock %}
+{% block app_content %}
+
+{% if current_section != "overview" %}
+  <nav class="legal-section-return" aria-label="Caminho da seção">
+    <a href="{% url 'office:workspace' %}" data-app-home>
+      <i data-lucide="arrow-left"></i>
+      <span>Visão geral</span>
+    </a>
+    <i data-lucide="chevron-right" aria-hidden="true"></i>
+    <strong>{{ current_section_label }}</strong>
+  </nav>
+{% endif %}
+
+{% if current_section == "overview" %}
+  <section class="legal-page-heading">
+    <div>
+      <span class="legal-kicker">GESTÃO JURÍDICA INTEGRADA</span>
+      <h1>Visão geral do escritório</h1>
+      <p>{{ organization.name }} · dados operacionais atualizados em tempo real.</p>
+    </div>
+    <div class="legal-heading-actions">
+      <a class="legal-action secondary" href="{% url 'office:section' 'tasks' %}">
+        <i data-lucide="calendar-clock"></i><span>Abrir agenda</span>
+      </a>
+      <button class="legal-action primary" type="button" data-dialog-open="case-create-dialog">
+        <i data-lucide="plus"></i><span>Novo processo</span>
+      </button>
+    </div>
+  </section>
+
+  <nav class="legal-context-tabs" aria-label="Áreas da visão geral">
+    <span class="is-active" aria-current="page"><i data-lucide="layout-dashboard"></i>Resumo</span>
+    <a href="{% url 'office:section' 'cases' %}"><i data-lucide="scale"></i>Processos</a>
+    <a href="{% url 'office:section' 'practice' %}"><i data-lucide="workflow"></i>Áreas e fluxos</a>
+    <a href="{% url 'office:section' 'tasks' %}"><i data-lucide="calendar-days"></i>Prazos</a>
+    <a href="{% url 'office:section' 'finance' %}"><i data-lucide="landmark"></i>Financeiro</a>
+    <a href="{% url 'office:section' 'documents' %}"><i data-lucide="files"></i>Documentos</a>
+  </nav>
+
+  <section class="legal-metric-strip">
+    <article class="metric-revenue">
+      <span><i data-lucide="trending-up"></i>Receitas registradas</span>
+      <strong>R$ {{ revenue_total|floatformat:2 }}</strong>
+      <small>Honorários e entradas</small>
+    </article>
+    <article class="metric-danger">
+      <span><i data-lucide="alarm-clock"></i>Prazos vencidos</span>
+      <strong>{{ overdue_tasks_count }}</strong>
+      <small>Precisam de atenção</small>
+    </article>
+    <article class="metric-info">
+      <span><i data-lucide="briefcase-business"></i>Processos ativos</span>
+      <strong>{{ open_cases }}</strong>
+      <small>Triagem, ativos e aguardando</small>
+    </article>
+    <article class="metric-purple">
+      <span><i data-lucide="wallet-cards"></i>Saldo consolidado</span>
+      <strong>R$ {{ finance_balance|floatformat:2 }}</strong>
+      <small>{{ finance_pending_count }} lançamento{{ finance_pending_count|pluralize }} pendente{{ finance_pending_count|pluralize }}</small>
+    </article>
+  </section>
+
+  <section class="legal-dashboard-grid">
+    <article class="legal-panel legal-chart-panel">
+      <header class="legal-panel-heading">
+        <div><span>CARTEIRA JURÍDICA</span><h2>Distribuição dos processos</h2><p>Volume atual por etapa de trabalho.</p></div>
+        <span class="panel-icon amber"><i data-lucide="chart-no-axes-column-increasing"></i></span>
+      </header>
+      <div class="legal-bar-chart" aria-label="Distribuição dos processos por status">
+        <div><i style="--bar-value: {{ case_intake_count|add:1 }}"></i><strong>{{ case_intake_count }}</strong><span>Triagem</span></div>
+        <div><i style="--bar-value: {{ case_active_count|add:1 }}"></i><strong>{{ case_active_count }}</strong><span>Ativos</span></div>
+        <div><i style="--bar-value: {{ case_waiting_count|add:1 }}"></i><strong>{{ case_waiting_count }}</strong><span>Aguardando</span></div>
+        <div><i style="--bar-value: {{ case_closed_count|add:1 }}"></i><strong>{{ case_closed_count }}</strong><span>Encerrados</span></div>
+      </div>
+    </article>
+
+    <article class="legal-panel">
+      <header class="legal-panel-heading">
+        <div><span>AGENDA CRÍTICA</span><h2>Próximos compromissos</h2><p>Prazos e tarefas da equipe.</p></div>
+        <a class="panel-icon blue" href="{% url 'office:section' 'tasks' %}" aria-label="Abrir agenda"><i data-lucide="arrow-up-right"></i></a>
+      </header>
+      <div class="legal-activity-list">
+        {% for task in tasks|slice:":6" %}
+          <article>
+            <span class="activity-state {% if task.status == 'done' %}done{% elif task.status == 'in_progress' %}progress{% else %}todo{% endif %}"></span>
+            <div><strong>{{ task.title }}</strong><p>{{ task.client.name|default:"Rotina interna" }}</p></div>
+            <time>{% if task.due_date %}{{ task.due_date|date:"d/m" }}{% else %}—{% endif %}</time>
+          </article>
+        {% empty %}
+          <div class="legal-empty"><i data-lucide="calendar-check-2"></i><p>Nenhuma atividade cadastrada.</p></div>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <section class="legal-dashboard-lower">
+    <article class="legal-panel">
+      <header class="legal-panel-heading">
+        <div><span>PROCESSOS RECENTES</span><h2>Movimentação da carteira</h2></div>
+        <a href="{% url 'office:section' 'cases' %}">Ver todos</a>
+      </header>
+      <div class="legal-table-wrap">
+        <table class="legal-table">
+          <thead><tr><th>Processo / cliente</th><th>Status</th><th>Responsável</th><th>Prazo</th></tr></thead>
+          <tbody>
+            {% for case in cases|slice:":6" %}
+              <tr>
+                <td><strong>{{ case.title }}</strong><small>{{ case.client.name|default:"Sem cliente" }}</small></td>
+                <td><span class="legal-status status-{{ case.status }}">{{ case.get_status_display }}</span></td>
+                <td>{{ case.responsible.name|default:"Não definido" }}</td>
+                <td>{% if case.next_deadline %}{{ case.next_deadline|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4"><div class="legal-empty compact"><p>Nenhum processo cadastrado.</p></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+  </section>
+
+  <dialog class="legal-dialog" id="case-create-dialog" {% if case_form.errors %}open{% endif %}>
+    <div class="legal-dialog-card">
+      <header><div><span>NOVO REGISTRO</span><h2>Cadastrar processo</h2></div><button type="button" data-dialog-close aria-label="Fechar"><i data-lucide="x"></i></button></header>
+      <form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="case">{% for field in case_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit"><i data-lucide="save"></i>Salvar processo</button></footer></form>
+    </div>
+  </dialog>
+
+{% elif current_section == "clients" %}
+  <section class="legal-page-heading">
+    <div><span class="legal-kicker">RELACIONAMENTO</span><h1>Clientes</h1><p>Pessoas e empresas atendidas pelo escritório.</p></div>
+    <button class="legal-action primary" type="button" data-dialog-open="client-create-dialog"><i data-lucide="user-plus"></i>Novo cliente</button>
+  </section>
+  <nav class="legal-context-tabs" aria-label="Áreas de clientes">
+    <span class="is-active" aria-current="page"><i data-lucide="users"></i>Todos <b>{{ clients|length }}</b></span>
+    <a href="{% url 'office:section' 'cases' %}"><i data-lucide="briefcase-business"></i>Com processos</a>
+    <a href="{% url 'office:section' 'finance' %}"><i data-lucide="wallet-cards"></i>Financeiro</a>
+  </nav>
+  <section class="legal-panel">
+    <div class="legal-toolbar">
+      <label class="legal-search"><i data-lucide="search"></i><input type="search" placeholder="Buscar por nome, e-mail ou telefone..." data-list-filter="clients-list"></label>
+      <span class="legal-count"><i data-lucide="database"></i>{{ clients|length }} registro{{ clients|length|pluralize }}</span>
+    </div>
+    <div class="legal-table-wrap" id="clients-list">
+      <table class="legal-table">
+        <thead><tr><th>Cliente</th><th>Contato</th><th>Processos</th><th>Cadastro</th></tr></thead>
+        <tbody>
+          {% for client in clients %}
+            <tr data-search-item="{{ client.name }} {{ client.email }} {{ client.phone }}">
+              <td><span class="legal-person"><b>{{ client.name|slice:":1"|upper }}</b><span><strong>{{ client.name }}</strong><small>ID #{{ client.id|stringformat:"04d" }}</small></span></span></td>
+              <td><strong>{{ client.email|default:"Sem e-mail" }}</strong><small>{{ client.phone|default:"Sem telefone" }}</small></td>
+              <td><span class="legal-status status-active">{{ client.visible_case_count }} caso{{ client.visible_case_count|pluralize }}</span></td>
+              <td>{{ client.created_at|date:"d/m/Y" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="legal-empty"><i data-lucide="users"></i><p>Nenhum cliente cadastrado.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <dialog class="legal-dialog" id="client-create-dialog" {% if client_form.errors %}open{% endif %}>
+    <div class="legal-dialog-card"><header><div><span>NOVO RELACIONAMENTO</span><h2>Cadastrar cliente</h2></div><button type="button" data-dialog-close aria-label="Fechar"><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="client">{% for field in client_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit"><i data-lucide="save"></i>Salvar cliente</button></footer></form></div>
+  </dialog>
+
+{% elif current_section == "cases" %}
+  <section class="legal-page-heading">
+    <div><span class="legal-kicker">CARTEIRA JURÍDICA</span><h1>Processos e casos</h1><p>Controle contencioso e consultivo com responsáveis, status e prazos.</p></div>
+    <button class="legal-action primary" type="button" data-dialog-open="case-create-dialog"><i data-lucide="folder-plus"></i>Novo processo</button>
+  </section>
+  <section class="legal-metric-strip compact">
+    <article class="metric-purple"><span>Triagem</span><strong>{{ case_intake_count }}</strong><small>Novas demandas</small></article>
+    <article class="metric-info"><span>Ativos</span><strong>{{ case_active_count }}</strong><small>Em andamento</small></article>
+    <article class="metric-warning"><span>Aguardando</span><strong>{{ case_waiting_count }}</strong><small>Dependência externa</small></article>
+    <article class="metric-neutral"><span>Encerrados</span><strong>{{ case_closed_count }}</strong><small>Histórico concluído</small></article>
+  </section>
+  <section class="legal-panel">
+    <div class="legal-toolbar">
+      <label class="legal-search"><i data-lucide="search"></i><input type="search" placeholder="Buscar processo, cliente, número ou tribunal..." data-list-filter="cases-list"></label>
+      <span class="legal-count"><i data-lucide="scale"></i>{{ cases|length }} processo{{ cases|length|pluralize }}</span>
+    </div>
+    <div class="legal-table-wrap" id="cases-list">
+      <table class="legal-table">
+        <thead><tr><th>Processo / cliente</th><th>Área e demanda</th><th>Natureza / fase</th><th>Responsável</th><th>Próximo prazo</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for case in cases %}
+            <tr data-search-item="{{ case.title }} {{ case.client.name }} {{ case.case_number }} {{ case.court }} {{ case.practice_area.name }} {{ case.matter_type.name }} {{ case.get_nature_display }} {{ case.get_stage_display }} {{ case.get_status_display }}">
+              <td><strong>{{ case.title }}</strong><small>{{ case.case_number|default:"Sem número" }} · {{ case.client.name|default:"Sem cliente" }}</small></td>
+              <td><strong>{{ case.practice_area.name|default:"Não classificado" }}</strong><small>{{ case.matter_type.name|default:"Tipo de demanda não definido" }}</small></td>
+              <td><span class="legal-status status-{{ case.priority }}">{{ case.get_nature_display }}</span><small>{{ case.get_stage_display }}</small></td>
+              <td>{{ case.responsible.name|default:"Não definido" }}</td>
+              <td>{% if case.next_deadline %}<strong>{{ case.next_deadline|date:"d/m/Y" }}</strong>{% else %}—{% endif %}</td>
+              <td>
+                <form method="post" action="{% url 'office:case-status' case.id %}" class="legal-inline-form">{% csrf_token %}
+                  <span class="legal-status status-{{ case.status }}">{{ case.get_status_display }}</span>
+                  <select name="status" aria-label="Alterar status de {{ case.title }}">
+                    <option value="" selected disabled>Alterar</option>
+                    {% if case.status == "intake" %}<option value="active">Ativar</option><option value="waiting">Aguardar</option><option value="closed">Encerrar</option>
+                    {% elif case.status == "active" %}<option value="waiting">Aguardar</option><option value="closed">Encerrar</option>
+                    {% elif case.status == "waiting" %}<option value="active">Retomar</option><option value="closed">Encerrar</option>
+                    {% else %}<option value="active">Reabrir</option>{% endif %}
+                  </select>
+                  <button type="submit" aria-label="Salvar novo status"><i data-lucide="check"></i></button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="legal-empty"><i data-lucide="briefcase-business"></i><p>Nenhum processo cadastrado.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <dialog class="legal-dialog" id="case-create-dialog" {% if case_form.errors %}open{% endif %}>
+    <div class="legal-dialog-card"><header><div><span>NOVO REGISTRO</span><h2>Cadastrar processo</h2></div><button type="button" data-dialog-close aria-label="Fechar"><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="case">{% for field in case_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit"><i data-lucide="save"></i>Salvar processo</button></footer></form></div>
+  </dialog>
+
+{% elif current_section == "practice" %}
+  <section class="legal-page-heading">
+    <div>
+      <span class="legal-kicker">INTELIGÊNCIA OPERACIONAL</span>
+      <h1>Áreas e fluxos jurídicos</h1>
+      <p>Uma base única para organizar demandas contenciosas, consultivas, administrativas e extrajudiciais.</p>
+    </div>
+    <button class="legal-action primary" type="button" data-dialog-open="case-create-dialog">
+      <i data-lucide="folder-plus"></i>Novo caso
+    </button>
+  </section>
+
+  <section class="legal-metric-strip compact">
+    <article class="metric-info"><span>Áreas cobertas</span><strong>{{ practice_area_count }}</strong><small>Especialidades jurídicas</small></article>
+    <article class="metric-purple"><span>Tipos de demanda</span><strong>{{ matter_type_count }}</strong><small>Fluxos iniciais disponíveis</small></article>
+    <article class="metric-warning"><span>Casos classificados</span><strong>{{ classified_case_count }}</strong><small>Com contexto operacional</small></article>
+    <article class="metric-neutral"><span>Casos em aberto</span><strong>{{ open_cases }}</strong><small>Em toda a carteira</small></article>
+  </section>
+
+  <section class="legal-panel legal-practice-catalog">
+    <header class="legal-catalog-heading">
+      <div>
+        <span class="legal-kicker">CATÁLOGO JUMBI</span>
+        <h2>Escolha a área para consultar os fluxos</h2>
+        <p>Os checklists organizam o trabalho interno e podem ser adaptados à estratégia do escritório.</p>
+      </div>
+      <label class="legal-search">
+        <i data-lucide="search"></i>
+        <input type="search" placeholder="Buscar área ou tipo de demanda..." data-list-filter="practice-list">
+      </label>
+    </header>
+    <div class="legal-practice-grid" id="practice-list">
+      {% for area in practice_areas %}
+        <article class="legal-practice-card" data-search-item="{{ area.name }} {{ area.description }} {% for type in area.active_matter_types %}{{ type.name }} {{ type.description }} {% endfor %}">
+          <header>
+            <span class="legal-practice-icon"><i data-lucide="{{ area.icon }}"></i></span>
+            <span class="legal-practice-count">{{ area.active_case_count }} caso{{ area.active_case_count|pluralize }} em aberto</span>
+          </header>
+          <h2>{{ area.name }}</h2>
+          <p>{{ area.description }}</p>
+          <div class="legal-matter-list">
+            {% for type in area.active_matter_types %}
+              <details class="legal-matter-type">
+                <summary>
+                  <span>{{ type.name }}</span>
+                  <i data-lucide="chevron-down"></i>
+                </summary>
+                <p>{{ type.description }}</p>
+                <div class="legal-matter-columns">
+                  <div>
+                    <strong>Fluxo sugerido</strong>
+                    <ol>{% for step in type.workflow_steps %}<li>{{ step }}</li>{% endfor %}</ol>
+                  </div>
+                  <div>
+                    <strong>Documentos iniciais</strong>
+                    <ul>{% for document in type.required_documents %}<li>{{ document }}</li>{% endfor %}</ul>
+                  </div>
+                </div>
+              </details>
+            {% endfor %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <aside class="legal-guidance-note">
+    <i data-lucide="info"></i>
+    <p><strong>Controle profissional, sem automatismos inseguros.</strong> Os fluxos são checklists operacionais. Prazos legais e decisões estratégicas continuam sob validação do profissional responsável.</p>
+  </aside>
+
+  <dialog class="legal-dialog" id="case-create-dialog" {% if case_form.errors %}open{% endif %}>
+    <div class="legal-dialog-card"><header><div><span>NOVO REGISTRO</span><h2>Cadastrar caso jurídico</h2></div><button type="button" data-dialog-close aria-label="Fechar"><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="case">{% for field in case_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit"><i data-lucide="save"></i>Salvar caso</button></footer></form></div>
+  </dialog>
+
+{% elif current_section == "tasks" %}
+  <section class="legal-page-heading">
+    <div><span class="legal-kicker">CRONOGRAMA & ATIVIDADES</span><h1>Agenda e prazos</h1><p>Fluxo operacional da equipe jurídica em formato Kanban.</p></div>
+    <button class="legal-action primary" type="button" data-dialog-open="task-create-dialog"><i data-lucide="calendar-plus"></i>Nova atividade</button>
+  </section>
+  <nav class="legal-context-tabs" aria-label="Visualização das atividades">
+    <span class="is-active" aria-current="page"><i data-lucide="kanban-square"></i>Kanban</span>
+    <a href="{% url 'office:section' 'cases' %}"><i data-lucide="scale"></i>Processos</a>
+    <span class="context-summary"><b>{{ open_tasks }}</b> abertas · <b>{{ overdue_tasks_count }}</b> vencidas</span>
+  </nav>
+  <section class="legal-kanban">
+    <article class="kanban-column overdue"><header><span><i data-lucide="alarm-clock"></i>Atrasadas</span><b>{{ overdue_tasks|length }}</b></header><div>{% for task in overdue_tasks %}{% include "office/partials/task_card.html" %}{% empty %}<p class="kanban-empty">Nenhum prazo vencido.</p>{% endfor %}</div></article>
+    <article class="kanban-column todo"><header><span><i data-lucide="circle-dashed"></i>A fazer</span><b>{{ todo_tasks|length }}</b></header><div>{% for task in todo_tasks %}{% include "office/partials/task_card.html" %}{% empty %}<p class="kanban-empty">Fila vazia.</p>{% endfor %}</div></article>
+    <article class="kanban-column progress"><header><span><i data-lucide="loader-circle"></i>Em andamento</span><b>{{ progress_tasks|length }}</b></header><div>{% for task in progress_tasks %}{% include "office/partials/task_card.html" %}{% empty %}<p class="kanban-empty">Nada em andamento.</p>{% endfor %}</div></article>
+    <article class="kanban-column done"><header><span><i data-lucide="circle-check-big"></i>Concluídas</span><b>{{ done_tasks|length }}</b></header><div>{% for task in done_tasks|slice:":8" %}{% include "office/partials/task_card.html" %}{% empty %}<p class="kanban-empty">Nenhuma conclusão.</p>{% endfor %}</div></article>
+  </section>
+  <dialog class="legal-dialog" id="task-create-dialog" {% if task_form.errors %}open{% endif %}>
+    <div class="legal-dialog-card"><header><div><span>NOVA ATIVIDADE</span><h2>Criar prazo ou tarefa</h2></div><button type="button" data-dialog-close aria-label="Fechar"><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="task">{% for field in task_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit"><i data-lucide="plus"></i>Criar atividade</button></footer></form></div>
+  </dialog>
+
+{% elif current_section == "documents" %}
+  <section class="legal-page-heading">
+    <div><span class="legal-kicker">REPOSITÓRIO JURÍDICO</span><h1>Documentos</h1><p>Contratos, petições, procurações e anexos ligados ao cliente e ao processo.</p></div>
+    <button class="legal-action primary" type="button" data-dialog-open="document-create-dialog"><i data-lucide="file-up"></i>Novo documento</button>
+  </section>
+  <section class="legal-panel">
+    <div class="legal-toolbar">
+      <label class="legal-search"><i data-lucide="search"></i><input type="search" placeholder="Buscar documento, tipo, cliente ou processo..." data-list-filter="documents-list"></label>
+      <span class="legal-count"><i data-lucide="hard-drive"></i>{{ documents|length }} arquivo{{ documents|length|pluralize }}</span>
+    </div>
+    <div class="legal-table-wrap" id="documents-list">
+      <table class="legal-table">
+        <thead><tr><th>Documento</th><th>Tipo</th><th>Cliente</th><th>Processo</th><th>Data</th><th>Ação</th></tr></thead>
+        <tbody>
+          {% for document in documents %}
+            <tr data-search-item="{{ document.title }} {{ document.document_type }} {{ document.client.name }} {{ document.case.title }}">
+              <td><span class="legal-file"><i data-lucide="file-text"></i><strong>{{ document.title }}</strong></span></td>
+              <td>{{ document.document_type|default:"Documento" }}</td>
+              <td>{{ document.client.name|default:"Sem cliente" }}</td>
+              <td>{{ document.case.title|default:"Sem processo" }}</td>
+              <td>{{ document.created_at|date:"d/m/Y" }}</td>
+              <td>{% if document.file %}<a class="legal-row-action" href="{{ document.file.url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Abrir</a>{% else %}<span class="legal-status status-waiting">Referência</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="legal-empty"><i data-lucide="files"></i><p>Nenhum documento registrado.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <dialog class="legal-dialog" id="document-create-dialog" {% if document_form.errors %}open{% endif %}>
+    <div class="legal-dialog-card"><header><div><span>NOVO ARQUIVO</span><h2>Registrar documento</h2></div><button type="button" data-dialog-close aria-label="Fechar"><i data-lucide="x"></i></button></header><form method="post" enctype="multipart/form-data" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="document">{% for field in document_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit"><i data-lucide="upload"></i>Salvar documento</button></footer></form></div>
+  </dialog>
+
+{% elif current_section == "finance" %}
+  <section class="legal-page-heading">
+    <div><span class="legal-kicker">GESTÃO FINANCEIRA</span><h1>Financeiro</h1><p>Honorários, receitas, despesas e pendências do escritório.</p></div>
+    <button class="legal-action primary" type="button" data-dialog-open="finance-create-dialog"><i data-lucide="plus"></i>Novo lançamento</button>
+  </section>
+  <nav class="legal-context-tabs" aria-label="Áreas do financeiro">
+    <span class="is-active" aria-current="page"><i data-lucide="receipt-text"></i>Lançamentos</span>
+    <a href="{% url 'office:section' 'purchases' %}"><i data-lucide="shopping-cart"></i>Compras</a>
+  </nav>
+  <section class="legal-metric-strip">
+    <article class="metric-revenue"><span>Receitas</span><strong>R$ {{ revenue_total|floatformat:2 }}</strong><small>Honorários registrados</small></article>
+    <article class="metric-danger"><span>Despesas</span><strong>R$ {{ expense_total|floatformat:2 }}</strong><small>Saídas operacionais</small></article>
+    <article class="metric-info"><span>Saldo líquido</span><strong>R$ {{ finance_balance|floatformat:2 }}</strong><small>Após deduções</small></article>
+    <article class="metric-purple"><span>Pendências</span><strong>{{ finance_pending_count }}</strong><small>A receber ou pagar</small></article>
+  </section>
+  <section class="legal-panel">
+    <div class="legal-toolbar">
+      <label class="legal-search"><i data-lucide="search"></i><input type="search" placeholder="Buscar lançamento, cliente ou processo..." data-list-filter="finance-list"></label>
+      <span class="legal-count"><i data-lucide="landmark"></i>{{ finance_entries|length }} lançamento{{ finance_entries|length|pluralize }}</span>
+    </div>
+    <div class="legal-table-wrap" id="finance-list">
+      <table class="legal-table">
+        <thead><tr><th>Lançamento / origem</th><th>Vencimento</th><th>Tipo</th><th>Situação</th><th>Valor</th></tr></thead>
+        <tbody>
+          {% for entry in finance_entries %}
+            <tr data-search-item="{{ entry.description }} {{ entry.client.name }} {{ entry.case.title }} {{ entry.get_kind_display }}">
+              <td><strong>{{ entry.description }}</strong><small>{{ entry.client.name|default:"Sem cliente" }}{% if entry.case %} · {{ entry.case.title }}{% endif %}</small></td>
+              <td>{% if entry.due_date %}{{ entry.due_date|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+              <td><span class="legal-status {% if entry.kind == 'revenue' %}status-active{% else %}status-closed{% endif %}">{{ entry.get_kind_display }}</span></td>
+              <td><form method="post" action="{% url 'office:finance-paid' entry.id %}" class="legal-toggle-form">{% csrf_token %}<input type="hidden" name="paid" value="{% if entry.paid %}0{% else %}1{% endif %}"><button class="legal-status {% if entry.paid %}status-active{% else %}status-waiting{% endif %}" type="submit">{% if entry.paid %}Quitado{% else %}Pendente{% endif %}</button></form></td>
+              <td><strong class="{% if entry.kind == 'revenue' %}amount-positive{% else %}amount-negative{% endif %}">{% if entry.kind == 'revenue' %}+{% else %}-{% endif %} R$ {{ entry.amount|floatformat:2 }}</strong></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="legal-empty"><i data-lucide="landmark"></i><p>Nenhum lançamento registrado.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <dialog class="legal-dialog" id="finance-create-dialog" {% if finance_form.errors %}open{% endif %}>
+    <div class="legal-dialog-card"><header><div><span>NOVO LANÇAMENTO</span><h2>Receita ou despesa</h2></div><button type="button" data-dialog-close aria-label="Fechar"><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="finance">{% for field in finance_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit"><i data-lucide="save"></i>Salvar lançamento</button></footer></form></div>
+  </dialog>
+
+{% elif current_section == "staff" %}
+  <section class="legal-page-heading">
+    <div><span class="legal-kicker">EQUIPE & OPERAÇÃO</span><h1>Colaboradores</h1><p>Advogados, assistentes e profissionais administrativos.</p></div>
+    <button class="legal-action primary" type="button" data-dialog-open="staff-create-dialog"><i data-lucide="badge-plus"></i>Novo colaborador</button>
+  </section>
+  <section class="legal-team-grid">
+    {% for staff in staff_members %}
+      <article class="legal-team-card" data-search-item="{{ staff.name }} {{ staff.email }} {{ staff.get_role_display }}">
+        <header><span class="legal-person-avatar">{{ staff.name|slice:":2"|upper }}</span><span class="legal-status {% if staff.is_active %}status-active{% else %}status-closed{% endif %}">{% if staff.is_active %}Ativo{% else %}Inativo{% endif %}</span></header>
+        <h2>{{ staff.name }}</h2><p>{{ staff.get_role_display }}</p>
+        <dl><div><dt>E-mail</dt><dd>{{ staff.email|default:"Não informado" }}</dd></div><div><dt>Telefone</dt><dd>{{ staff.phone|default:"Não informado" }}</dd></div></dl>
+      </article>
+    {% empty %}
+      <div class="legal-panel legal-empty"><i data-lucide="users-round"></i><p>Nenhum profissional cadastrado.</p></div>
+    {% endfor %}
+  </section>
+  <dialog class="legal-dialog" id="staff-create-dialog" {% if staff_form.errors %}open{% endif %}>
+    <div class="legal-dialog-card"><header><div><span>NOVA CONTRATAÇÃO</span><h2>Cadastrar profissional</h2></div><button type="button" data-dialog-close aria-label="Fechar"><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="staff">{% for field in staff_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit"><i data-lucide="save"></i>Salvar profissional</button></footer></form></div>
+  </dialog>
+
+{% elif current_section == "partners" %}
+  {% include "partners/internal_section.html" %}
+{% elif current_section == "purchases" %}
+  <section class="legal-page-heading">
+    <div><span class="legal-kicker">ADMINISTRATIVO</span><h1>Compras</h1><p>Aquisições, fornecedores e despesas administrativas.</p></div>
+    <button class="legal-action primary" type="button" data-dialog-open="purchase-create-dialog"><i data-lucide="shopping-cart"></i>Nova compra</button>
+  </section>
+  <section class="legal-metric-strip compact two">
+    <article class="metric-warning"><span>Compras pendentes</span><strong>{{ purchases_pending_count }}</strong><small>Aguardando pagamento</small></article>
+    <article class="metric-info"><span>Total de registros</span><strong>{{ purchases|length }}</strong><small>Histórico administrativo</small></article>
+  </section>
+  <section class="legal-panel">
+    <div class="legal-toolbar"><label class="legal-search"><i data-lucide="search"></i><input type="search" placeholder="Buscar item ou fornecedor..." data-list-filter="purchases-list"></label></div>
+    <div class="legal-table-wrap" id="purchases-list"><table class="legal-table"><thead><tr><th>Item / serviço</th><th>Fornecedor</th><th>Data</th><th>Situação</th><th>Valor</th></tr></thead><tbody>
+      {% for purchase in purchases %}
+        <tr data-search-item="{{ purchase.item }} {{ purchase.supplier_name }}"><td><strong>{{ purchase.item }}</strong><small>Compra #{{ purchase.id|stringformat:"04d" }}</small></td><td>{{ purchase.supplier_name }}</td><td>{% if purchase.purchased_at %}{{ purchase.purchased_at|date:"d/m/Y" }}{% else %}—{% endif %}</td><td><form method="post" action="{% url 'office:purchase-paid' purchase.id %}" class="legal-toggle-form">{% csrf_token %}<input type="hidden" name="paid" value="{% if purchase.paid %}0{% else %}1{% endif %}"><button class="legal-status {% if purchase.paid %}status-active{% else %}status-waiting{% endif %}" type="submit">{% if purchase.paid %}Pago{% else %}Pendente{% endif %}</button></form></td><td><strong>R$ {{ purchase.amount|floatformat:2 }}</strong></td></tr>
+      {% empty %}<tr><td colspan="5"><div class="legal-empty"><i data-lucide="shopping-bag"></i><p>Nenhuma compra registrada.</p></div></td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+  <dialog class="legal-dialog" id="purchase-create-dialog" {% if purchase_form.errors %}open{% endif %}>
+    <div class="legal-dialog-card"><header><div><span>NOVA COMPRA</span><h2>Registrar aquisição</h2></div><button type="button" data-dialog-close aria-label="Fechar"><i data-lucide="x"></i></button></header><form method="post" class="stack-form legal-form">{% csrf_token %}<input type="hidden" name="action" value="purchase">{% for field in purchase_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<footer><button class="legal-action secondary" type="button" data-dialog-close>Cancelar</button><button class="legal-action primary" type="submit"><i data-lucide="save"></i>Salvar compra</button></footer></form></div>
+  </dialog>
+
+{% elif current_section == "accesses" %}
+  <section class="legal-page-heading"><div><span class="legal-kicker">EQUIPE & PERMISSÕES</span><h1>Hierarquia e acessos</h1><p>Cargos, níveis de autoridade e logins pessoais do escritório.</p></div></section>
+  {% include "app/team_accesses.html" %}
+{% elif current_section == "settings" %}
+  <section class="legal-page-heading"><div><span class="legal-kicker">IDENTIDADE DO ESCRITÓRIO</span><h1>Personalização</h1><p>Logo, cores e aparência do ambiente do cliente.</p></div></section>
+  {% include "app/branding_settings.html" %}
+{% endif %}
+
+{% endblock %}

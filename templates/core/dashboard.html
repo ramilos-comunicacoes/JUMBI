@@ -1,0 +1,19 @@
+{% extends "app/base_shell.html" %}
+{% block title %}Visão geral | Jumbi{% endblock %}
+{% block app_content %}
+<section class="page-header">
+  <div><span class="eyebrow">VISÃO GERAL</span><h1>Olá, {{ request.user.first_name|default:request.user.email }}.</h1><p>{% if organization %}Você está trabalhando em <strong>{{ organization.name }}</strong>{% if membership %} como {{ membership.get_role_display }}{% endif %}.{% else %}Escolha um ambiente para começar sua operação.{% endif %}</p></div>
+  {% if request.user.is_superuser %}<a class="button button-secondary" href="{% url 'core:control-panel' %}">Abrir backoffice</a>{% endif %}
+</section>
+<section class="stat-grid" aria-label="Resumo da operação">
+  <article class="stat-card"><span>Organização</span><strong>{{ organization.name|default:"Sem contexto" }}</strong><small>Contexto ativo</small></article>
+  <article class="stat-card"><span>Seu papel</span><strong>{{ membership.get_role_display|default:"Administrador" }}</strong><small>Permissões aplicadas</small></article>
+  <article class="stat-card"><span>Segurança</span><strong>Ativa</strong><small><a href="{% url 'core:password-change' %}">Revisar senha</a></small></article>
+</section>
+<section class="content-section">
+  <div class="section-heading"><div><span class="eyebrow">GESTÃO JURÍDICA</span><h2>Entre no ambiente do seu escritório.</h2></div><p>Todos os módulos compartilham a base de identidade, organizações e permissões do Jumbi.</p></div>
+  <div class="product-grid">
+    <article class="product-card legal"><span>JUMBI GESTÃO JURÍDICA</span><h3>Clientes, tarefas e processos do escritório.</h3><p>Organize a rotina e mantenha os próximos passos visíveis para toda a equipe.</p><a href="{% url 'office:workspace' %}">Abrir Jumbi <b>→</b></a></article>
+  </div>
+</section>
+{% endblock %}

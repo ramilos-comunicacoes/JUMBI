@@ -1,0 +1,27 @@
+<article class="data-row" id="project-{{ project.id }}">
+  <div>
+    <strong>{{ project.name }}</strong>
+    <span>{{ project.client_name|default:"Sem cliente" }} · {{ project.get_status_display }} · {{ project.tasks.count }} tarefas · {{ project.evidences.count }} evidências</span>
+  </div>
+  <form
+    method="post"
+    action="{% url 'engineering:project-status' project.id %}"
+    class="inline-status-form"
+    hx-post="{% url 'engineering:project-status' project.id %}"
+    hx-target="closest article"
+    hx-select="unset"
+    hx-select-oob="unset"
+    hx-swap="outerHTML"
+    hx-push-url="false"
+  >
+    {% csrf_token %}
+    <label for="project-status-{{ project.id }}">Status</label>
+    <select id="project-status-{{ project.id }}" name="status">
+      {% for value,label in project.Status.choices %}
+        <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Atualizar</button>
+  </form>
+  <span>R$ {{ project.budget|floatformat:2 }}</span>
+</article>

@@ -1,0 +1,22 @@
+<article class="legal-task-card">
+  <header>
+    <span class="task-priority {% if task in overdue_tasks or task.priority == 'urgent' %}overdue{% elif task.status == 'done' %}done{% elif task.status == 'in_progress' %}progress{% else %}todo{% endif %}">
+      {% if task in overdue_tasks %}Vencida{% elif task.status == "done" %}Concluída{% elif task.priority == "urgent" %}Urgente{% elif task.priority == "high" %}Alta{% else %}{{ task.get_kind_display }}{% endif %}
+    </span>
+    <i data-lucide="more-horizontal"></i>
+  </header>
+  <h2>{{ task.title }}</h2>
+  <p>{% if task.case %}{{ task.case.title }}{% elif task.client %}{{ task.client.name }}{% else %}Rotina interna do escritório{% endif %}</p>
+  <footer>
+    <span><i data-lucide="calendar-days"></i>{% if task.due_date %}{{ task.due_date|date:"d M" }}{% else %}Sem data{% endif %}</span>
+    <form method="post" action="{% url 'office:task-status' task.id %}" class="task-quick-form">{% csrf_token %}
+      <select name="status" aria-label="Alterar status de {{ task.title }}">
+        <option value="" selected disabled>Mover para</option>
+        {% if task.status == "todo" %}<option value="in_progress">Em andamento</option><option value="done">Concluída</option>
+        {% elif task.status == "in_progress" %}<option value="todo">A fazer</option><option value="done">Concluída</option>
+        {% else %}<option value="in_progress">Reabrir</option>{% endif %}
+      </select>
+      <button type="submit" aria-label="Salvar status"><i data-lucide="arrow-right"></i></button>
+    </form>
+  </footer>
+</article>

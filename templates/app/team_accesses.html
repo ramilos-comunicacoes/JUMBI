@@ -1,0 +1,132 @@
+<section class="module-page-header">
+  <div>
+    <span class="module-icon"><i data-lucide="network"></i></span>
+    <div>
+      <span class="eyebrow">PESSOAS E SEGURANÇA</span>
+      <h1>Hierarquia e acessos</h1>
+      <p>Defina a estrutura da empresa e entregue um login individual, rastreável e limitado ao cargo de cada pessoa.</p>
+    </div>
+  </div>
+</section>
+
+<section class="hierarchy-summary" aria-label="Resumo da hierarquia">
+  <article><i data-lucide="layers-3"></i><div><strong>{{ organization_roles|length }}</strong><span>Cargos configurados</span></div></article>
+  <article><i data-lucide="users-round"></i><div><strong>{{ organization_memberships|length }}</strong><span>Logins individuais</span></div></article>
+  <article><i data-lucide="shield-check"></i><div><strong>4</strong><span>Perfis de permissão</span></div></article>
+</section>
+
+<section class="team-access-layout">
+  <article class="ops-panel">
+    <div class="panel-title">
+      <div><span>NOVO CARGO</span><h2>Expandir a hierarquia</h2></div>
+      <i data-lucide="badge-plus"></i>
+    </div>
+    <form method="post" class="stack-form compact-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="hierarchy_role">
+      {% for field in team_role_form %}
+        <p>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+          {{ field.errors }}
+        </p>
+      {% endfor %}
+      <button type="submit"><i data-lucide="network"></i> Criar cargo</button>
+    </form>
+  </article>
+
+  <article class="ops-panel">
+    <div class="panel-title">
+      <div><span>NOVO LOGIN PESSOAL</span><h2>Adicionar pessoa à equipe</h2></div>
+      <i data-lucide="user-plus"></i>
+    </div>
+    <form method="post" class="stack-form compact-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="organization_member">
+      {% for field in team_member_form %}
+        <p>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+          {{ field.errors }}
+        </p>
+      {% endfor %}
+      <button type="submit"><i data-lucide="key-round"></i> Criar login individual</button>
+    </form>
+  </article>
+</section>
+
+<section class="team-access-layout team-access-lists">
+  <article class="ops-panel module-list-card">
+    <div class="panel-title">
+      <div><span>ORGANOGRAMA</span><h2>Cargos por nível</h2></div>
+      <i data-lucide="waypoints"></i>
+    </div>
+    <div class="hierarchy-list">
+      {% for role in organization_roles %}
+        <article class="hierarchy-row {% if not role.is_active %}is-disabled{% endif %}">
+          <span class="hierarchy-level">{{ role.hierarchy_level }}</span>
+          <div>
+            <strong>{{ role.name }}</strong>
+            <span>{{ role.get_permission_role_display }} · {{ role.memberships.all|length }} pessoa{{ role.memberships.all|length|pluralize }}</span>
+            {% if role.description %}<small>{{ role.description }}</small>{% endif %}
+          </div>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="hierarchy_status">
+            <input type="hidden" name="role_id" value="{{ role.id }}">
+            <input type="hidden" name="is_active" value="{% if role.is_active %}false{% else %}true{% endif %}">
+            <button class="inline-action" type="submit">{% if role.is_active %}Desativar{% else %}Ativar{% endif %}</button>
+          </form>
+        </article>
+      {% empty %}
+        <p class="empty-state">Nenhum cargo configurado.</p>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="ops-panel module-list-card">
+    <div class="panel-title">
+      <div><span>CONTAS DA EMPRESA</span><h2>Equipe com acesso</h2></div>
+      <i data-lucide="id-card"></i>
+    </div>
+    <div class="data-list">
+      {% for membership in organization_memberships %}
+        <article class="member-access-row">
+          <span class="member-avatar">{{ membership.user.first_name|default:membership.user.email|slice:":1"|upper }}</span>
+          <div>
+            <strong>{{ membership.user.get_full_name|default:membership.user.email }}</strong>
+            <span>{{ membership.position.name|default:membership.get_role_display }} · {{ membership.user.email }}</span>
+            <small>
+              {% if membership.reports_to %}
+                Responde a {{ membership.reports_to.user.get_full_name|default:membership.reports_to.user.email }}
+              {% else %}
+                Topo da estrutura / sem gestor direto
+              {% endif %}
+            </small>
+          </div>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="membership_status">
+            <input type="hidden" name="membership_id" value="{{ membership.id }}">
+            <input type="hidden" name="is_active" value="{% if membership.is_active %}false{% else %}true{% endif %}">
+            <button class="status {% if membership.is_active %}active{% else %}inactive{% endif %}" type="submit">
+              {% if membership.is_active %}Ativo{% else %}Inativo{% endif %}
+            </button>
+          </form>
+        </article>
+      {% empty %}
+        <p class="empty-state">Nenhum login individual cadastrado.</p>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<article class="permission-guide">
+  <i data-lucide="shield-check"></i>
+  <div>
+    <strong>Permissões acompanham o cargo</strong>
+    <p><b>Direção</b> controla toda a empresa; <b>Gestão</b> administra pessoas e operação; <b>Operação</b> executa rotinas; <b>Consulta</b> apenas visualiza. Cada ação fica associada ao login pessoal nos registros de auditoria.</p>
+  </div>
+</article>

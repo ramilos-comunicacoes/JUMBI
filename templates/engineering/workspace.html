@@ -1,0 +1,93 @@
+{% extends "app/base_shell.html" %}
+{% block title %}{{ current_section_label }} | Djumbi Engenharia{% endblock %}
+{% block app_content %}
+{% if current_section == "overview" %}
+  <section class="workspace-hero">
+    <div>
+      <span class="eyebrow">DJUMBI ENGENHARIA</span>
+      <h1>Bom trabalho, {{ request.user.first_name|default:request.user.email }}.</h1>
+      <p>Acompanhe obras, prazos, custos e suprimentos da {{ organization.name }} em uma visão operacional.</p>
+    </div>
+    <div class="workspace-hero-actions">
+      <a class="button button-secondary" href="{% url 'engineering:section' 'tasks' %}"><i data-lucide="kanban-square"></i> Ver tarefas</a>
+      <a class="button button-primary" href="{% url 'engineering:section' 'projects' %}"><i data-lucide="plus"></i> Nova obra</a>
+    </div>
+  </section>
+  <section class="ops-stat-grid">
+    <article class="ops-stat-card"><span><i data-lucide="hard-hat"></i> Obras ativas</span><strong>{{ active_projects }}</strong><small>{{ projects|length }} obras cadastradas</small></article>
+    <article class="ops-stat-card"><span><i data-lucide="circle-dollar-sign"></i> Saldo financeiro</span><strong>R$ {{ finance_balance|floatformat:2 }}</strong><small>Receitas menos despesas</small></article>
+    <article class="ops-stat-card"><span><i data-lucide="list-checks"></i> Tarefas abertas</span><strong>{{ open_tasks }}</strong><small>{{ review_tasks }} aguardando aprovação</small></article>
+    <article class="ops-stat-card"><span><i data-lucide="truck"></i> Fornecedores</span><strong>{{ suppliers|length }}</strong><small>Base homologada</small></article>
+  </section>
+  <section class="overview-grid">
+    <article class="ops-panel overview-primary">
+      <div class="panel-title"><div><span>OPERAÇÃO</span><h2>Obras em andamento</h2></div><a href="{% url 'engineering:section' 'projects' %}">Ver todas</a></div>
+      <div class="data-list">
+        {% for project in projects|slice:":5" %}
+          <article class="data-row"><div><strong>{{ project.name }}</strong><span>{{ project.client_name|default:"Cliente não informado" }} · {{ project.get_status_display }}</span></div><span>R$ {{ project.budget|floatformat:2 }}</span></article>
+        {% empty %}<p class="empty-state">Cadastre a primeira obra para iniciar a operação.</p>{% endfor %}
+      </div>
+    </article>
+    <article class="ops-panel">
+      <div class="panel-title"><div><span>PRÓXIMOS PASSOS</span><h2>Tarefas prioritárias</h2></div><a href="{% url 'engineering:section' 'tasks' %}">Abrir Kanban</a></div>
+      <div class="timeline-list">
+        {% for task in tasks|slice:":5" %}
+          <article><span></span><div><strong>{{ task.title }}</strong><p>{{ task.project.name }} · {{ task.get_status_display }}</p><small>{% if task.due_date %}Prazo {{ task.due_date|date:"d/m/Y" }}{% else %}Sem prazo definido{% endif %}</small></div></article>
+        {% empty %}<p class="empty-state">Nenhuma tarefa cadastrada.</p>{% endfor %}
+      </div>
+    </article>
+  </section>
+  <section class="module-shortcuts" aria-label="Módulos de engenharia">
+    {% for item in sidebar_items %}{% if item.key != "overview" %}
+      <a href="{{ item.url }}"><i data-lucide="{{ item.icon }}"></i><span>{{ item.label }}</span><b>Gerenciar <i data-lucide="arrow-up-right"></i></b></a>
+    {% endif %}{% endfor %}
+  </section>
+
+{% elif current_section == "projects" %}
+  <section class="module-page-header"><div><span class="module-icon"><i data-lucide="building-2"></i></span><div><span class="eyebrow">OPERAÇÃO</span><h1>Obras</h1><p>Carteira de projetos, clientes, orçamento e estágio de execução.</p></div></div></section>
+  <section class="module-layout">
+    <article class="ops-panel module-form-card"><div class="panel-title"><div><span>NOVO REGISTRO</span><h2>Cadastrar obra</h2></div><i data-lucide="plus-circle"></i></div><form method="post" class="stack-form compact-form">{% csrf_token %}<input type="hidden" name="action" value="project">{% for field in project_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<button type="submit"><i data-lucide="save"></i> Salvar obra</button></form></article>
+    <article class="ops-panel module-list-card"><div class="panel-title"><div><span>CARTEIRA</span><h2>{{ projects|length }} obras cadastradas</h2></div><i data-lucide="map"></i></div><div class="data-list">{% for project in projects %}{% include "engineering/partials/project_row.html" with project=project %}{% empty %}<p class="empty-state">Nenhuma obra cadastrada.</p>{% endfor %}</div></article>
+  </section>
+
+{% elif current_section == "tasks" %}
+  <section class="module-page-header"><div><span class="module-icon"><i data-lucide="kanban-square"></i></span><div><span class="eyebrow">PLANEJAMENTO</span><h1>Tarefas e Kanban</h1><p>Distribua atividades, prioridades e prazos entre as obras.</p></div></div></section>
+  <section class="module-layout module-layout-compact">
+    <article class="ops-panel module-form-card"><div class="panel-title"><div><span>NOVA ATIVIDADE</span><h2>Criar tarefa</h2></div><i data-lucide="clipboard-plus"></i></div><form method="post" class="stack-form compact-form">{% csrf_token %}<input type="hidden" name="action" value="task">{% for field in task_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<button type="submit"><i data-lucide="plus"></i> Criar tarefa</button></form></article>
+    <article class="ops-panel module-help-card"><span class="eyebrow">FLUXO DE EXECUÇÃO</span><h2>{{ open_tasks }} tarefas abertas</h2><p>As mudanças de status passam por validação de permissão e geram registro de auditoria.</p><div class="mini-metrics"><span><b>{{ kanban.todo|length }}</b>A fazer</span><span><b>{{ kanban.doing|length }}</b>Em progresso</span><span><b>{{ kanban.review|length }}</b>Em aprovação</span></div></article>
+  </section>
+  <section class="ops-panel kanban-panel">
+    <div class="kanban-board">
+      <section class="kanban-column muted-column"><header><span></span><h3>A fazer</h3><strong>{{ kanban.todo|length }}</strong></header>{% for task in kanban.todo %}{% include "engineering/partials/task_card.html" with task=task %}{% empty %}<p class="kanban-empty">Nada aqui.</p>{% endfor %}</section>
+      <section class="kanban-column amber-column"><header><span></span><h3>Em progresso</h3><strong>{{ kanban.doing|length }}</strong></header>{% for task in kanban.doing %}{% include "engineering/partials/task_card.html" with task=task %}{% empty %}<p class="kanban-empty">Sem execução.</p>{% endfor %}</section>
+      <section class="kanban-column teal-column"><header><span></span><h3>Aprovação</h3><strong>{{ kanban.review|length }}</strong></header>{% for task in kanban.review %}{% include "engineering/partials/task_card.html" with task=task %}{% empty %}<p class="kanban-empty">Sem revisão.</p>{% endfor %}</section>
+      <section class="kanban-column green-column"><header><span></span><h3>Concluídas</h3><strong>{{ kanban.done|length }}</strong></header>{% for task in kanban.done %}{% include "engineering/partials/task_card.html" with task=task %}{% empty %}<p class="kanban-empty">Nada finalizado.</p>{% endfor %}</section>
+    </div>
+  </section>
+
+{% elif current_section == "suppliers" %}
+  <section class="module-page-header"><div><span class="module-icon"><i data-lucide="truck"></i></span><div><span class="eyebrow">SUPRIMENTOS</span><h1>Fornecedores</h1><p>Mantenha contatos e dados comerciais disponíveis para compras e cotações.</p></div></div></section>
+  <section class="module-layout"><article class="ops-panel module-form-card"><div class="panel-title"><div><span>NOVO PARCEIRO</span><h2>Cadastrar fornecedor</h2></div><i data-lucide="user-plus"></i></div><form method="post" class="stack-form compact-form">{% csrf_token %}<input type="hidden" name="action" value="supplier">{% for field in supplier_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<button type="submit"><i data-lucide="save"></i> Salvar fornecedor</button></form></article><article class="ops-panel module-list-card"><div class="panel-title"><div><span>BASE COMERCIAL</span><h2>{{ suppliers|length }} fornecedores</h2></div><i data-lucide="contact"></i></div><div class="data-list">{% for supplier in suppliers %}<article class="data-row"><div><strong>{{ supplier.name }}</strong><span>{{ supplier.document|default:"Documento não informado" }} · {{ supplier.email|default:"Sem e-mail" }}</span></div><span>{{ supplier.phone|default:"Sem telefone" }}</span></article>{% empty %}<p class="empty-state">Nenhum fornecedor cadastrado.</p>{% endfor %}</div></article></section>
+
+{% elif current_section == "purchases" %}
+  <section class="module-page-header"><div><span class="module-icon"><i data-lucide="shopping-cart"></i></span><div><span class="eyebrow">SUPRIMENTOS</span><h1>Compras</h1><p>Solicitações, cotações, aprovações e recebimentos vinculados às obras.</p></div></div></section>
+  <section class="module-layout"><article class="ops-panel module-form-card"><div class="panel-title"><div><span>NOVA COMPRA</span><h2>Registrar solicitação</h2></div><i data-lucide="plus-circle"></i></div><form method="post" class="stack-form compact-form">{% csrf_token %}<input type="hidden" name="action" value="purchase">{% for field in purchase_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<button type="submit"><i data-lucide="save"></i> Salvar compra</button></form></article><article class="ops-panel module-list-card"><div class="panel-title"><div><span>PIPELINE</span><h2>Compras e suprimentos</h2></div><i data-lucide="shopping-bag"></i></div><div class="data-list">{% for purchase in purchases %}<article class="data-row"><div><strong>{{ purchase.item }}</strong><span>{{ purchase.supplier.name|default:"Sem fornecedor" }} · {{ purchase.project.name|default:"Sem obra" }} · {{ purchase.get_status_display }}</span></div><span>R$ {{ purchase.total_amount|floatformat:2 }}</span></article>{% empty %}<p class="empty-state">Nenhuma compra registrada.</p>{% endfor %}</div></article></section>
+
+{% elif current_section == "finance" %}
+  <section class="module-page-header"><div><span class="module-icon"><i data-lucide="circle-dollar-sign"></i></span><div><span class="eyebrow">CONTROLE FINANCEIRO</span><h1>Financeiro</h1><p>Receitas, despesas, vencimentos e resultado por obra.</p></div></div></section>
+  <section class="finance-summary"><article><span>Saldo consolidado</span><strong>R$ {{ finance_balance|floatformat:2 }}</strong><small>Receitas menos despesas registradas</small></article><article><span>Orçamento em carteira</span><strong>R$ {{ total_budget|floatformat:2 }}</strong><small>Total orçado nas obras</small></article></section>
+  <section class="module-layout"><article class="ops-panel module-form-card"><div class="panel-title"><div><span>NOVO LANÇAMENTO</span><h2>Receita ou despesa</h2></div><i data-lucide="receipt"></i></div><form method="post" class="stack-form compact-form">{% csrf_token %}<input type="hidden" name="action" value="finance">{% for field in finance_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<button type="submit"><i data-lucide="save"></i> Salvar lançamento</button></form></article><article class="ops-panel module-list-card"><div class="panel-title"><div><span>MOVIMENTAÇÃO</span><h2>Lançamentos recentes</h2></div><i data-lucide="landmark"></i></div><div class="data-list">{% for entry in finance_entries %}<article class="data-row"><div><strong>{{ entry.description }}</strong><span>{{ entry.get_kind_display }} · {{ entry.project.name|default:"Sem obra" }} · {{ entry.get_status_display }}</span></div><span>R$ {{ entry.amount|floatformat:2 }}</span></article>{% empty %}<p class="empty-state">Nenhum lançamento registrado.</p>{% endfor %}</div></article></section>
+
+{% elif current_section == "staff" %}
+  <section class="module-page-header"><div><span class="module-icon"><i data-lucide="users-round"></i></span><div><span class="eyebrow">PESSOAS</span><h1>Equipe técnica</h1><p>Engenheiros, arquitetos, mestres de obra e profissionais de apoio.</p></div></div></section>
+  <section class="module-layout"><article class="ops-panel module-form-card"><div class="panel-title"><div><span>NOVO PROFISSIONAL</span><h2>Cadastrar funcionário</h2></div><i data-lucide="badge-plus"></i></div><form method="post" class="stack-form compact-form">{% csrf_token %}<input type="hidden" name="action" value="employee">{% for field in employee_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<button type="submit"><i data-lucide="save"></i> Salvar funcionário</button></form></article><article class="ops-panel module-list-card"><div class="panel-title"><div><span>TIME</span><h2>{{ employees|length }} profissionais</h2></div><i data-lucide="users"></i></div><div class="data-list">{% for employee in employees %}<article class="data-row"><div><strong>{{ employee.name }}</strong><span>{{ employee.get_role_display }} · {{ employee.project.name|default:"Sem obra fixa" }}</span></div><span class="status {% if employee.is_active %}active{% else %}inactive{% endif %}">{% if employee.is_active %}Ativo{% else %}Inativo{% endif %}</span></article>{% empty %}<p class="empty-state">Nenhum profissional cadastrado.</p>{% endfor %}</div></article></section>
+
+{% elif current_section == "evidences" %}
+  <section class="module-page-header"><div><span class="module-icon"><i data-lucide="file-check-2"></i></span><div><span class="eyebrow">CAMPO E QUALIDADE</span><h1>Evidências</h1><p>Registros técnicos, arquivos e observações vinculados às obras e tarefas.</p></div></div></section>
+  <section class="module-layout"><article class="ops-panel module-form-card"><div class="panel-title"><div><span>NOVO REGISTRO</span><h2>Anexar evidência</h2></div><i data-lucide="file-up"></i></div><form method="post" enctype="multipart/form-data" class="stack-form compact-form">{% csrf_token %}<input type="hidden" name="action" value="evidence">{% for field in evidence_form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}<button type="submit"><i data-lucide="upload"></i> Salvar evidência</button></form></article><article class="ops-panel module-list-card"><div class="panel-title"><div><span>HISTÓRICO</span><h2>Evidências recentes</h2></div><i data-lucide="files"></i></div><div class="timeline-list">{% for evidence in evidences %}<article><span></span><div><strong>{{ evidence.title }}</strong><p>{{ evidence.project.name }}{% if evidence.task %} · {{ evidence.task.title }}{% endif %}</p><small>{{ evidence.created_at|date:"d/m/Y H:i" }}{% if evidence.file %} · arquivo anexado{% endif %}</small></div></article>{% empty %}<p class="empty-state">Nenhuma evidência registrada.</p>{% endfor %}</div></article></section>
+{% elif current_section == "accesses" %}
+  {% include "app/team_accesses.html" %}
+{% elif current_section == "settings" %}
+  {% include "app/branding_settings.html" %}
+{% endif %}
+{% endblock %}

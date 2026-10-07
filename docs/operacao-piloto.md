@@ -1,0 +1,104 @@
+# Operação do JUMBI
+
+## Estado da implantação em 07/10/2026
+
+O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). A release ativa `20261007-v3` acrescenta contratação pelo WhatsApp, animações e composições próprias para celular. O domínio HTTPS está atendendo o novo sistema.
+
+A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.service` e upstream `127.0.0.1:8040`. O banco `djumbi` é compartilhado com a instalação em `/var/www/apps/djumbi`: por esse motivo, a evolução foi feita no clone independente `jumbi_v2`. O banco original foi preservado, sem receber as migrações ou o isolamento de contas da nova versão.
+
+| Componente novo | Configuração publicada |
+| --- | --- |
+| Serviço | `jumbi-v2.service`, executado pelo usuário de serviço `jumbi` |
+| Upstream | `127.0.0.1:8041` |
+| Release | `/srv/jumbi/releases/20261007-v3` |
+| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261007-v3` |
+| Banco exclusivo | `jumbi_v2` |
+| Configuração privada | `/srv/jumbi/shared/.env`, proprietário/grupo `root:jumbi`, modo `0640` |
+| Arquivos privados | `/srv/jumbi/shared/private_media`, diretório com modo `0750` |
+| Host de publicação | `jumbi.nabio.pro` |
+
+O certificado existente de `jumbi.nabio.pro` foi conferido e é válido até **26/10/2026**. O timer de renovação do Certbot já existente está ativo. A validade atual e o timer ativo não substituem o acompanhamento da próxima renovação.
+
+## Backup de origem e restauração
+
+O backup anterior à evolução está em `/srv/jumbi/backups/pre-v2-20261007`, com acesso restrito a root. Ele conserva o dump do banco original, código, configuração de ambiente, configuração Nginx e unidade de serviço anteriores.
+
+Esse dump foi restaurado em `jumbi_v2`. A comparação de fingerprints dos registros jurídicos de origem confirmou a restauração antes da evolução. As migrações e demais ajustes da release nova foram executados no clone, preservando o banco compartilhado `djumbi` e a aplicação que continua utilizando-o.
+
+Os backups de origem e o clone permanecem **na mesma VPS**. A cópia separada fora do servidor ainda está pendente. Restaurar esse clone comprova a etapa executada; não estabelece RPO/RTO nem comprova recuperação após perda integral da VPS.
+
+## Isolamento de contas e administração
+
+O comando `isolate_legacy_accounts` tem simulação como padrão, exige o nome exato do banco em `--expected-db` e recusa o banco original `djumbi`. Aplicado ao clone com `--apply`, desativa contas sem vínculo ativo com escritório jurídico ativo e remove privilégios globais herdados. As contas reservadas de administração e demonstração são excluídas dessa operação. Senhas, registros e vínculos históricos são preservados.
+
+O JUMBI mantém os modelos legados instalados para conservar as tabelas e permitir a importação. Os admins de Engenharia, Agro, Parceiros, páginas legadas e jurídico antigo foram retirados da interface. O painel e a administração de organizações/acessos exibem o escopo jurídico.
+
+O superusuário tem painel próprio em `/plataforma/` e um escritório administrativo separado da organização de demonstração. A conta demo não possui acesso de staff ou superusuário. As credenciais geradas ficam em material local ignorado pelo Git e não devem ser incluídas em documentação, código ou relatórios públicos.
+
+## Importação dos registros jurídicos
+
+Após a restauração e as migrações no clone, a importação criou **9 registros** na estrutura jurídica nova:
+
+| Registro | Quantidade |
+| --- | ---: |
+| Pessoas/contatos | 3 |
+| Pastas jurídicas | 2 |
+| Lançamentos financeiros | 2 |
+| Baixas financeiras | 1 |
+| Tarefas | 1 |
+
+A repetição do comando confirmou a idempotência: os registros já importados não foram duplicados. O relatório também registra **6 pendências de conferência**. Elas precisam de revisão humana; a criação dos registros não equivale à homologação integral dos dados antigos.
+
+O comando `import_legacy_office` é um procedimento administrativo para essa origem legada. Ele não substitui um assistente geral de importação com mapeamento de planilhas, tratamento assistido de erros e retomada pela interface. Itens antigos do tipo prazo não devem ser considerados prazos jurídicos conferidos sem revisão humana da fonte e do vencimento.
+
+## Verificações da release
+
+- **106 testes passaram em PostgreSQL**, em 64,064 segundos, sem testes ignorados, na release v3. A suíte incluiu concorrência entre dois aceites de convite disputando a última vaga do plano e os redirecionamentos comerciais. O banco temporário `test_jumbi_v2` foi removido ao final.
+- Verificação autenticada de **18 rotas** no ambiente de preparação concluída, incluindo acesso administrativo e de demonstração; endpoint de saúde também verificado.
+- Autenticação, proteção CSRF, download privado com conferência de hash e separação entre as contas de superusuário e demonstração verificados.
+- Restauração do clone e repetição da importação com idempotência comprovadas.
+
+O relatório `docs/validacao-piloto.md` documenta a primeira entrega local e seus 55 testes; essa contagem é histórica. A matriz `docs/auditoria-documentacao.md` distingue o núcleo implementado das capacidades ainda pendentes do estudo. A liberação pública e o fluxo real de navegador foram conferidos adicionalmente conforme o registro abaixo.
+
+## Registro de liberação ao tráfego
+
+**Estado: publicado.**
+
+- Virtual host JUMBI direcionado à porta privada 8041, com `nginx -t` aprovado e reload concluído. Os demais virtual hosts foram preservados.
+- HTTPS da home retornou 200; `/saude/` retornou `{"status":"ok","application":"JUMBI"}`.
+- A atualização v3 trocou o symlink da release e reiniciou somente `jumbi-v2.service`; saúde e serviço ativo foram confirmados. As rotas de contratação Start/Max responderam 302 para `wa.me/5588992745456`, com plano e preço corretos. A verificação não enviou mensagens.
+- Às 20:34 UTC, a conferência da v3 no navegador de produção passou por 11 verificações: home em 390/1440 px, CSS específico de celular, pausa persistente, movimento reduzido, mensagens dos dois planos, login demo, pastas/financeiro em 360/390 px e tabela desktop. Sem erros JavaScript, respostas HTTP inesperadas ou mutações além do login. A emulação de viewport não substitui teste em aparelho físico.
+- Navegador real: 13 verificações aprovadas, sem erros JavaScript nem respostas HTTP inesperadas. Foram validados login das duas contas, pessoa/pasta consultiva, prazo conferido e revisado, tarefa independente, upload/download privado, bloqueio anônimo, baixa de R$ 350 sobre R$ 1.000, saldo R$ 650, estorno para R$ 1.000 e exportação restrita à demonstração. A demo recebeu 403 ao acessar a plataforma; o administrador acessou plataforma e assinaturas.
+- Somente dados fictícios foram criados para essa conferência, na organização de demonstração. Nenhum registro do escritório legado foi usado para teste destrutivo.
+- O timer de backup está ativo e sua primeira execução terminou com `Result=success` e código 0.
+- O backup da nova produção foi restaurado em banco temporário `jumbi_v2_restore_check`: dump e arquivos passaram no SHA-256, um arquivo privado foi confrontado com o hash armazenado, e os dados de 7 pastas/2 baixas do snapshot estavam acessíveis. O banco temporário foi removido após a validação.
+
+Os caminhos `/media/` e `/private_media/` não devem servir arquivos jurídicos diretamente. Os documentos novos são entregues exclusivamente pelas rotas autenticadas da aplicação; o alias público da instalação anterior não deve expor a árvore privada da release nova.
+
+## Backup operacional ativo
+
+Os arquivos `deploy/backup-jumbi.sh`, `deploy/jumbi-backup.service` e `deploy/jumbi-backup.timer` executam o backup diário de `jumbi_v2`, arquivos privados, configuração e identificação da release. O timer define explicitamente **04:15 UTC** — **01:15 em Fortaleza** — com atraso aleatório de até cinco minutos e retenção de 14 dias na própria VPS.
+
+**Timer ativado e primeira execução concluída.** A restauração inicial do novo conjunto foi testada. Permanecem pendentes a cópia fora da VPS e a validação periódica das próximas gerações de backup.
+
+O pacote ZIP exportado pela aplicação serve à portabilidade dos registros e arquivos autorizados. Ele não substitui esse backup administrativo: contas, sessões e segredos não integram a exportação do escritório.
+
+## Reversão da publicação
+
+Antes de reverter, avaliar os registros escritos após a liberação: `jumbi_v2` e o banco original passam a divergir. A simples volta ao sistema antigo pode ocultar trabalho realizado na versão nova. Preserve o banco novo e reconcilie as alterações necessárias antes de direcionar usuários ao estado anterior.
+
+Quando a reversão do tráfego estiver definida, restaure somente o arquivo do virtual host JUMBI conservado em `/srv/jumbi/backups/pre-v2-20261007`, voltando ao upstream anterior `127.0.0.1:8040`. Execute `nginx -t` e faça reload do Nginx apenas se a validação passar. Confira saúde e autenticação do host após a troca.
+
+Não restaure um dump antigo sobre o banco compartilhado `djumbi`, não reverta migrações nesse banco e não apague `jumbi_v2`. O banco original também atende à outra aplicação. Conserve a release nova, seus arquivos e seus backups para reconciliação e investigação; alterações no symlink da release não substituem a reversão controlada do virtual host.
+
+## Interface e limites conhecidos
+
+A interface preserva a marca âmbar, temas claro/escuro, menu lateral recolhível, gaveta móvel e foco visível. O redesenho usa superfícies translúcidas e animações com pausa e preferência por movimento reduzido, com CSS e JavaScript locais. As folhas `jumbi-mobile-public.css` e `jumbi-mobile-app.css` definem composições específicas para celular: prévia pública compacta, formulários em coluna, tabelas apresentadas como cartões rotulados, fontes de formulário de 16 px e controles de pelo menos 44 px. Veja `docs/estilo-mobile.md` para as regras e evidências de viewport.
+
+A assinatura começa por mensagem preenchida no WhatsApp comercial **+55 88 99274-5456**. O visitante decide enviar; a ativação continua administrativa após a contratação. O link comercial não implementa API de WhatsApp, cobrança automática ou confirmação de pagamento.
+
+- Sem envio automático de convites, recuperação de senha por e-mail, armazenamento externo, antivírus de anexos, jobs, notificações garantidas ou integrações externas no núcleo atual.
+- Uploads têm extensão permitida e limite de 15 MB; downloads exigem autenticação. O hash confere integridade, não ausência de conteúdo malicioso.
+- Valores de clientes têm classificação separada; repasses completos, conciliação bancária e contabilidade fiscal continuam pendentes.
+- Portal do cliente, aprovação/publicação de documentos e importação geral pela interface permanecem para etapas seguintes.
+- As seis pendências da importação legada e a cópia de backup fora da VPS precisam permanecer visíveis na operação.
