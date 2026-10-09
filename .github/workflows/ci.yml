@@ -33,5 +33,5 @@ jobs:
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py migrate --noinput
-      - run: python manage.py test apps.legal apps.billing apps.core.test_workspace apps.core.test_platform apps.core.test_legacy_isolation
+      - run: python manage.py test apps.legal apps.billing apps.contracts apps.performance apps.core.test_workspace apps.core.test_platform apps.core.test_legacy_isolation apps.core.test_platform_management
       - run: python manage.py collectstatic --noinput

@@ -1,0 +1,10 @@
+<article class="goal-card">
+  <div class="goal-card-top"><span class="badge">{{ card.goal.get_metric_display }}</span><span class="goal-state">{{ card.state }}</span></div>
+  <h3>{{ card.goal.title }}</h3>
+  <p class="goal-period">{{ card.goal.starts_on|date:"d/m/Y" }} — {{ card.goal.ends_on|date:"d/m/Y" }}</p>
+  <div class="goal-value"><strong>{% if card.is_money %}R$ {% endif %}{{ card.value|floatformat:2 }}</strong><span>de {% if card.is_money %}R$ {% endif %}{{ card.goal.target|floatformat:2 }}</span><span class="goal-percent">{{ card.percent }}%</span></div>
+  <progress max="100" value="{{ card.percent }}" aria-label="Progresso de {{ card.goal.title }}: {{ card.percent }}%">{{ card.percent }}%</progress>
+  <div class="goal-card-meta"><span>{% if card.goal.owner %}{{ card.goal.owner.get_full_name|default:card.goal.owner.email }}{% else %}Todo o escritório{% endif %}</span><span>{{ card.goal.get_niche_display|default:"Todas as áreas" }}</span></div>
+  {% if card.goal.description %}<p class="goal-description">{{ card.goal.description|truncatechars:180 }}</p>{% endif %}
+  {% if can_manage_goals %}<div class="goal-actions"><a class="button button-secondary" href="{% url 'performance:edit' card.goal.pk %}">Editar meta</a>{% if card.goal.metric == 'manual' and not card.goal.archived %}<a class="button button-primary" href="{% url 'performance:progress' card.goal.pk %}">Registrar progresso</a>{% endif %}</div>{% endif %}
+</article>

@@ -3,10 +3,16 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.shortcuts import render
-from django.views.decorators.http import require_GET
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+from django.views.decorators.debug import sensitive_post_parameters
+from django.views.decorators.http import require_GET, require_http_methods
 
 from .models import Membership, Organization, User
+from .platform_forms import OfficeConfigurationForm, OfficeCreationForm
+from .platform_services import configure_office, create_office, require_platform_admin
 
 
 @login_required
@@ -31,4 +37,38 @@ def platform_dashboard(request):
         },
         "organizations_page": Paginator(organizations, 12).get_page(request.GET.get("offices")),
         "members_page": Paginator(members, 12).get_page(request.GET.get("members")),
+    })
+
+
+@sensitive_post_parameters("password", "password_confirmation")
+@login_required
+@require_http_methods(["GET", "POST"])
+def office_create(request):
+    require_platform_admin(request.user)
+    form = OfficeCreationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            office = create_office(actor=request.user, data=form.cleaned_data)
+        except (ValidationError, IntegrityError):
+            form.add_error(None, "Não foi possível criar a conta. Confira os dados e se o e-mail já foi cadastrado.")
+        else:
+            messages.success(request, f"Escritório {office.name} criado. O responsável pode entrar com o e-mail e a senha definidos.")
+            return redirect("core:platform")
+    return render(request, "platform/office_form.html", {
+        "form": form, "page_title": "Criar escritório e acesso", "active_nav": "platform", "creating": True,
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def office_configure(request, pk):
+    require_platform_admin(request.user)
+    office = get_object_or_404(Organization, pk=pk, business_type="office")
+    form = OfficeConfigurationForm(request.POST or None, instance=office)
+    if request.method == "POST" and form.is_valid():
+        configure_office(actor=request.user, office_id=office.pk, data=form.cleaned_data)
+        messages.success(request, "Dados e áreas de atuação atualizados.")
+        return redirect("core:platform")
+    return render(request, "platform/office_form.html", {
+        "form": form, "page_title": f"Configurar {office.name}", "active_nav": "platform", "office": office,
     })

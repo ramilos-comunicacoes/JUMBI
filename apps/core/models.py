@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
+from .niches import PRACTICE_AREA_LABELS, validate_practice_areas
 
 
 hex_color_validator = RegexValidator(
@@ -66,6 +67,7 @@ class Organization(models.Model):
     status = models.CharField("status", max_length=20, choices=Status.choices, default=Status.ACTIVE)
     contact_email = models.EmailField("e-mail de contato", blank=True)
     contact_phone = models.CharField("telefone", max_length=30, blank=True)
+    practice_areas = models.JSONField("áreas de atuação", default=list, db_default=[], blank=True, validators=[validate_practice_areas])
     city = models.CharField("cidade", max_length=100, blank=True)
     state = models.CharField("UF", max_length=2, blank=True)
     brand_logo = models.FileField(
@@ -100,6 +102,10 @@ class Organization(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def practice_area_labels(self):
+        return [PRACTICE_AREA_LABELS[code] for code in self.practice_areas if code in PRACTICE_AREA_LABELS]
 
 
 class OrganizationRole(models.Model):

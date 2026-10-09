@@ -28,7 +28,7 @@ Abra `http://127.0.0.1:8000/` e escolha o plano. O cadastro cria usuário e escr
 - Busca e filtros nas listas, painel com números reais, auditoria e exportação ZIP com relações, arquivos autorizados e manifesto.
 - Pastas sigilosas exigem acesso específico, inclusive de gestores. URLs, buscas e exportações respeitam o mesmo escopo.
 
-Esta entrega é uma **base funcional para piloto**. O estudo prevê mais etapas: aprovação/publicação de documentos, portal do cliente, importação guiada, contratos e modelos, conciliação e repasses completos, filas/automações, conectores, PWA e aplicativos. Não há cálculo automático de prazo jurídico nem consulta automática a tribunais.
+Esta entrega é uma **base funcional para piloto**. O estudo prevê mais etapas: aprovação/publicação de documentos, portal do cliente, importação guiada, aprovação e assinatura de contratos, conciliação e repasses completos, filas/automações, conectores, PWA e aplicativos. Não há cálculo automático de prazo jurídico nem consulta automática a tribunais.
 
 ## Demonstração local opcional
 
@@ -44,7 +44,7 @@ $env:JUMBI_DEMO_PASSWORD = 'defina-uma-senha-local-exclusiva'
 ```powershell
 .\.venv\Scripts\python.exe manage.py check
 .\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
-.\.venv\Scripts\python.exe manage.py test apps.legal apps.billing apps.core.test_workspace apps.core.test_platform apps.core.test_legacy_isolation
+.\.venv\Scripts\python.exe manage.py test apps.legal apps.billing apps.contracts apps.performance apps.core.test_workspace apps.core.test_platform apps.core.test_legacy_isolation apps.core.test_platform_management
 .\.venv\Scripts\python.exe manage.py collectstatic --noinput
 ```
 
@@ -60,8 +60,16 @@ Veja [auditoria do estudo](docs/auditoria-documentacao.md) para o escopo real e 
 
 ## Planos
 
-Start: R$ 89,90/mês, 3 usuários ativos, 100 pastas ativas e 200 versões de documentos. Max: R$ 199,90/mês, 15 usuários ativos, 1.000 pastas ativas e 2.000 versões, incluindo CRM e financeiro. Ambos incluem auditoria e exportação dos dados autorizados. Ativação e vigência são administradas em `/admin/billing/organizationsubscription/`; não há cobrança automática ou gateway.
+Start: R$ 89,90/mês, 3 usuários ativos, 100 pastas ativas e 200 versões de documentos. Max: R$ 199,90/mês, 15 usuários ativos, 1.000 pastas ativas e 2.000 versões, incluindo CRM, financeiro e montagem de contratos. Ambos incluem calendário, Kanban, metas operacionais, auditoria e exportação dos dados autorizados. Ativação e vigência são administradas em `/admin/billing/organizationsubscription/`; não há cobrança automática ou gateway.
 
 A contratação pode começar pelo WhatsApp: os botões dos planos preenchem a mensagem com plano e valor para o número comercial informado. A mensagem depende do envio pelo visitante; abrir o link não ativa assinatura.
 
 As regras próprias da experiência em celular ficam em [estilo mobile](docs/estilo-mobile.md), com folhas de estilo distintas para a página pública e o aplicativo.
+
+## Evolução de 09/10/2026
+
+Dashboard operacional com indicadores, nichos combinados, metas, calendário e aniversariantes. A administração cria escritórios e escolhe múltiplas áreas em `/plataforma/escritorios/novo/`. Nichos filtram pastas, indicadores, calendário e Kanban. Metas e calendário integram Start e Max; indicadores financeiros e montagem de contratos exigem Max.
+
+A agenda usa calendário mensal e categorias separadas para prazos, tarefas, compromissos e datas importantes; aniversariantes de clientes autorizados abrem mensagem preenchida no WhatsApp para envio manual. O Kanban preserva evidência ao concluir e motivo ao reabrir. A montagem de contratos gera DOCX privado e versões preservadas, com impressão/salvar PDF.
+
+Referências funcionais lidas no servidor: calendário/Kanban do Navie Hospedagens e montagem de contratos do Autos. Estilização do aplicativo adaptada dos tokens do Nabio BJJ, com a marca dourada JUMBI e regras específicas de celular. Consulte [nichos e metas](docs/nichos-e-metas.md), [contratos](docs/montagem-contratos.md) e [operação](docs/operacao-piloto.md).

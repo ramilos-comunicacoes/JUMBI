@@ -1,0 +1,25 @@
+/* Workspace foundation adapted from Nabio BJJ tokens; JUMBI keeps its amber brand. */
+.app-body.j-office-shell{--bg:#0e0e11;--surface:#18181b;--surface-soft:#202024;--surface-hover:#27272c;--sidebar:#121215;--border:#3f3f46;--border-soft:#2b2b31;--text:#e4e4e7;--strong:#fafafa;--muted:#a1a1aa;--faint:#96969f;--shadow:0 4px 16px #00000016;--radius:16px;background:var(--bg)}
+[data-theme=light] .app-body.j-office-shell{--bg:#f8fafc;--surface:#fff;--surface-soft:#f1f5f9;--surface-hover:#e9eef5;--sidebar:#fff;--border:#cbd5e1;--border-soft:#e2e8f0;--text:#334155;--strong:#09090b;--muted:#64748b;--faint:#64748b;--shadow:0 4px 16px #0f172a08}
+.app-body.j-office-shell .sidebar{background:var(--sidebar);border-color:var(--border-soft);color:var(--muted)}
+.app-body.j-office-shell .sidebar-brand{height:86px;min-height:86px;border-color:var(--border-soft)}
+.app-body.j-office-shell .sidebar-brand>a{width:156px;height:68px;background:#121215;border-radius:12px;padding:4px 8px}
+.app-body.j-office-shell .workspace-copy strong{color:var(--strong)}
+.app-body.j-office-shell .workspace-copy span,.app-body.j-office-shell .nav-label{color:var(--muted)}
+.app-body.j-office-shell .workspace{padding-top:16px;padding-bottom:16px;min-height:76px}
+.app-body.j-office-shell .nav-link{min-height:44px;border-radius:12px;font-size:12px;font-weight:600}
+.app-body.j-office-shell .nav-link:hover{background:var(--surface-hover);color:var(--strong)}
+.app-body.j-office-shell .nav-link.is-active{background:var(--amber-soft);border-color:var(--amber-border);box-shadow:none;color:var(--primary)}
+[data-theme=light] .app-body.j-office-shell .nav-link.is-active{color:#8b5700}
+.app-body.j-office-shell .nav-link>.icon{color:currentColor}
+.app-body.j-office-shell .sidebar-note{border-color:var(--border-soft)}
+.app-body.j-office-shell .topbar{height:64px;min-height:64px;background:var(--sidebar);border-color:var(--border-soft);backdrop-filter:none}
+.app-body.j-office-shell .panel,.app-body.j-office-shell .stat-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:16px;box-shadow:var(--shadow)}
+.app-body.j-office-shell .stat-card:hover{transform:translateY(-2px);border-color:var(--amber-border);box-shadow:var(--shadow)}
+.app-body.j-office-shell .button{min-height:44px;border-radius:12px;transition:background 150ms ease,border-color 150ms ease}
+.app-body.j-office-shell .icon-button{min-height:44px;min-width:44px;border-radius:12px}
+.app-body.j-office-shell .page-content{padding-top:26px}.app-body.j-office-shell .page-heading{margin-bottom:22px}
+.workspace-scope{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}.workspace-scope a{padding:9px 13px;border:1px solid var(--border-soft);border-radius:99px;font-size:12px;min-height:44px;display:inline-flex;align-items:center;background:var(--surface);color:var(--muted)}.workspace-scope a.is-active{color:var(--strong);background:var(--amber-soft);border-color:var(--amber-border)}
+.notification-link{position:relative}.notification-link .notification-dot{position:absolute;right:3px;top:2px;min-width:17px;height:17px;display:grid;place-items:center;background:var(--primary);color:var(--primary-ink);font-size:10px;font-weight:750;border-radius:99px;padding:0 3px}
+@media(max-width:720px){.app-body.j-office-shell .page-content{padding:20px 16px}.app-body.j-office-shell .topbar{height:calc(64px + env(safe-area-inset-top));min-height:64px;padding-top:env(safe-area-inset-top)}.app-body.j-office-shell .workspace-scope{gap:7px;margin-bottom:18px}.workspace-scope a{font-size:12px;padding:8px 11px}.app-body.j-office-shell .panel{border-radius:16px}.app-body.j-office-shell .sidebar-brand{height:80px;min-height:80px}}
+@media(prefers-reduced-motion:reduce){.app-body.j-office-shell .stat-card:hover{transform:none}.app-body.j-office-shell .button{transition:none}}

@@ -10,7 +10,7 @@ class CoreConfig(AppConfig):
 
         # AdminConfig runs autodiscovery before CoreConfig.ready. Keep legacy
         # apps installed for migrations/data, but never expose their admin URLs.
-        allowed_labels = {"auth", "core", "legal", "billing"}
+        allowed_labels = {"auth", "core", "legal", "billing", "contracts", "performance"}
         for model in tuple(admin.site._registry):
             if model._meta.app_label not in allowed_labels:
                 admin.site.unregister(model)

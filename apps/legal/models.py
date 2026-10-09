@@ -151,6 +151,7 @@ class Contact(TenantModel):
     phone = models.CharField("Telefone", max_length=40, blank=True)
     document = models.CharField("CPF / CNPJ", max_length=30, blank=True)
     kind = models.CharField("Tipo", max_length=12, choices=Kind.choices, default=Kind.PERSON)
+    birth_date = models.DateField("Data de nascimento", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -158,6 +159,14 @@ class Contact(TenantModel):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        super().clean()
+        if self.birth_date:
+            if self.kind != self.Kind.PERSON:
+                raise ValidationError({"birth_date": "Informe nascimento somente para pessoas físicas."})
+            if self.birth_date > timezone.localdate():
+                raise ValidationError({"birth_date": "A data de nascimento não pode estar no futuro."})
 
 
 class Matter(TenantModel):
@@ -189,6 +198,11 @@ class Matter(TenantModel):
 
     def __str__(self):
         return self.title
+
+    @property
+    def area_label(self):
+        from apps.core.niches import PRACTICE_AREA_LABELS
+        return PRACTICE_AREA_LABELS.get(self.area, self.area)
 
 
 @receiver(m2m_changed, sender=Matter.members.through)
@@ -244,6 +258,7 @@ class Task(TenantModel):
     status = models.CharField("Situação", max_length=12, choices=Status.choices, default=Status.TODO)
     priority = models.CharField("Prioridade", max_length=10, choices=Priority.choices, default=Priority.NORMAL)
     completion_note = models.TextField("Evidência de conclusão", blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -318,8 +333,15 @@ class DeadlineRevision(ImmutableTenantModel):
 
 
 class Appointment(TenantModel):
+    class Kind(models.TextChoices):
+        MEETING = "meeting", "Reunião"
+        HEARING = "hearing", "Audiência"
+        IMPORTANT_DATE = "important_date", "Data importante"
+        OTHER = "other", "Outro compromisso"
+
     matter = models.ForeignKey(Matter, on_delete=models.PROTECT, null=True, blank=True, related_name="appointments")
     title = models.CharField("Compromisso", max_length=240)
+    kind = models.CharField("Tipo", max_length=20, choices=Kind.choices, default=Kind.OTHER, db_default="other")
     starts_at = models.DateTimeField("Início")
     ends_at = models.DateTimeField("Término")
     location = models.CharField("Local", max_length=240, blank=True)

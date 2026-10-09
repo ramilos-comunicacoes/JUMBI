@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     "apps.pages",
     "apps.legal",
     "apps.billing",
+    "apps.performance",
+    "apps.contracts",
 ]
 
 MIDDLEWARE = [

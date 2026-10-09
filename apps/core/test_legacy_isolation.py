@@ -95,7 +95,7 @@ class LegacyIsolationTests(TestCase):
 
     def test_legacy_apps_keep_models_but_have_no_admin_routes(self):
         labels = {model._meta.app_label for model in admin.site._registry}
-        self.assertTrue(labels.issubset({"auth", "core", "legal", "billing"}))
+        self.assertTrue(labels.issubset({"auth", "core", "legal", "billing", "contracts", "performance"}))
         from apps.engineering.models import Project
         self.assertFalse(admin.site.is_registered(Project))
         self.client.force_login(self.reserved_admin)

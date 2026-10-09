@@ -52,3 +52,9 @@ A verificação pública cobriu 360, 390, 520, 720 e 1440 px nos temas claro/esc
 ## Conferência após publicação
 
 Em 07/10/2026 às 20:34 UTC, a release v3 publicada em `https://jumbi.nabio.pro` passou por 11 verificações de navegador. Home em 390/1440 px e pastas/financeiro em 360/390 px mantiveram a largura do documento igual à viewport. Campos de busca tinham fonte de 16 px; controles, pelo menos 44 px; cartões conservaram todos os rótulos. A tabela desktop permaneceu tabela. Pausa persistente e preferência por movimento reduzido interromperam as animações contínuas. Nenhum erro JavaScript ou resposta HTTP inesperada foi registrado. Relatório local ignorado pelo Git: `tmp/qa-production-v3-results.json`.
+
+## Ampliação de 09/10/2026
+
+A base autenticada usa `jumbi-workspace.css`, adaptada dos tokens do Nabio BJJ: superfícies neutras, borda de 1 px, raios de 8/12/16/24 px, topo de 64 px e cor de destaque dourada JUMBI. A classe exclusiva `j-office-shell` evita conflitos com as ilustrações animadas da página pública.
+
+Dashboard, calendário, Kanban, metas e contratos possuem composições específicas até 720 px. No calendário, células compactas mostram pontos por categoria e os detalhes aparecem abaixo; no Kanban, as colunas se empilham e possuem atalhos, com ação Mover disponível para toque/teclado. A entrevista de contrato e a prévia ficam em sequência; a impressão tem CSS próprio. Nenhum documento A4 é reduzido para caber na tela. A conferência local cobriu telas de 360/390/1440 px e temas claro/escuro, incluindo movimento normal.

@@ -47,8 +47,10 @@ class OrganizationModelForm(forms.ModelForm):
 class ContactForm(OrganizationModelForm):
     class Meta:
         model = Contact
-        fields = ("name", "kind", "document", "email", "phone")
+        fields = ("name", "kind", "document", "email", "phone", "birth_date")
         labels = {"name": "Nome / razão social", "kind": "Tipo de pessoa", "document": "CPF / CNPJ", "email": "E-mail", "phone": "Telefone"}
+        widgets = {"birth_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
+        help_texts = {"birth_date": "Opcional, somente pessoa física. Os lembretes aparecem para clientes vinculados a uma pasta acessível."}
 
 
 class MatterForm(OrganizationModelForm):
@@ -60,6 +62,14 @@ class MatterForm(OrganizationModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from apps.core.niches import PRACTICE_AREAS, practice_area_choices
+        configured = practice_area_choices(self.organization)
+        choices = list(configured or PRACTICE_AREAS)
+        previous = self.instance.area if self.instance.pk else ""
+        if previous and previous not in dict(choices):
+            choices.append((previous, previous + " (registro existente)"))
+        self.fields["area"] = forms.ChoiceField(label="Nicho / área jurídica", required=False,
+            choices=[("", "Selecione a área"), *choices], help_text="Áreas de atuação configuradas pela administração. Cada pasta pode pertencer a um nicho do escritório.")
         role = Membership.objects.filter(organization=self.organization, user=self.user, is_active=True).values_list("role", flat=True).first()
         if role not in {"owner", "manager"}:
             for field in ("owner", "confidential", "members"):
@@ -144,7 +154,7 @@ class DeadlineForm(OrganizationModelForm):
 class AppointmentForm(OrganizationModelForm):
     class Meta:
         model = Appointment
-        fields = ("matter", "title", "starts_at", "ends_at", "location", "owner")
+        fields = ("matter", "title", "kind", "starts_at", "ends_at", "location", "owner")
         labels = {"matter": "Pasta", "title": "Compromisso", "starts_at": "Início", "ends_at": "Término", "location": "Local / link", "owner": "Responsável"}
         widgets = {"starts_at": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"), "ends_at": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M")}
 

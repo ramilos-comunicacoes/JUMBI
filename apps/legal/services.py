@@ -101,9 +101,36 @@ def complete_task(*, task, actor, evidence):
         raise ValidationError("A tarefa já está concluída.")
     task.status = Task.Status.DONE
     task.completion_note = evidence
-    task.save(update_fields=["status", "completion_note"])
+    task.completed_at = timezone.now()
+    task.save(update_fields=["status", "completion_note", "completed_at"])
     audit(organization=task.organization, actor=actor, action="task.completed", obj=task,
           description=f"Evidência de conclusão: {evidence}")
+    return task
+
+
+@transaction.atomic
+def move_task(*, task, actor, destination, expected_status, note=""):
+    """Move a Kanban card without silently overwriting another person's move."""
+    task = Task.objects.select_for_update().get(pk=task.pk, organization_id=task.organization_id)
+    _authorize_write(actor=actor, obj=task)
+    if destination not in Task.Status.values or expected_status not in Task.Status.values:
+        raise ValidationError("Escolha uma coluna válida.")
+    if task.status != expected_status:
+        raise ValidationError("Esta tarefa foi alterada por outra pessoa. Atualize o quadro antes de movê-la.")
+    if task.status == destination:
+        return task
+    if destination == Task.Status.DONE:
+        return complete_task(task=task, actor=actor, evidence=note)
+    previous = task.status
+    if previous == Task.Status.DONE:
+        note = _required_text(note, "o motivo da reabertura")
+    task.status = destination
+    task.completed_at = None
+    # Evidence of earlier completions remains in the immutable audit trail.
+    task.completion_note = ""
+    task.save(update_fields=["status", "completed_at", "completion_note"])
+    audit(organization=task.organization, actor=actor, action="task.reopen" if previous == Task.Status.DONE else "task.moved", obj=task,
+          description=f"{dict(Task.Status.choices)[previous]} → {task.get_status_display()}. {note.strip()}")
     return task
 
 

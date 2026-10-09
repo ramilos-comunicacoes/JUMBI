@@ -16,7 +16,7 @@ class SubscriptionMiddleware:
         match = request.resolver_match
         if not match:
             return None
-        protected = match.namespace == "legal" or (match.namespace == "core" and match.url_name in {"team", "audit", "revoke_member", "revoke_invitation"})
+        protected = match.namespace in {"legal", "performance", "contracts"} or (match.namespace == "core" and match.url_name in {"team", "audit", "revoke_member", "revoke_invitation"})
         # Portability remains available after expiration/suspension, subject to
         # the export view's existing membership and confidentiality checks.
         if not protected or match.url_name == "export":
@@ -27,6 +27,6 @@ class SubscriptionMiddleware:
         subscription = subscription_for(org)
         if not subscription or not subscription.is_available:
             return redirect("billing:subscription")
-        if view_kwargs.get("module") in {"finance", "crm"} and not subscription.limits["advanced"]:
+        if (view_kwargs.get("module") in {"finance", "crm"} or match.namespace == "contracts") and not subscription.limits["advanced"]:
             return render(request, "billing/upgrade.html", {"page_title": "Recurso do plano Max", "active_nav": "subscription"}, status=403)
         return None

@@ -1,0 +1,14 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-performance.css' %}">{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'core:platform' %}">Voltar à plataforma</a>
+<div class="page-heading"><div><div class="eyebrow">ADMINISTRAÇÃO JUMBI</div><h1>{{ page_title }}</h1><p>{% if creating %}Crie o escritório, o acesso da direção e a assinatura em um só lugar.{% else %}Combine os nichos que fazem parte da rotina deste escritório.{% endif %}</p></div></div>
+<section class="panel form-panel"><form method="post" class="record-form">{% csrf_token %}
+{% if form.errors %}<div class="alert alert-error" role="alert">Revise os campos indicados.{{ form.non_field_errors }}</div>{% endif %}
+<div class="form-grid">{% for field in form %}<div class="form-field {% if field.name == 'practice_areas' %}field-full niche-options{% endif %} {% if field.errors %}has-error{% endif %}">
+{% if field.name == 'practice_areas' %}<fieldset><legend>{{ field.label }}</legend>{{ field }}{% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}</fieldset>{% else %}<label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}{% endif %}
+{% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>{% endfor %}</div>
+{% if creating %}<p class="field-help">Start: R$ 89,90/mês · Max: R$ 199,90/mês. A ativação é manual e não registra cobrança. A conta criada terá acesso de direção apenas ao próprio escritório.</p>{% endif %}
+<div class="form-actions"><a class="button button-secondary" href="{% url 'core:platform' %}">Cancelar</a><button type="submit" class="button button-primary">{% if creating %}Criar escritório e acesso{% else %}Salvar configuração{% endif %}</button></div>
+</form></section>
+{% endblock %}

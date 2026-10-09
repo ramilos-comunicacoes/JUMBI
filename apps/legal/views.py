@@ -91,7 +91,37 @@ def get_module(request, module, *, write=False):
     return MODULES[module]
 
 
-def scoped_queryset(user, organization, model):
+def scoped_queryset(user, organization, model, *, for_export=False):
+    from apps.contracts.models import Contract, ContractRevision, ContractTemplate
+    from apps.contracts.services import visible_contracts, visible_revisions
+    from apps.performance.models import Goal, GoalUpdate
+    from apps.performance.services import visible_goals
+
+    role = Membership.objects.filter(user=user, organization=organization, is_active=True, user__is_active=True, organization__status="active").values_list("role", flat=True).first()
+    if role is None:
+        return model.objects.none()
+    if model is Contract:
+        return visible_contracts(user, organization)
+    if model is ContractRevision:
+        return visible_revisions(user, organization)
+    if model is ContractTemplate:
+        templates = ContractTemplate.objects.filter(organization=organization)
+        if role not in {"owner", "manager"}:
+            permitted_templates = Q(is_active=True)
+            if for_export:
+                permitted_templates |= Q(pk__in=visible_contracts(user, organization).values("template_id"))
+            templates = templates.filter(permitted_templates)
+        return templates
+    if model in {Goal, GoalUpdate}:
+        if for_export:
+            # Portability keeps historical financial goals available to the
+            # same roles as financial entries, even after plan expiration.
+            goals = Goal.objects.filter(organization=organization)
+            if role not in {"owner", "manager"}:
+                goals = goals.exclude(metric=Goal.Metric.REVENUE)
+        else:
+            goals = visible_goals(user, organization)
+        return goals if model is Goal else GoalUpdate.objects.filter(organization=organization, goal__in=goals)
     matters = visible_matters(user, organization)
     queryset = model.objects.filter(organization=organization)
     if model is Matter:
@@ -104,22 +134,24 @@ def scoped_queryset(user, organization, model):
     if model is DeadlineRevision:
         return queryset.filter(deadline__matter__in=matters, deadline__organization=organization)
     if model is Payment:
-        return queryset.filter(entry__in=scoped_queryset(user, organization, FinanceEntry))
+        return queryset.filter(entry__in=scoped_queryset(user, organization, FinanceEntry, for_export=for_export))
     return queryset
 
 
-def accessible_audit(user, organization, role=None):
+def accessible_audit(user, organization, role=None, *, for_export=False):
     """Only audit events whose current subject is still authorized are visible."""
-    role = Membership.objects.filter(user=user, organization=organization, is_active=True, organization__status="active").values_list("role", flat=True).first()
+    role = Membership.objects.filter(user=user, organization=organization, is_active=True, user__is_active=True, organization__status="active").values_list("role", flat=True).first()
     if role is None:
         return AuditEvent.objects.none()
-    models = [Matter, Contact, CourtCase, Task, Deadline, DeadlineRevision, Appointment, Document, DocumentVersion, Opportunity]
+    from apps.contracts.models import Contract, ContractRevision, ContractTemplate
+    from apps.performance.models import Goal, GoalUpdate
+    models = [Matter, Contact, CourtCase, Task, Deadline, DeadlineRevision, Appointment, Document, DocumentVersion, Opportunity, ContractTemplate, Contract, ContractRevision, Goal, GoalUpdate]
     if role in {"owner", "manager"}:
         models.extend([FinanceEntry, Payment])
     global_events = Q(object_type="core.organization", object_id=str(organization.pk), action__in=["workspace.created", "team.invited", "team.revoked", "team.invitation_revoked", "team.accepted", "workspace.exported"])
     permitted = global_events if role in {"owner", "manager"} else global_events & Q(actor=user)
     for model in models:
-        ids = scoped_queryset(user, organization, model).annotate(
+        ids = scoped_queryset(user, organization, model, for_export=for_export).annotate(
             audit_id=Cast("pk", output_field=CharField())
         ).values("audit_id")
         permitted |= Q(object_type=model._meta.label_lower, object_id__in=ids)
@@ -214,22 +246,8 @@ def optimize_queryset(queryset, model):
 @organization_required
 @require_GET
 def dashboard(request):
-    matters = scoped_queryset(request.user, request.organization, Matter)
-    tasks = scoped_queryset(request.user, request.organization, Task).exclude(status=Task.Status.DONE)
-    deadlines = scoped_queryset(request.user, request.organization, Deadline).exclude(status=Deadline.Status.FULFILLED)
-    receivable = None
-    if can_manage_finance(request):
-        entries = scoped_queryset(request.user, request.organization, FinanceEntry).filter(kind=FinanceEntry.Kind.INCOME)
-        receivable = sum((entry.balance for entry in entries), Decimal("0.00"))
-    return render(request, "legal/dashboard.html", {
-        "title": "Visão geral", "page_title": "Visão geral", "active_nav": "dashboard",
-        "stats": {"matters": matters.exclude(status=Matter.Status.CLOSED).count(), "tasks": tasks.count(), "deadlines": deadlines.count(), "receivable": receivable},
-        "upcoming_deadlines": deadlines.select_related("matter", "owner").order_by("due_date")[:6],
-        "pending_tasks": tasks.select_related("matter", "owner").order_by("due_date")[:6],
-        "recent_matters": matters.select_related("client", "owner").order_by("-created_at")[:5],
-        "activity": accessible_audit(request.user, request.organization, request.membership.role)[:6],
-        "today": timezone.localdate(), "can_edit": can_edit(request), "can_manage_finance": can_manage_finance(request),
-    })
+    from .dashboard_views import overview
+    return overview(request)
 
 
 @organization_required
@@ -237,6 +255,15 @@ def dashboard(request):
 def record_list(request, module):
     config = get_module(request, module)
     queryset = scoped_queryset(request.user, request.organization, config["model"])
+    from .niches import filter_niche, niche_selection
+    niche, niche_choices = niche_selection(request)
+    if config["model"] is Matter:
+        queryset = filter_niche(queryset, niche, niche_choices)
+    elif "matter" in {field.name for field in config["model"]._meta.fields}:
+        queryset = filter_niche(queryset, niche, niche_choices, relation="matter__")
+    elif niche and module in {"contacts", "crm"}:
+        clients = filter_niche(visible_matters(request.user, request.organization), niche, niche_choices).values("client_id")
+        queryset = queryset.filter(**{"pk__in" if module == "contacts" else "contact_id__in": clients})
     q = request.GET.get("q", "").strip()[:200]
     if q:
         search = Q()
@@ -255,6 +282,7 @@ def record_list(request, module):
         "module": module, "active_nav": module, "title": config["title"], "page_title": config["title"], "subtitle": config["subtitle"], "description": config["subtitle"],
         "columns": config["columns"], "rows": [table_row(request, module, obj) for obj in page_obj],
         "page_obj": page_obj, "q": q, "status": status, "status_choices": status_choices,
+        "niche": niche, "niche_choices": niche_choices,
         "create_url": reverse("legal:create", args=[module]), "can_create": can_edit(request), "export_url": reverse("legal:export"),
     })
 
@@ -411,6 +439,8 @@ def record_action(request, module, pk, action):
                         if action == "reopen" and obj.status != Task.Status.DONE:
                             raise ValidationError("Somente uma tarefa concluída pode ser reaberta.")
                         obj.status = Task.Status.DOING if action == "start" else Task.Status.TODO
+                        obj.completed_at = None
+                        obj.completion_note = ""
                         obj.save()
                         audit(organization=request.organization, actor=request.user, action=f"task.{action}", obj=obj, description=data["reason"])
                 elif module == "deadlines":
@@ -460,19 +490,28 @@ def document_upload(request, pk):
     return render_form(request, title="Enviar nova versão", form=form, module="documents", cancel_url=reverse("legal:detail", args=[document.matter_id]), submit_label="Enviar versão", subtitle=document.title)
 
 
+from apps.contracts.models import Contract, ContractRevision, ContractTemplate
+from apps.performance.models import Goal, GoalUpdate
+
+
 EXPORT_FIELDS = {
     Matter: ["title", "client_id", "nature", "area", "status", "description", "confidential", "owner_id", "created_at"],
-    Contact: ["name", "email", "phone", "document", "kind", "created_at"],
+    Contact: ["name", "email", "phone", "document", "kind", "birth_date", "created_at"],
     CourtCase: ["matter_id", "number", "court", "opposing_party", "notes", "created_at"],
-    Task: ["matter_id", "title", "description", "owner_id", "due_date", "status", "priority", "completion_note", "created_at"],
+    Task: ["matter_id", "title", "description", "owner_id", "due_date", "status", "priority", "completion_note", "completed_at", "created_at"],
     Deadline: ["matter_id", "title", "source", "due_date", "owner_id", "status", "confirmed_by_id", "confirmed_at", "evidence", "created_at"],
     DeadlineRevision: ["deadline_id", "previous_date", "new_date", "reason", "actor_id", "created_at"],
-    Appointment: ["matter_id", "title", "starts_at", "ends_at", "location", "owner_id"],
+    Appointment: ["matter_id", "title", "starts_at", "ends_at", "location", "owner_id", "kind"],
     Document: ["matter_id", "title", "kind", "created_by_id", "created_at"],
     DocumentVersion: ["document_id", "number", "original_name", "checksum", "uploaded_by_id", "created_at"],
     Opportunity: ["contact_id", "title", "stage", "amount", "owner_id", "next_action", "lost_reason", "created_at"],
     FinanceEntry: ["matter_id", "description", "kind", "amount", "due_date", "created_at"],
     Payment: ["entry_id", "amount", "date", "note", "created_by_id", "is_legacy_import", "reversal_of_id", "operation_key", "created_at"],
+    ContractTemplate: ["name", "category", "description", "body", "is_active", "created_by_id", "created_at", "updated_at"],
+    Contract: ["title", "template_id", "matter_id", "client_id", "document_id", "created_by_id", "created_at"],
+    ContractRevision: ["contract_id", "document_version_id", "number", "title", "template_name", "source_body", "values", "rendered_text", "checksum", "created_by_id", "created_at", "operation_key"],
+    Goal: ["title", "description", "metric", "target", "manual_value", "starts_on", "ends_on", "owner_id", "niche", "created_by_id", "archived", "created_at", "updated_at"],
+    GoalUpdate: ["goal_id", "previous_value", "value", "note", "actor_id", "created_at"],
     AuditEvent: ["actor_id", "action", "object_type", "object_id", "description", "created_at"],
 }
 
@@ -484,10 +523,10 @@ def export_workspace(request):
     output = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
     finance_allowed = request.membership.role in {"owner", "manager"}
     manifest = {
-        "schema_version": 1, "organization": {"id": request.organization.pk, "name": request.organization.name},
+        "schema_version": 2, "organization": {"id": request.organization.pk, "name": request.organization.name, "practice_areas": request.organization.practice_areas},
         "generated_at": timezone.now().isoformat(), "scope": "Somente registros autorizados ao usuário no momento da exportação.",
         "finance_included": finance_allowed, "counts": {}, "files": [],
-        "notes": ["Valores monetários são strings decimais. Datas usam ISO 8601.", "Usuários referenciados têm somente identificador e nome de exibição; credenciais e dados de autenticação não são exportados.", "A auditoria contém apenas eventos de objetos ainda acessíveis.", "Este pacote não inclui módulos ainda não implementados nem substitui o backup operacional."],
+        "notes": ["Valores monetários são strings decimais. Datas usam ISO 8601.", "Usuários referenciados têm somente identificador e nome de exibição; credenciais e dados de autenticação não são exportados.", "A auditoria contém apenas eventos de objetos ainda acessíveis.", "Modelos arquivados referenciados por contratos autorizados preservam os vínculos de reconstrução.", "Metas financeiras seguem as permissões de direção/gestão; a portabilidade permanece disponível após expiração do plano.", "Metas automáticas exportam a configuração; seu progresso pode ser recalculado pelos registros autorizados incluídos no pacote.", "Este pacote não inclui módulos ainda não implementados nem substitui o backup operacional."],
     }
     records = {}
     try:
@@ -495,7 +534,7 @@ def export_workspace(request):
             for model, fields in EXPORT_FIELDS.items():
                 if model in {FinanceEntry, Payment} and not finance_allowed:
                     continue
-                queryset = accessible_audit(request.user, request.organization, request.membership.role) if model is AuditEvent else scoped_queryset(request.user, request.organization, model)
+                queryset = accessible_audit(request.user, request.organization, request.membership.role, for_export=True) if model is AuditEvent else scoped_queryset(request.user, request.organization, model, for_export=True)
                 key = model._meta.model_name
                 values = []
                 for obj in queryset.iterator():

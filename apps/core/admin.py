@@ -133,6 +133,16 @@ class OrganizationAdmin(admin.ModelAdmin):
     list_filter = ("status", "state")
     search_fields = ("name", "legal_name", "document", "contact_email")
 
+    def get_readonly_fields(self, request, obj=None):
+        return () if request.user.is_superuser else ("practice_areas",)
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == "practice_areas":
+            from django import forms
+            from .niches import PRACTICE_AREAS
+            return forms.MultipleChoiceField(label="Áreas de atuação", choices=PRACTICE_AREAS, required=False, widget=forms.CheckboxSelectMultiple)
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
     def get_queryset(self, request):
         return super().get_queryset(request).filter(business_type="office")
 

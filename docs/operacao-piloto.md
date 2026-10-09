@@ -1,8 +1,8 @@
 # Operação do JUMBI
 
-## Estado da implantação em 07/10/2026
+## Estado da implantação em 09/10/2026
 
-O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). A release ativa `20261007-v3` acrescenta contratação pelo WhatsApp, animações e composições próprias para celular. O domínio HTTPS está atendendo o novo sistema.
+O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). A release ativa `20261009-v4`, publicada em 09/10, acrescenta dashboard completo, múltiplos nichos, metas, calendário/aniversários, Kanban e montagem de contratos. O domínio HTTPS está atendendo essa versão; contratação por WhatsApp e composições próprias para celular foram preservadas.
 
 A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.service` e upstream `127.0.0.1:8040`. O banco `djumbi` é compartilhado com a instalação em `/var/www/apps/djumbi`: por esse motivo, a evolução foi feita no clone independente `jumbi_v2`. O banco original foi preservado, sem receber as migrações ou o isolamento de contas da nova versão.
 
@@ -10,8 +10,8 @@ A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.
 | --- | --- |
 | Serviço | `jumbi-v2.service`, executado pelo usuário de serviço `jumbi` |
 | Upstream | `127.0.0.1:8041` |
-| Release | `/srv/jumbi/releases/20261007-v3` |
-| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261007-v3` |
+| Release | `/srv/jumbi/releases/20261009-v4` |
+| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261009-v4` |
 | Banco exclusivo | `jumbi_v2` |
 | Configuração privada | `/srv/jumbi/shared/.env`, proprietário/grupo `root:jumbi`, modo `0640` |
 | Arquivos privados | `/srv/jumbi/shared/private_media`, diretório com modo `0750` |
@@ -53,6 +53,11 @@ O comando `import_legacy_office` é um procedimento administrativo para essa ori
 
 ## Verificações da release
 
+- **164 testes passaram em PostgreSQL**, em 87,757 segundos, sem testes ignorados, na versão final v4. Incluem isolamento, sigilo, planos, múltiplos nichos, metas, calendário, Kanban, contratos, exportação, concorrência e estornos financeiros. O banco temporário `test_jumbi_v2` foi removido pelo procedimento ao final.
+- As seis migrações aditivas da v4 foram aplicadas no banco exclusivo. O teste de compatibilidade confirmou INSERTs da versão anterior omitindo os campos novos de organização/agenda, que possuem valores padrão no banco.
+- O comando `seed_workspace_showcase` adicionou somente registros fictícios à organização reservada de demonstração: quatro nichos, pessoas/pastas, tarefas, agenda, aniversário, metas e contrato privado. É idempotente e preserva contas, senhas e registros anteriores. O telefone de exemplo é o número comercial do próprio JUMBI; nenhuma mensagem foi enviada.
+- Oito rotas novas/ampliadas responderam 200 em conferência autenticada antes da troca do symlink. Após a troca, saúde HTTPS, serviço ativo e backup com `Result=success` foram confirmados.
+- `check --deploy` não apontou erros; manteve dois avisos relativos a HSTS para subdomínios e preload, que continuam desativados. A publicação não ampliou a política HTTPS para outros subdomínios nem inscreveu o domínio na lista de preload.
 - **106 testes passaram em PostgreSQL**, em 64,064 segundos, sem testes ignorados, na release v3. A suíte incluiu concorrência entre dois aceites de convite disputando a última vaga do plano e os redirecionamentos comerciais. O banco temporário `test_jumbi_v2` foi removido ao final.
 - Verificação autenticada de **18 rotas** no ambiente de preparação concluída, incluindo acesso administrativo e de demonstração; endpoint de saúde também verificado.
 - Autenticação, proteção CSRF, download privado com conferência de hash e separação entre as contas de superusuário e demonstração verificados.
@@ -64,6 +69,9 @@ O relatório `docs/validacao-piloto.md` documenta a primeira entrega local e seu
 
 **Estado: publicado.**
 
+- A v4 passou por **35 verificações no navegador de produção**, incluindo 24 combinações de seis módulos em 390/1440 px e temas claro/escuro, com animações normais. Não houve transbordamento horizontal, erro JavaScript, falha HTTP nas verificações concluídas ou acentuação corrompida. Calendário, filtros, sino, quatro nichos da demo, metas e Kanban foram conferidos. O cadastro do superusuário ofereceu 25 nichos e permitiu selecionar quatro simultaneamente sem salvar.
+- O DOCX da demonstração foi baixado e validado como Word/ZIP, com cabeçalhos privados; impressão respondeu 200, visitante anônimo foi bloqueado e a conta administrativa em outro escritório recebeu 404. Essa conferência alterou somente sessões de login, sem modificar cadastros nem enviar WhatsApp. Os fluxos de criação/movimentação haviam sido exercitados localmente e nos testes PostgreSQL.
+- Um timeout de espera por `networkidle` interrompeu a primeira passagem do navegador. O relatório inicial foi preservado e somente as etapas restantes foram retomadas, aguardando DOM e componente visível. A retomada passou; a leitura autenticada de contratos foi medida em 0,101 s no Django, sem erros ou timeouts de workers no serviço. A emulação de viewport não substitui teste em aparelho físico.
 - Virtual host JUMBI direcionado à porta privada 8041, com `nginx -t` aprovado e reload concluído. Os demais virtual hosts foram preservados.
 - HTTPS da home retornou 200; `/saude/` retornou `{"status":"ok","application":"JUMBI"}`.
 - A atualização v3 trocou o symlink da release e reiniciou somente `jumbi-v2.service`; saúde e serviço ativo foram confirmados. As rotas de contratação Start/Max responderam 302 para `wa.me/5588992745456`, com plano e preço corretos. A verificação não enviou mensagens.
@@ -85,6 +93,10 @@ O pacote ZIP exportado pela aplicação serve à portabilidade dos registros e a
 
 ## Reversão da publicação
 
+Para reverter apenas a v4 à v3, preservar o backup atual e trocar atomicamente `/srv/jumbi/current` para `/srv/jumbi/releases/20261007-v3`, reiniciando somente `jumbi-v2.service`. Conferir saúde, login e arquivos estáticos. As migrações aditivas e os dados novos devem permanecer no banco; o teste de compatibilidade cobre os campos novos obrigatórios. Os módulos novos ficarão inacessíveis enquanto a v3 estiver ativa, sem apagar seus registros. Essa reversão mantém o mesmo upstream 8041 e não exige mudar Nginx.
+
+As instruções abaixo se referem a uma eventual volta à instalação legada anterior à v2, uma operação diferente e que exige reconciliação dos dados:
+
 Antes de reverter, avaliar os registros escritos após a liberação: `jumbi_v2` e o banco original passam a divergir. A simples volta ao sistema antigo pode ocultar trabalho realizado na versão nova. Preserve o banco novo e reconcilie as alterações necessárias antes de direcionar usuários ao estado anterior.
 
 Quando a reversão do tráfego estiver definida, restaure somente o arquivo do virtual host JUMBI conservado em `/srv/jumbi/backups/pre-v2-20261007`, voltando ao upstream anterior `127.0.0.1:8040`. Execute `nginx -t` e faça reload do Nginx apenas se a validação passar. Confira saúde e autenticação do host após a troca.
@@ -94,6 +106,8 @@ Não restaure um dump antigo sobre o banco compartilhado `djumbi`, não reverta 
 ## Interface e limites conhecidos
 
 A interface preserva a marca âmbar, temas claro/escuro, menu lateral recolhível, gaveta móvel e foco visível. O redesenho usa superfícies translúcidas e animações com pausa e preferência por movimento reduzido, com CSS e JavaScript locais. As folhas `jumbi-mobile-public.css` e `jumbi-mobile-app.css` definem composições específicas para celular: prévia pública compacta, formulários em coluna, tabelas apresentadas como cartões rotulados, fontes de formulário de 16 px e controles de pelo menos 44 px. Veja `docs/estilo-mobile.md` para as regras e evidências de viewport.
+
+Na v4, a base visual do aplicativo usa os tokens do Nabio BJJ com a marca JUMBI. Calendário e Kanban seguem as referências do Navie Hospedagens. Em celular, o calendário usa marcadores e detalhes do dia; o Kanban dispõe de colunas empilhadas, atalhos e botão Mover, sem depender de arrastar pelo toque. A administração combina nichos em `/plataforma/escritorios/novo/`; metas e calendário estão nos dois planos, e montagem de contratos e indicadores financeiros exigem Max.
 
 A assinatura começa por mensagem preenchida no WhatsApp comercial **+55 88 99274-5456**. O visitante decide enviar; a ativação continua administrativa após a contratação. O link comercial não implementa API de WhatsApp, cobrança automática ou confirmação de pagamento.
 
