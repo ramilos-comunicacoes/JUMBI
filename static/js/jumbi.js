@@ -6,6 +6,9 @@
   const openButton = document.querySelector('[data-sidebar-open]');
   const compactButton = document.querySelector('[data-sidebar-toggle]');
   const mobile = window.matchMedia('(max-width: 980px)');
+  const automaticSidebar = window.matchMedia('(min-width: 981px) and (hover: hover) and (pointer: fine)');
+  let keyboardNavigation = false;
+  let pointerOverSidebar = false;
   let previousFocus = null;
   const save = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
   function updateThemeButtons() {
@@ -34,7 +37,43 @@
     const text = compactButton.querySelector('span');
     if (text) text.textContent = collapsed ? 'Expandir menu' : 'Recolher menu';
   }
+  function syncSidebar() {
+    if (!sidebar) return;
+    root.classList.toggle('sidebar-auto', automaticSidebar.matches);
+    if (automaticSidebar.matches) {
+      const keyboardFocus = keyboardNavigation && sidebar.contains(document.activeElement);
+      root.classList.toggle('sidebar-collapsed', !pointerOverSidebar && !keyboardFocus);
+    } else if (mobile.matches) {
+      root.classList.remove('sidebar-collapsed');
+    }
+    updateCompactButton();
+  }
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Tab') keyboardNavigation = true;
+  }, true);
+  document.addEventListener('pointerdown', () => {
+    keyboardNavigation = false;
+    syncSidebar();
+  }, true);
+  if (sidebar) {
+    sidebar.addEventListener('pointerenter', event => {
+      if (event.pointerType === 'touch') return;
+      pointerOverSidebar = true;
+      syncSidebar();
+    });
+    sidebar.addEventListener('pointerleave', () => {
+      pointerOverSidebar = false;
+      syncSidebar();
+    });
+    sidebar.addEventListener('focusin', syncSidebar);
+    sidebar.addEventListener('focusout', () => queueMicrotask(syncSidebar));
+  }
+  automaticSidebar.addEventListener('change', () => {
+    pointerOverSidebar = automaticSidebar.matches && Boolean(sidebar?.matches(':hover'));
+    syncSidebar();
+  });
   if (compactButton) compactButton.addEventListener('click', () => {
+    if (automaticSidebar.matches) return;
     root.classList.toggle('sidebar-collapsed');
     save('jumbi-sidebar', root.classList.contains('sidebar-collapsed') ? 'collapsed' : 'expanded');
     updateCompactButton();
@@ -62,6 +101,8 @@
   function syncViewport() {
     setDrawer(false);
     if (sidebar) sidebar.inert = mobile.matches;
+    pointerOverSidebar = automaticSidebar.matches && Boolean(sidebar?.matches(':hover'));
+    syncSidebar();
   }
   mobile.addEventListener('change', syncViewport);
   syncViewport();

@@ -1,6 +1,6 @@
-<article class="goal-card">
+<article class="goal-card goal-score-row">
   <div class="goal-card-top"><span class="badge">{{ card.goal.get_metric_display }}</span><span class="goal-state">{{ card.state }}</span></div>
-  <h3>{{ card.goal.title }}</h3>
+  <h3>{{ card.goal.title }}</h3><span class="goal-tracking-mode">{% if card.goal.metric == 'manual' %}Atualização manual{% else %}Indicador automático{% endif %}</span>
   <p class="goal-period">{{ card.goal.starts_on|date:"d/m/Y" }} — {{ card.goal.ends_on|date:"d/m/Y" }}</p>
   <div class="goal-value"><strong>{% if card.is_money %}R$ {% endif %}{{ card.value|floatformat:2 }}</strong><span>de {% if card.is_money %}R$ {% endif %}{{ card.goal.target|floatformat:2 }}</span><span class="goal-percent">{{ card.percent }}%</span></div>
   <progress max="100" value="{{ card.percent }}" aria-label="Progresso de {{ card.goal.title }}: {{ card.percent }}%">{{ card.percent }}%</progress>

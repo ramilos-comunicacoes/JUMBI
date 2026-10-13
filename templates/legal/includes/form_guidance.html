@@ -1,0 +1,21 @@
+{% if module == 'matters' %}
+<h2>Uma pasta reúne a demanda</h2><ol><li>Vincule a pessoa atendida e escolha o nicho.</li><li>Use a pasta para reunir processos, tarefas, prazos e arquivos da mesma demanda.</li><li>Em uma pasta sigilosa, confira o responsável e as pessoas autorizadas.</li></ol>
+{% elif module == 'contacts' %}
+<h2>Cadastre uma vez</h2><ol><li>Busque a pessoa antes de criar outro cadastro.</li><li>Informe o telefone com DDD e a data de nascimento, quando houver.</li><li>Vincule a pessoa como cliente em uma pasta para acompanhar seu aniversário no calendário.</li></ol>
+{% elif module == 'cases' %}
+<h2>Processo dentro da pasta</h2><ol><li>Selecione a demanda à qual o processo pertence.</li><li>Informe número, órgão e parte contrária para facilitar a consulta.</li><li>Atualize as informações manualmente; não há captura de andamentos dos tribunais.</li></ol>
+{% elif module == 'tasks' %}
+<h2>Do planejamento à entrega</h2><ol><li>Defina quem executa, a prioridade e a data de entrega interna.</li><li>Acompanhe o andamento no Kanban.</li><li>Ao concluir, registre o que foi entregue. Prazos jurídicos têm cumprimento separado.</li></ol>
+{% elif module == 'deadlines' %}
+<h2>Registrar, conferir, cumprir</h2><ol><li>Informe a fonte e o vencimento conferido pela equipe. O sistema não calcula o prazo jurídico.</li><li>Use Conferir para confirmar obrigação, data e responsável.</li><li>Registre o cumprimento com evidência. Alterar o vencimento exige motivo e nova conferência.</li></ol>
+{% elif module == 'appointments' %}
+<h2>Reserve o horário</h2><ol><li>Escolha a categoria e informe início e término.</li><li>Indique o local ou link da reunião e o responsável.</li><li>O compromisso aparece no calendário. Obrigações jurídicas devem ser cadastradas em Prazos.</li></ol>
+{% elif module == 'documents' %}
+<h2>Preserve cada versão</h2><ol><li>Vincule o arquivo à pasta correta e use um nome fácil de localizar.</li><li>Para atualizar o conteúdo, envie uma nova versão: a anterior fica preservada.</li><li>Enviar um arquivo não o publica ao cliente. No Max, use Revisão e portal para aprovar e compartilhar.</li></ol>
+{% elif module == 'finance' %}
+<h2>Previsão e movimentação</h2><ol><li>Separe receita, despesa e valor de cliente.</li><li>O valor previsto só é movimentado quando você registra uma baixa.</li><li>Um estorno exige motivo e preserva o histórico. Para várias parcelas, use Honorários.</li></ol>
+{% elif module == 'crm' %}
+<h2>Defina o próximo contato</h2><ol><li>Vincule a pessoa e informe a etapa do atendimento.</li><li>Deixe clara a próxima ação e quem a executa.</li><li>A estimativa não gera receita no financeiro. Ao marcar como perdida, registre o motivo.</li></ol>
+{% else %}
+<h2>Confira antes de salvar</h2><p>Revise os dados e os campos obrigatórios. A ação será registrada no escritório selecionado.</p>
+{% endif %}

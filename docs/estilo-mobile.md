@@ -58,3 +58,9 @@ Em 07/10/2026 às 20:34 UTC, a release v3 publicada em `https://jumbi.nabio.pro`
 A base autenticada usa `jumbi-workspace.css`, adaptada dos tokens do Nabio BJJ: superfícies neutras, borda de 1 px, raios de 8/12/16/24 px, topo de 64 px e cor de destaque dourada JUMBI. A classe exclusiva `j-office-shell` evita conflitos com as ilustrações animadas da página pública.
 
 Dashboard, calendário, Kanban, metas e contratos possuem composições específicas até 720 px. No calendário, células compactas mostram pontos por categoria e os detalhes aparecem abaixo; no Kanban, as colunas se empilham e possuem atalhos, com ação Mover disponível para toque/teclado. A entrevista de contrato e a prévia ficam em sequência; a impressão tem CSS próprio. Nenhum documento A4 é reduzido para caber na tela. A conferência local cobriu telas de 360/390/1440 px e temas claro/escuro, incluindo movimento normal.
+
+## Revisão por módulo — 13/10/2026
+
+A v6 acrescenta layouts próprios para as abas, com regras em `jumbi-modules-mobile.css`, `jumbi-sections.css` e nos CSS específicos de rotinas, honorários, portal e contratos. O menu usa `jumbi-navigation.css`: hover e teclado a partir de 981 px com mouse; gaveta até 980 px; controle manual para telas grandes de toque. A abertura automática mantém o conteúdo no lugar.
+
+A validação percorreu 360, 390, 768, 980, 981, 1024, 1440 e 1920 px. Foram conferidos os temas claro/escuro, formulários, indicadores, filtros, menu e acessos. A emulação não substitui teste em aparelho físico. Evidências e contagens estão em `docs/operacao-piloto.md`; decisões e pesquisa de mercado em `docs/experiencia-e-concorrentes.md`.

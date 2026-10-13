@@ -74,7 +74,13 @@ def organization_required(view):
 
 def can_manage_finance(request):
     from apps.billing.services import has_advanced
-    return request.membership.role in {"owner", "manager"} and has_advanced(request.organization)
+    # One decision per request, shared by the module gate and each row action.
+    key = (request.organization.pk, request.membership.pk, request.membership.role)
+    cached = getattr(request, "_finance_access", None)
+    if cached is None or cached[0] != key:
+        cached = (key, request.membership.role in {"owner", "manager"} and has_advanced(request.organization))
+        request._finance_access = cached
+    return cached[1]
 
 
 def can_edit(request):
@@ -185,7 +191,7 @@ def money_label(value):
 def record_actions(request, module, obj):
     actions = []
     if module == "documents":
-        version = obj.latest_version
+        version = obj._list_latest_version if hasattr(obj, "_list_latest_version") else obj.latest_version
         if version:
             actions.append({"label": "Baixar", "url": reverse("legal:document_download", args=[version.pk])})
         if can_edit(request):
@@ -206,9 +212,11 @@ def record_actions(request, module, obj):
         elif obj.status == Deadline.Status.CONFIRMED:
             names.append(("fulfill", "Registrar cumprimento"))
     elif module == "finance" and can_manage_finance(request):
-        if obj.balance > 0:
+        balance = obj._list_balance if hasattr(obj, "_list_balance") else obj.balance
+        if balance > 0:
             names.append(("payment", "Registrar baixa"))
-        if obj.payments.filter(reversal_of__isnull=True, reversal__isnull=True).exists():
+        reversible = obj._list_reversible if hasattr(obj, "_list_reversible") else obj.payments.filter(reversal_of__isnull=True, reversal__isnull=True).exists()
+        if reversible:
             names.append(("reverse", "Estornar baixa"))
     actions.extend({"label": label, "url": reverse("legal:action", args=[module, obj.pk, name])} for name, label in names)
     return actions
@@ -283,14 +291,20 @@ def record_list(request, module):
         queryset = queryset.filter(**{status_field: status})
     else:
         status = ""
-    page_obj = Paginator(optimize_queryset(queryset, config["model"]), 25).get_page(request.GET.get("page"))
-    return render(request, "legal/list.html", {
+    from .list_presenters import MODULE_PAGES, prepare_queryset, present_list
+    page_queryset = optimize_queryset(queryset, config["model"])
+    if module == "documents":
+        page_queryset = page_queryset.prefetch_related(None)
+    page_obj = Paginator(prepare_queryset(page_queryset, module), 25).get_page(request.GET.get("page"))
+    context = {
         "module": module, "active_nav": module, "title": config["title"], "page_title": config["title"], "subtitle": config["subtitle"], "description": config["subtitle"],
-        "columns": config["columns"], "rows": [table_row(request, module, obj) for obj in page_obj],
+        "columns": config["columns"], "rows": [] if module in MODULE_PAGES else [table_row(request, module, obj) for obj in page_obj],
         "page_obj": page_obj, "q": q, "status": status, "status_choices": status_choices,
         "niche": niche, "niche_choices": niche_choices,
-        "create_url": reverse("legal:create", args=[module]), "can_create": can_edit(request), "export_url": reverse("legal:export"),
-    })
+        "create_url": reverse("legal:create", args=[module]), "can_create": can_edit(request),
+    }
+    context.update(present_list(request, module, queryset, page_obj, editable=can_edit(request), actions=record_actions, money_label=money_label, user_label=user_label))
+    return render(request, "legal/list.html" if module in MODULE_PAGES else "legal/modules-generic.html", context)
 
 
 def add_validation_errors(form, error):

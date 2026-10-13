@@ -1,0 +1,6 @@
+<div class="matter-portfolio">{% for row in module_rows %}<article class="matter-folder">
+  <div class="module-card-top"><span class="module-tag">{{ row.record.get_nature_display }}</span><span class="module-state state-{{ row.record.status }}">{{ row.record.get_status_display }}</span></div>
+  <h2><a href="{{ row.url }}">{{ row.record.title }}</a></h2><p class="matter-client">{{ row.record.client|default:"Cliente não vinculado" }}</p>
+  <dl class="module-details"><div><dt>Área</dt><dd>{{ row.record.area_label|default:"Não informada" }}</dd></div><div><dt>Responsável</dt><dd>{{ row.owner }}</dd></div></dl>
+  <footer class="module-card-footer"><span class="module-note">{% if row.record.confidential %}Acesso restrito{% else %}Equipe do escritório{% endif %}</span><a href="{{ row.url }}" class="module-action">Abrir pasta <span aria-hidden="true">↗</span></a>{% if row.edit_url %}<a href="{{ row.edit_url }}" class="module-action">Editar</a>{% endif %}</footer>
+</article>{% endfor %}</div>

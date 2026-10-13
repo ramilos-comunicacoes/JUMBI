@@ -81,3 +81,9 @@ Rotinas por nicho com cinco exemplos editáveis, prévia, aplicação única à 
 Segurança de conta inclui TOTP opcional, códigos de recuperação de uso único e revogação de outras sessões em ambos os planos. O financeiro não efetua cobranças externas; a aprovação documental não equivale a assinatura eletrônica. Os limites de usuários ativos incluem os vínculos Cliente. A exportação inclui os novos registros autorizados e preserva portabilidade após expiração ou redução do plano; arquivos já publicados continuam disponíveis ao destinatário enquanto o vínculo e a publicação estiverem ativos.
 
 Consulte [rotinas](docs/routines.md), [honorários](docs/honorarios.md), [portal](docs/portal.md) e [segurança](docs/seguranca-conta.md). Os 117 itens do levantamento representam referências e alternativas; esta versão implementa as primeiras quatro frentes, não a totalidade do catálogo.
+
+## Experiência por módulo — v6
+
+Menu automático por mouse no desktop, com expansão por teclado, gaveta móvel e controle manual em telas grandes de toque. Navegação agrupada por rotina, acervo, comercial e administração. Pastas, pessoas, processos, prazos, documentos, financeiro e relacionamento têm apresentações próprias, com filtros, ações existentes e indicadores sobre o escopo autorizado. As demais abas receberam composição e orientação específicas. Os formulários explicam como cada registro participa do fluxo do escritório.
+
+As regras de celular, tablet e desktop e a pesquisa nas páginas oficiais de Astrea, ADVBOX, Projuris e Legal One estão em [experiência e concorrentes](docs/experiencia-e-concorrentes.md). O documento separa decisões desta revisão das integrações e funcionalidades propostas para etapas futuras.

@@ -2,7 +2,7 @@
 
 ## Estado da implantação — verificado em 13/10/2026
 
-O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). A release ativa é `20261009-v5`, publicada em 09/10 às 14:18 UTC (11:18 em Fortaleza), com rotinas por nicho, honorários parcelados/mensais, revisão/publicação de documentos, portal do cliente e segurança de conta. A verificação de 13/10 confirmou o symlink, o serviço ativo, saúde HTTPS e sucesso do último backup. Dashboard, nichos, metas, calendário/aniversários, Kanban, contratos e contratação por WhatsApp das versões anteriores foram preservados.
+O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). A release ativa é `20261013-v6`, publicada em 13/10 às 11:46 UTC (08:46 em Fortaleza), com menu automático no desktop, navegação agrupada e layouts próprios por módulo, incluindo regras de celular e tablet. A publicação confirmou o symlink, o serviço ativo, saúde HTTPS e sucesso do backup anterior à troca. Dashboard, nichos, metas, calendário/aniversários, Kanban, contratos, rotinas, honorários, portal, segurança e contratação por WhatsApp foram preservados. Nenhuma migração, senha ou cadastro de produção foi alterado nesta atualização.
 
 A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.service` e upstream `127.0.0.1:8040`. O banco `djumbi` é compartilhado com a instalação em `/var/www/apps/djumbi`: por esse motivo, a evolução foi feita no clone independente `jumbi_v2`. O banco original foi preservado, sem receber as migrações ou o isolamento de contas da nova versão.
 
@@ -10,8 +10,8 @@ A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.
 | --- | --- |
 | Serviço | `jumbi-v2.service`, executado pelo usuário de serviço `jumbi` |
 | Upstream | `127.0.0.1:8041` |
-| Release | `/srv/jumbi/releases/20261009-v5` |
-| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261009-v5` |
+| Release | `/srv/jumbi/releases/20261013-v6` |
+| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261013-v6` |
 | Banco exclusivo | `jumbi_v2` |
 | Configuração privada | `/srv/jumbi/shared/.env`, proprietário/grupo `root:jumbi`, modo `0640` |
 | Arquivos privados | `/srv/jumbi/shared/private_media`, diretório com modo `0750` |
@@ -53,6 +53,12 @@ O comando `import_legacy_office` é um procedimento administrativo para essa ori
 
 ## Verificações da release
 
+- **255 testes passaram em PostgreSQL**, em 188,298 segundos, sem testes ignorados, na v6. Os sete cenários novos cobrem filtros e sigilo dos indicadores, datas de prazos, perfis, separação de valores de clientes e estornos, paginação do pipeline e consultas financeiras constantes ao aumentar os registros.
+- **256 verificações locais no navegador** passaram: 240 combinações de páginas entre 360, 390, 768, 980, 981, 1024, 1440 e 1920 px, com claro/escuro em 390/1440, mais acessos, formulários e navegação. O menu foi exercitado por mouse, teclado e toque, inclusive redimensionamento com gaveta aberta, preferência antiga e movimento reduzido. Não houve erro JavaScript ou transbordamento.
+- A revisão especializada de rotinas, honorários, contratos e portal acrescentou 112 combinações de layout em sete larguras e dois temas, mais 26 verificações de filtros, navegação, prévias e tema persistente do cliente. Um ajuste final removeu texto redundante dos cabeçalhos; 28 verificações adicionais de layout, busca vazia e limpeza de filtros nas sete listas passaram após esse ajuste.
+- Home, cadastro e login públicos passaram em 24 combinações nas mesmas oito larguras, sem transbordamento ou erros JavaScript.
+- A v6 não exige migrações ou atualização de dependências. O backup anterior à troca terminou com sucesso. Somente `jumbi-v2.service` foi reiniciado. A primeira tentativa de saúde recebeu 502 durante a inicialização; a repetição retornou 200 e o serviço ficou ativo. Os avisos HSTS de subdomínios/preload continuam os mesmos, sem ampliar a política de outros sistemas.
+
 - **248 testes passaram em PostgreSQL**, em 210,161 segundos, sem testes ignorados, na v5 final. A suíte inclui concorrência de publicação/aprovação/honorários, MFA e revogação de sessões, isolamento do perfil Cliente, exportação, sigilo e os fluxos anteriores. O banco temporário `test_jumbi_v2` foi removido; a verificação de 13/10 confirmou sua ausência.
 - A primeira execução PostgreSQL detectou ordenação implícita removida pela agregação de parcelas e bloqueio sobre relação opcional no comando de demonstração. Ambos foram corrigidos antes de publicar. Também foram corrigidos testes dependentes da virada do intervalo TOTP e do fechamento manual de uma resposta de arquivo dentro da transação de teste. A suíte completa foi repetida e passou.
 - **50 verificações locais no navegador** passaram em 390/1440 px e temas claro/escuro, sem erros JavaScript ou transbordamento. Incluem dashboard, rotinas, honorários, revisão/portal, segurança, pasta e portal externo; download privado e bloqueios de acesso do Cliente foram exercitados.
@@ -76,6 +82,7 @@ O relatório `docs/validacao-piloto.md` documenta a primeira entrega local e seu
 
 **Estado: publicado.**
 
+- A v6 passou por **111 verificações no navegador de produção em 13/10/2026**, com os três logins reais, 96 combinações de páginas em 390/1440 px e temas claro/escuro, dez formulários e navegação por mouse/teclado/gaveta. Os bloqueios internos do Cliente também foram conferidos. Sem erro JavaScript ou transbordamento nas verificações concluídas. A primeira rodada parou em uma asserção imediata após redimensionamento; a automação passou a aguardar o carregamento completo e o estado da gaveta antes de interagir, e a repetição completa passou. O relatório inicial foi preservado. Não houve alteração de cadastros, senhas, envio de mensagens ou cobranças nessa checagem. A leitura operacional posterior confirmou a release v6 ativa, saúde OK, backup com sucesso e ausência do banco temporário de testes.
 - A v5 passou por **65 verificações no navegador de produção em 13/10/2026**: login de superusuário, gestor demo e cliente demo; 60 combinações de páginas em 390/1440 px e temas claro/escuro; download privado e bloqueios do perfil Cliente. Não houve erros JavaScript ou transbordamento nas verificações concluídas. A medição aguarda o carregamento das folhas de estilo e fontes; uma tentativa anterior mediu o layout antes do CSS, e o relatório inicial foi preservado. A emulação de viewport não substitui teste em aparelho físico.
 - A v4 passou por **35 verificações no navegador de produção**, incluindo 24 combinações de seis módulos em 390/1440 px e temas claro/escuro, com animações normais. Não houve transbordamento horizontal, erro JavaScript, falha HTTP nas verificações concluídas ou acentuação corrompida. Calendário, filtros, sino, quatro nichos da demo, metas e Kanban foram conferidos. O cadastro do superusuário ofereceu 25 nichos e permitiu selecionar quatro simultaneamente sem salvar.
 - O DOCX da demonstração foi baixado e validado como Word/ZIP, com cabeçalhos privados; impressão respondeu 200, visitante anônimo foi bloqueado e a conta administrativa em outro escritório recebeu 404. Essa conferência alterou somente sessões de login, sem modificar cadastros nem enviar WhatsApp. Os fluxos de criação/movimentação haviam sido exercitados localmente e nos testes PostgreSQL.
@@ -100,6 +107,8 @@ Os arquivos `deploy/backup-jumbi.sh`, `deploy/jumbi-backup.service` e `deploy/ju
 O pacote ZIP exportado pela aplicação serve à portabilidade dos registros e arquivos autorizados. Ele não substitui esse backup administrativo: contas, sessões e segredos não integram a exportação do escritório.
 
 ## Reversão da publicação
+
+**V6 → V5:** esta revisão não muda o esquema nem as credenciais. A release `20261009-v5` foi preservada e mantém as barreiras de Cliente e MFA. Caso seja necessária reversão do código, preservar o backup atual, trocar atomicamente o symlink para essa v5 e reiniciar somente `jumbi-v2.service`; conferir saúde, autenticação e estáticos. Não restaurar banco por cima dos dados ativos. A advertência abaixo continua valendo para versões anteriores à v5.
 
 **V5: não aponte simplesmente para v4/v3 após cadastrar Clientes ou ativar MFA.** Essas versões não reconhecem as novas barreiras de acesso. Prefira uma correção da v5 preservando as tabelas e dados. Se uma volta ao código antigo for inevitável, faça backup e planeje o bloqueio dos acessos externos, contas com MFA e sessões antes da troca, documentando a restauração dos acessos depois. Não remova tabelas ou restaure um dump por cima do banco ativo. As instruções v4/v3 abaixo são históricas e não autorizam contornar essas barreiras.
 

@@ -50,6 +50,15 @@ def workspace_context(request):
             {'key': 'portal', 'label': 'Meus documentos', 'url': reverse('portal:home'), 'icon': 'file'},
             {'key': 'security', 'label': 'Segurança da conta', 'url': reverse('security:account'), 'icon': 'shield'},
         ]
+    navigation_groups = [
+        ("Dia a dia", ["dashboard", "appointments", "tasks", "deadlines", "goals", "routines"]),
+        ("Acervo jurídico", ["matters", "contacts", "cases", "documents", "portal", "contracts"]),
+        ("Gestão comercial", ["crm", "fees", "finance"]),
+        ("Administração", ["team", "audit", "subscription", "security", "platform"]),
+    ]
+    indexed_nav = {item["key"]: item for item in nav}
+    nav = [dict(indexed_nav[key], group=group) for group, keys in navigation_groups
+           for key in keys if key in indexed_nav]
     birthday_count = 0
     if organization and membership and membership.role != 'client' and subscription and subscription.is_available:
         from apps.legal.calendar_services import birthday_context

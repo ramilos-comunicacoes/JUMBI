@@ -1,0 +1,38 @@
+/* Navigation: a steady desktop rail and a separate touch drawer. */
+.brand-symbol { display: none; }
+.app-body.j-office-shell .sidebar { overflow: hidden; }
+.sidebar .main-nav { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; padding: 0 2px 12px; }
+.sidebar .workspace { flex-shrink: 0; }
+.sidebar .sidebar-bottom { flex-shrink: 0; margin-top: 0; padding-top: 8px; border-top: 1px solid var(--border-soft); }
+.nav-group-label { margin: 16px 12px 5px; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.nav-group-label:first-child { margin-top: 0; }
+.sidebar-auto-hint { display: none; margin: 7px 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.form-context ol { padding-left: 18px; font-size: 12px; color: var(--muted); line-height: 1.75; }
+.form-context li + li { margin-top: 12px; }
+@media (min-width: 981px) {
+  .sidebar-auto .app-main { margin-left: 78px; transition: none; }
+  .sidebar-auto .sidebar { width: 264px; box-shadow: 16px 0 40px #00000020; }
+  .sidebar-auto.sidebar-collapsed .sidebar { width: 78px; box-shadow: none; }
+  .sidebar-auto .sidebar-collapse { display: none; }
+  .sidebar-auto:not(.sidebar-collapsed) .sidebar-auto-hint { display: block; }
+  .sidebar-collapsed .nav-group-label { font-size: 0; height: 1px; margin: 12px 7px 7px; border-top: 1px solid var(--border-soft); }
+  .sidebar-collapsed .nav-group-label:first-child { display: none; }
+  .sidebar-collapsed .app-body.j-office-shell .sidebar-brand > a { width: 48px; height: 56px; padding: 4px; }
+  .sidebar-collapsed .brand-logo { display: none; }
+  .sidebar-collapsed .brand-symbol { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .sidebar-collapsed .sidebar .workspace { min-height: 58px; padding: 10px 0; }
+  .sidebar-auto .sidebar-brand, .sidebar-auto.sidebar-collapsed .sidebar-brand { height: 86px; min-height: 86px; }
+}
+@media (max-width: 980px) {
+  .sidebar .sidebar-bottom { display: none; }
+  .sidebar .main-nav { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+  .sidebar .nav-group-label { margin-top: 18px; font-size: 10px; }
+  .sidebar .workspace { padding-top: 12px; padding-bottom: 12px; }
+}
+@media (max-width: 720px) {
+  .form-context { padding: 18px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px; }
+  .form-context ol { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-auto .sidebar { transition: none; }
+}

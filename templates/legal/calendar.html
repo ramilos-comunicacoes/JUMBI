@@ -1,12 +1,15 @@
 {% extends 'legal/base.html' %}{% load static %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-calendar.css' %}">{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}"><link rel="stylesheet" href="{% static 'css/jumbi-calendar.css' %}">{% endblock %}
 {% block content %}
-<div class="page-heading"><div><div class="eyebrow">TEMPO PARA O QUE IMPORTA</div><h1>Calendário e agenda</h1><p>Prazos, entregas e encontros em uma só visão.</p></div><div class="heading-actions">{% if can_edit %}<a class="button button-secondary" href="{% url 'legal:create' 'deadlines' %}">Novo prazo</a><a class="button button-primary" href="{% url 'legal:create' 'appointments' %}">Novo compromisso</a>{% endif %}</div></div>
+<div class="section-workspace section-calendar">
+<div class="page-heading"><div><div class="eyebrow">TEMPO PARA O QUE IMPORTA</div><h1>Calendário e agenda</h1><p>Selecione um dia para consultar os registros. Use as categorias para separar prazos, tarefas e compromissos.</p></div><div class="heading-actions">{% if can_edit %}<a class="button button-secondary" href="{% url 'legal:create' 'deadlines' %}">Novo prazo</a><a class="button button-primary" href="{% url 'legal:create' 'appointments' %}">Novo compromisso</a>{% endif %}</div></div>
 {% if calendar_filter_form.errors %}<div class="alert alert-error" role="alert">A data ou categoria informada é inválida. Exibindo o mês atual.</div>{% endif %}
 {% if niche_choices %}<form class="calendar-niche" method="get"><input type="hidden" name="month" value="{{ calendar_month|date:'Y-m' }}"><input type="hidden" name="kind" value="{{ calendar_kind }}"><label for="calendar-niche">Área de atuação</label><select id="calendar-niche" name="niche"><option value="">Todos os nichos</option>{% for code,label in niche_choices %}<option value="{{ code }}" {% if niche == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="button button-secondary" type="submit">Aplicar</button></form>{% endif %}
+<div class="calendar-reading-bar"><span>Dia selecionado · <strong>{{ calendar_selected_day|date:'d \d\e F' }}</strong></span><a href="#calendar-detail" class="text-link">Ver o dia selecionado ↓</a></div>
 <div class="calendar-workspace">
   <div class="calendar-main">{% include 'legal/includes/calendar_panel.html' %}</div>
   <aside class="calendar-sidebar" id="birthday-panel">{% include 'legal/includes/birthdays.html' %}<section class="calendar-note"><svg class="icon" aria-hidden="true"><use href="#i-deadlines"/></svg><div><strong>Cada compromisso no seu lugar</strong><p>Prazo jurídico mantém sua conferência. Concluir uma tarefa não encerra um prazo.</p></div></section></aside>
+</div>
 </div>
 {% endblock %}
 {% block extra_js %}<script src="{% static 'js/jumbi-calendar.js' %}" defer></script>{% endblock %}
