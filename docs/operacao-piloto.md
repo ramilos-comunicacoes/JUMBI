@@ -1,8 +1,8 @@
 # Operação do JUMBI
 
-## Estado da implantação em 09/10/2026
+## Estado da implantação — verificado em 13/10/2026
 
-O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). A release ativa `20261009-v4`, publicada em 09/10, acrescenta dashboard completo, múltiplos nichos, metas, calendário/aniversários, Kanban e montagem de contratos. O domínio HTTPS está atendendo essa versão; contratação por WhatsApp e composições próprias para celular foram preservadas.
+O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). A release ativa é `20261009-v5`, publicada em 09/10 às 14:18 UTC (11:18 em Fortaleza), com rotinas por nicho, honorários parcelados/mensais, revisão/publicação de documentos, portal do cliente e segurança de conta. A verificação de 13/10 confirmou o symlink, o serviço ativo, saúde HTTPS e sucesso do último backup. Dashboard, nichos, metas, calendário/aniversários, Kanban, contratos e contratação por WhatsApp das versões anteriores foram preservados.
 
 A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.service` e upstream `127.0.0.1:8040`. O banco `djumbi` é compartilhado com a instalação em `/var/www/apps/djumbi`: por esse motivo, a evolução foi feita no clone independente `jumbi_v2`. O banco original foi preservado, sem receber as migrações ou o isolamento de contas da nova versão.
 
@@ -10,8 +10,8 @@ A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.
 | --- | --- |
 | Serviço | `jumbi-v2.service`, executado pelo usuário de serviço `jumbi` |
 | Upstream | `127.0.0.1:8041` |
-| Release | `/srv/jumbi/releases/20261009-v4` |
-| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261009-v4` |
+| Release | `/srv/jumbi/releases/20261009-v5` |
+| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261009-v5` |
 | Banco exclusivo | `jumbi_v2` |
 | Configuração privada | `/srv/jumbi/shared/.env`, proprietário/grupo `root:jumbi`, modo `0640` |
 | Arquivos privados | `/srv/jumbi/shared/private_media`, diretório com modo `0750` |
@@ -53,6 +53,13 @@ O comando `import_legacy_office` é um procedimento administrativo para essa ori
 
 ## Verificações da release
 
+- **248 testes passaram em PostgreSQL**, em 210,161 segundos, sem testes ignorados, na v5 final. A suíte inclui concorrência de publicação/aprovação/honorários, MFA e revogação de sessões, isolamento do perfil Cliente, exportação, sigilo e os fluxos anteriores. O banco temporário `test_jumbi_v2` foi removido; a verificação de 13/10 confirmou sua ausência.
+- A primeira execução PostgreSQL detectou ordenação implícita removida pela agregação de parcelas e bloqueio sobre relação opcional no comando de demonstração. Ambos foram corrigidos antes de publicar. Também foram corrigidos testes dependentes da virada do intervalo TOTP e do fechamento manual de uma resposta de arquivo dentro da transação de teste. A suíte completa foi repetida e passou.
+- **50 verificações locais no navegador** passaram em 390/1440 px e temas claro/escuro, sem erros JavaScript ou transbordamento. Incluem dashboard, rotinas, honorários, revisão/portal, segurança, pasta e portal externo; download privado e bloqueios de acesso do Cliente foram exercitados.
+- Seis migrações aditivas foram aplicadas ao banco exclusivo, após backup com sucesso. Onze rotas autenticadas responderam 200 antes da troca da release. A primeira tentativa de saúde durante a inicialização dos workers recebeu 502; a repetição automática respondeu 200. O serviço e o backup posterior terminaram com sucesso.
+- `seed_reuse_showcase` acrescentou somente exemplos fictícios à organização reservada: rotina, conferência, comentário, honorários de R$ 1.200 em três parcelas, colaborador sem senha utilizável e cliente demo com documento revisado/publicado. Repetir o comando confirmou idempotência e preservação de senhas. O seed anterior não deve ser repetido após v5: ele exige uma única associação antes de consultar seu marcador.
+- As contas de superusuário e demo anteriores foram preservadas. O cliente demo não tem staff/superusuário nem acesso ao núcleo interno. A senha do cliente foi confirmada no servidor; credenciais permanecem em arquivo local ignorado, fora do pacote e do Git. MFA fica disponível para configuração pelo titular, sem cadastrar um autenticador em nome dele.
+
 - **164 testes passaram em PostgreSQL**, em 87,757 segundos, sem testes ignorados, na versão final v4. Incluem isolamento, sigilo, planos, múltiplos nichos, metas, calendário, Kanban, contratos, exportação, concorrência e estornos financeiros. O banco temporário `test_jumbi_v2` foi removido pelo procedimento ao final.
 - As seis migrações aditivas da v4 foram aplicadas no banco exclusivo. O teste de compatibilidade confirmou INSERTs da versão anterior omitindo os campos novos de organização/agenda, que possuem valores padrão no banco.
 - O comando `seed_workspace_showcase` adicionou somente registros fictícios à organização reservada de demonstração: quatro nichos, pessoas/pastas, tarefas, agenda, aniversário, metas e contrato privado. É idempotente e preserva contas, senhas e registros anteriores. O telefone de exemplo é o número comercial do próprio JUMBI; nenhuma mensagem foi enviada.
@@ -69,6 +76,7 @@ O relatório `docs/validacao-piloto.md` documenta a primeira entrega local e seu
 
 **Estado: publicado.**
 
+- A v5 passou por **65 verificações no navegador de produção em 13/10/2026**: login de superusuário, gestor demo e cliente demo; 60 combinações de páginas em 390/1440 px e temas claro/escuro; download privado e bloqueios do perfil Cliente. Não houve erros JavaScript ou transbordamento nas verificações concluídas. A medição aguarda o carregamento das folhas de estilo e fontes; uma tentativa anterior mediu o layout antes do CSS, e o relatório inicial foi preservado. A emulação de viewport não substitui teste em aparelho físico.
 - A v4 passou por **35 verificações no navegador de produção**, incluindo 24 combinações de seis módulos em 390/1440 px e temas claro/escuro, com animações normais. Não houve transbordamento horizontal, erro JavaScript, falha HTTP nas verificações concluídas ou acentuação corrompida. Calendário, filtros, sino, quatro nichos da demo, metas e Kanban foram conferidos. O cadastro do superusuário ofereceu 25 nichos e permitiu selecionar quatro simultaneamente sem salvar.
 - O DOCX da demonstração foi baixado e validado como Word/ZIP, com cabeçalhos privados; impressão respondeu 200, visitante anônimo foi bloqueado e a conta administrativa em outro escritório recebeu 404. Essa conferência alterou somente sessões de login, sem modificar cadastros nem enviar WhatsApp. Os fluxos de criação/movimentação haviam sido exercitados localmente e nos testes PostgreSQL.
 - Um timeout de espera por `networkidle` interrompeu a primeira passagem do navegador. O relatório inicial foi preservado e somente as etapas restantes foram retomadas, aguardando DOM e componente visível. A retomada passou; a leitura autenticada de contratos foi medida em 0,101 s no Django, sem erros ou timeouts de workers no serviço. A emulação de viewport não substitui teste em aparelho físico.
@@ -93,6 +101,8 @@ O pacote ZIP exportado pela aplicação serve à portabilidade dos registros e a
 
 ## Reversão da publicação
 
+**V5: não aponte simplesmente para v4/v3 após cadastrar Clientes ou ativar MFA.** Essas versões não reconhecem as novas barreiras de acesso. Prefira uma correção da v5 preservando as tabelas e dados. Se uma volta ao código antigo for inevitável, faça backup e planeje o bloqueio dos acessos externos, contas com MFA e sessões antes da troca, documentando a restauração dos acessos depois. Não remova tabelas ou restaure um dump por cima do banco ativo. As instruções v4/v3 abaixo são históricas e não autorizam contornar essas barreiras.
+
 Para reverter apenas a v4 à v3, preservar o backup atual e trocar atomicamente `/srv/jumbi/current` para `/srv/jumbi/releases/20261007-v3`, reiniciando somente `jumbi-v2.service`. Conferir saúde, login e arquivos estáticos. As migrações aditivas e os dados novos devem permanecer no banco; o teste de compatibilidade cobre os campos novos obrigatórios. Os módulos novos ficarão inacessíveis enquanto a v3 estiver ativa, sem apagar seus registros. Essa reversão mantém o mesmo upstream 8041 e não exige mudar Nginx.
 
 As instruções abaixo se referem a uma eventual volta à instalação legada anterior à v2, uma operação diferente e que exige reconciliação dos dados:
@@ -114,5 +124,5 @@ A assinatura começa por mensagem preenchida no WhatsApp comercial **+55 88 9927
 - Sem envio automático de convites, recuperação de senha por e-mail, armazenamento externo, antivírus de anexos, jobs, notificações garantidas ou integrações externas no núcleo atual.
 - Uploads têm extensão permitida e limite de 15 MB; downloads exigem autenticação. O hash confere integridade, não ausência de conteúdo malicioso.
 - Valores de clientes têm classificação separada; repasses completos, conciliação bancária e contabilidade fiscal continuam pendentes.
-- Portal do cliente, aprovação/publicação de documentos e importação geral pela interface permanecem para etapas seguintes.
+- Portal autenticado, revisão independente por versão/hash, publicação explícita, mensagens e revogação estão disponíveis no Max. Upload pelo cliente, assinatura eletrônica e importação geral pela interface permanecem pendentes. Downloads já publicados e revogação de acesso continuam possíveis após expiração/redução do plano, sob as mesmas permissões.
 - As seis pendências da importação legada e a cópia de backup fora da VPS precisam permanecer visíveis na operação.

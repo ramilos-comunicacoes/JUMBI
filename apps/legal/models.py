@@ -91,6 +91,8 @@ class TenantModel(models.Model):
             related_model = field.remote_field.model
             if related_model._meta.label_lower == settings.AUTH_USER_MODEL.lower():
                 memberships = Membership.objects.filter(organization_id=self.organization_id, user_id=related_id)
+                if field.name == 'owner':
+                    memberships = memberships.exclude(role='client')
                 # Existing historical authors remain valid after revocation.
                 # New assignments and current owners must be active users.
                 unchanged_historical = field.name != "owner" and original_values.get(field.attname) == related_id
@@ -438,6 +440,8 @@ class FinanceEntry(TenantModel):
 
     def clean(self):
         super().clean()
+        from apps.fees.models import validate_fee_entry
+        validate_fee_entry(self)
         if self.amount is not None and self.amount <= 0:
             raise ValidationError({"amount": "O valor deve ser maior que zero."})
         if self.pk and not self._state.adding:

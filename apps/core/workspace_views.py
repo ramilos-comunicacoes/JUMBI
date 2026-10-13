@@ -40,6 +40,10 @@ class WorkspaceLoginView(LoginView):
     redirect_authenticated_user = True
 
     def get_success_url(self):
+        if getattr(self.request, 'membership', None) and self.request.membership.role == 'client':
+            return reverse('portal:home')
+        if Membership.objects.filter(user=self.request.user, organization_id=self.request.session.get('active_organization_id'), role='client', is_active=True).exists():
+            return reverse('portal:home')
         return self.get_redirect_url() or reverse("core:platform" if self.request.user.is_superuser else "legal:dashboard")
 
     def form_valid(self, form):

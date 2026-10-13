@@ -30,6 +30,10 @@ class OrganizationModelForm(forms.ModelForm):
                 self.fields[name].queryset = get_user_model().objects.filter(
                     pk__in=active_user_ids, is_active=True
                 ).order_by("first_name", "email")
+                if name == 'owner':
+                    self.fields[name].queryset = get_user_model().objects.filter(
+                        pk__in=Membership.objects.filter(organization=organization, is_active=True)
+                        .exclude(role='client').values('user_id'), is_active=True).order_by('first_name', 'email')
         if "matter" in self.fields:
             self.fields["matter"].queryset = accessible_matters(organization, user).order_by("title")
             if self.instance.pk:

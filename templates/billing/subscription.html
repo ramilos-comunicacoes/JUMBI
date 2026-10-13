@@ -8,7 +8,7 @@
 {% if subscription.status == 'demo' %}<p>Demonstração para avaliação com dados fictícios. Não representa uma assinatura contratada.</p>{% endif %}
 {% if not subscription.is_available %}<div class="alert">O acesso operacional aguarda ativação ou renovação da assinatura. Seu cadastro foi preservado.</div>{% endif %}
 <p>{{ usage.members }} de {{ subscription.limits.members }} usuários ativos · {{ usage.matters }} de {{ subscription.limits.matters }} pastas ativas · {{ usage.versions }} de {{ subscription.limits.versions }} versões de documentos.</p>
-<p>{% if subscription.limits.advanced %}Todos os módulos desta versão, incluindo CRM e financeiro.{% else %}Pessoas, pastas, processos, tarefas, prazos manuais, agenda e documentos. CRM e financeiro estão no Max.{% endif %} Auditoria e exportação incluídas nos dois planos.</p>
+<p>{% if subscription.limits.advanced %}Todos os módulos desta versão, incluindo CRM, honorários, contratos e portal do cliente.{% else %}Pessoas, pastas, processos, tarefas, prazos manuais, agenda e documentos. Rotinas por nicho incluídas. CRM, honorários, contratos e portal estão no Max.{% endif %} Auditoria e exportação incluídas nos dois planos.</p>
 {% if subscription.expires_at %}<p>Vigência do acesso: {{ subscription.expires_at|date:'d/m/Y H:i' }}.</p>{% endif %}
 {% if subscription.requested_plan %}<p>Solicitação em análise: {{ subscription.get_requested_plan_display }}.</p>{% endif %}
 {% else %}<p>Aguardando definição e ativação do plano pela administração.</p>{% endif %}

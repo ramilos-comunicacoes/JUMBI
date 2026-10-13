@@ -3,6 +3,10 @@ from django.urls import include, path
 from apps.core.workspace_views import error403, error404, error500
 
 urlpatterns = [
+    path('seguranca/conta/', include('apps.security.urls')),
+    path('rotinas/', include('apps.routines.urls')),
+    path('honorarios/', include('apps.fees.urls')),
+    path('portal/', include('apps.portal.urls')),
     path('admin/', admin.site.urls),
     path('juridico/', include('apps.legal.urls')),
     path('metas/', include('apps.performance.urls')),

@@ -97,4 +97,6 @@ def overview(request):
         "matter_trend": months, "crm_summary": crm, "can_edit": can_edit(request),
         "can_manage_finance": finance_allowed, "can_use_contracts": has_advanced(request.organization),
     })
+    from apps.routines.services import dashboard_routines
+    context.update(dashboard_routines(request.user, request.organization, niche=niche))
     return render(request, "legal/dashboard.html", context)

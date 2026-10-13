@@ -22,7 +22,7 @@ def _active_user(user):
 def visible_matters(user, organization):
     """A tenant role never implies permission to a confidential matter."""
     if getattr(organization, "status", "active") != "active" or not _active_user(user) or not Membership.objects.filter(
-        organization=organization, user=user, is_active=True
+        organization=organization, user=user, is_active=True, role__in=['owner', 'manager', 'operator', 'viewer']
     ).exists():
         return Matter.objects.none()
     return Matter.objects.filter(organization=organization).filter(

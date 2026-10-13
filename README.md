@@ -28,7 +28,7 @@ Abra `http://127.0.0.1:8000/` e escolha o plano. O cadastro cria usuário e escr
 - Busca e filtros nas listas, painel com números reais, auditoria e exportação ZIP com relações, arquivos autorizados e manifesto.
 - Pastas sigilosas exigem acesso específico, inclusive de gestores. URLs, buscas e exportações respeitam o mesmo escopo.
 
-Esta entrega é uma **base funcional para piloto**. O estudo prevê mais etapas: aprovação/publicação de documentos, portal do cliente, importação guiada, aprovação e assinatura de contratos, conciliação e repasses completos, filas/automações, conectores, PWA e aplicativos. Não há cálculo automático de prazo jurídico nem consulta automática a tribunais.
+Esta entrega é uma **base funcional para piloto**. Aprovação de documentos por versão e portal autenticado foram acrescentados na v5. Permanecem etapas do estudo: importação guiada, negociação e assinatura eletrônica de contratos, conciliação e repasses completos, filas/automações, conectores, PWA e aplicativos. Não há cálculo automático de prazo jurídico nem consulta automática a tribunais.
 
 ## Demonstração local opcional
 
@@ -44,7 +44,7 @@ $env:JUMBI_DEMO_PASSWORD = 'defina-uma-senha-local-exclusiva'
 ```powershell
 .\.venv\Scripts\python.exe manage.py check
 .\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
-.\.venv\Scripts\python.exe manage.py test apps.legal apps.billing apps.contracts apps.performance apps.core.test_workspace apps.core.test_platform apps.core.test_legacy_isolation apps.core.test_platform_management
+.\.venv\Scripts\python.exe manage.py test apps.security apps.routines apps.fees apps.portal apps.legal apps.billing apps.contracts apps.performance apps.core.test_workspace apps.core.test_platform apps.core.test_legacy_isolation apps.core.test_platform_management
 .\.venv\Scripts\python.exe manage.py collectstatic --noinput
 ```
 
@@ -73,3 +73,11 @@ Dashboard operacional com indicadores, nichos combinados, metas, calendário e a
 A agenda usa calendário mensal e categorias separadas para prazos, tarefas, compromissos e datas importantes; aniversariantes de clientes autorizados abrem mensagem preenchida no WhatsApp para envio manual. O Kanban preserva evidência ao concluir e motivo ao reabrir. A montagem de contratos gera DOCX privado e versões preservadas, com impressão/salvar PDF.
 
 Referências funcionais lidas no servidor: calendário/Kanban do Navie Hospedagens e montagem de contratos do Autos. Estilização do aplicativo adaptada dos tokens do Nabio BJJ, com a marca dourada JUMBI e regras específicas de celular. Consulte [nichos e metas](docs/nichos-e-metas.md), [contratos](docs/montagem-contratos.md) e [operação](docs/operacao-piloto.md).
+
+## Reaproveitamentos da auditoria — v5
+
+Rotinas por nicho com cinco exemplos editáveis, prévia, aplicação única à pasta, tarefas no Kanban, checklist de documentos e comentários internos. Honorários Max com parcelamento exato, recorrência mensal finita e integração às baixas e estornos. Documentos Max com revisão independente vinculada à versão e ao hash, publicação explícita para cada cliente, revogação e mensagens. A conta Cliente acessa somente os arquivos publicados para ela; consulta interna e Cliente são perfis diferentes.
+
+Segurança de conta inclui TOTP opcional, códigos de recuperação de uso único e revogação de outras sessões em ambos os planos. O financeiro não efetua cobranças externas; a aprovação documental não equivale a assinatura eletrônica. Os limites de usuários ativos incluem os vínculos Cliente. A exportação inclui os novos registros autorizados e preserva portabilidade após expiração ou redução do plano; arquivos já publicados continuam disponíveis ao destinatário enquanto o vínculo e a publicação estiverem ativos.
+
+Consulte [rotinas](docs/routines.md), [honorários](docs/honorarios.md), [portal](docs/portal.md) e [segurança](docs/seguranca-conta.md). Os 117 itens do levantamento representam referências e alternativas; esta versão implementa as primeiras quatro frentes, não a totalidade do catálogo.

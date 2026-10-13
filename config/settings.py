@@ -33,6 +33,10 @@ INSTALLED_APPS = [
     "apps.billing",
     "apps.performance",
     "apps.contracts",
+    "apps.security",
+    "apps.routines",
+    "apps.fees",
+    "apps.portal",
 ]
 
 MIDDLEWARE = [
@@ -42,6 +46,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.security.middleware.AccountSecurityMiddleware",
     "apps.core.workspace_middleware.OrganizationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "apps.billing.middleware.SubscriptionMiddleware",

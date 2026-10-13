@@ -146,6 +146,7 @@ class Membership(models.Model):
         MANAGER = "manager", "Gestor"
         OPERATOR = "operator", "Operador"
         VIEWER = "viewer", "Consulta"
+        CLIENT = "client", "Cliente · portal"
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="memberships")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="memberships")

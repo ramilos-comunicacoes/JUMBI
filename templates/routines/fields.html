@@ -1,0 +1,2 @@
+{% if form.errors %}<div class="alert alert-error" role="alert">Revise os campos indicados.{{ form.non_field_errors }}</div>{% endif %}
+{% for field in form %}{% if field.is_hidden %}{{ field }}{{ field.errors }}{% else %}<div class="form-field {% if field.errors %}has-error{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<div class="field-help">{{ field.help_text }}</div>{% endif %}{{ field.errors }}</div>{% endif %}{% endfor %}

@@ -1,0 +1,3 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-routines.css' %}">{% endblock %}
+{% block content %}<a href="{{ back_url }}" class="back-link">Voltar</a><div class="page-heading"><div><div class="eyebrow">ROTINA ORGANIZADA</div><h1>{{ page_title }}</h1></div></div><section class="panel routine-form"><form method="post" class="record-form">{% csrf_token %}{% include 'routines/fields.html' %}<div class="form-actions"><a href="{{ back_url }}" class="button button-secondary">Cancelar</a><button class="button button-primary">{{ submit_label }}</button></div></form></section>{% endblock %}

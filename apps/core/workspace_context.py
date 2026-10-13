@@ -28,8 +28,14 @@ def workspace_context(request):
         elif item["key"] == "appointments":
             item.update(label="Calendário e agenda", url=reverse("legal:calendar"))
     nav.append({"key": "goals", "label": "Metas", "url": reverse("performance:list"), "icon": "target"})
+    nav.append({"key": "routines", "label": "Rotinas por nicho", "url": reverse("routines:list"), "icon": "check"})
+    if manager and advanced:
+        nav.append({"key": "fees", "label": "Honorários", "url": reverse("fees:overview"), "icon": "wallet"})
+    if membership and membership.role in {'owner', 'manager', 'operator'}:
+        nav.append({"key": "portal", "label": "Revisão e portal", "url": reverse("portal:manage"), "icon": "file"})
     if advanced:
         nav.append({"key": "contracts", "label": "Montar contratos", "url": reverse("contracts:library"), "icon": "file"})
+    nav.append({"key": "security", "label": "Segurança da conta", "url": reverse("security:account"), "icon": "shield"})
     if manager:
         nav.extend([
             {"key": "team", "label": "Equipe", "url": reverse("core:team"), "icon": "users"},
@@ -39,13 +45,18 @@ def workspace_context(request):
         nav.append({"key": "subscription", "label": "Plano e assinatura", "url": reverse("billing:subscription"), "icon": "wallet"})
     if request.user.is_authenticated and request.user.is_superuser:
         nav.append({"key": "platform", "label": "Administração JUMBI", "url": reverse("core:platform"), "icon": "shield"})
+    if membership and membership.role == 'client':
+        nav = [
+            {'key': 'portal', 'label': 'Meus documentos', 'url': reverse('portal:home'), 'icon': 'file'},
+            {'key': 'security', 'label': 'Segurança da conta', 'url': reverse('security:account'), 'icon': 'shield'},
+        ]
     birthday_count = 0
-    if organization and membership and subscription and subscription.is_available:
+    if organization and membership and membership.role != 'client' and subscription and subscription.is_available:
         from apps.legal.calendar_services import birthday_context
         birthday_count = birthday_context(request)["birthday_today_count"]
     return {
         "organization": organization, "membership": membership, "nav": nav,
-        "can_edit": bool(membership and membership.role != "viewer"),
+        "can_edit": bool(membership and membership.role in {'owner', 'manager', 'operator'}),
         "can_manage": manager, "today": timezone.localdate(),
         "birthday_notification_count": birthday_count,
         "is_demo": bool((subscription and subscription.status == "demo") or (organization and organization.slug in {"jumbi-demonstracao-local", "jumbi-demonstracao"})),

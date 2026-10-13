@@ -65,7 +65,7 @@ def organization_required(view):
             user=request.user, organization=organization, is_active=True,
             organization__status="active", organization__business_type="office",
         ).first()
-        if membership is None:
+        if membership is None or membership.role not in {'owner', 'manager', 'operator', 'viewer'}:
             raise PermissionDenied("O acesso a este escritório não está ativo.")
         request.membership = membership
         return view(request, *args, **kwargs)
@@ -98,8 +98,12 @@ def scoped_queryset(user, organization, model, *, for_export=False):
     from apps.performance.services import visible_goals
 
     role = Membership.objects.filter(user=user, organization=organization, is_active=True, user__is_active=True, organization__status="active").values_list("role", flat=True).first()
-    if role is None:
+    if role not in {'owner', 'manager', 'operator', 'viewer'}:
         return model.objects.none()
+    from .extensions import extra_scope
+    extra = extra_scope(user, organization, model, for_export=for_export)
+    if extra is not None:
+        return extra
     if model is Contract:
         return visible_contracts(user, organization)
     if model is ContractRevision:
@@ -141,11 +145,13 @@ def scoped_queryset(user, organization, model, *, for_export=False):
 def accessible_audit(user, organization, role=None, *, for_export=False):
     """Only audit events whose current subject is still authorized are visible."""
     role = Membership.objects.filter(user=user, organization=organization, is_active=True, user__is_active=True, organization__status="active").values_list("role", flat=True).first()
-    if role is None:
+    if role not in {'owner', 'manager', 'operator', 'viewer'}:
         return AuditEvent.objects.none()
     from apps.contracts.models import Contract, ContractRevision, ContractTemplate
     from apps.performance.models import Goal, GoalUpdate
     models = [Matter, Contact, CourtCase, Task, Deadline, DeadlineRevision, Appointment, Document, DocumentVersion, Opportunity, ContractTemplate, Contract, ContractRevision, Goal, GoalUpdate]
+    from .extensions import EXTRA_EXPORT_FIELDS
+    models.extend(EXTRA_EXPORT_FIELDS)
     if role in {"owner", "manager"}:
         models.extend([FinanceEntry, Payment])
     global_events = Q(object_type="core.organization", object_id=str(organization.pk), action__in=["workspace.created", "team.invited", "team.revoked", "team.invitation_revoked", "team.accepted", "workspace.exported"])
@@ -401,6 +407,10 @@ def matter_detail(request, pk):
         ids = model.objects.filter(organization=request.organization, **{relation: matter}).annotate(audit_id=Cast("pk", output_field=CharField())).values("audit_id")
         related_events |= Q(object_type=model._meta.label_lower, object_id__in=ids)
     context["activity"] = accessible_audit(request.user, request.organization, request.membership.role).filter(related_events)[:12]
+    from apps.routines.services import matter_context
+    context.update(matter_context(request.user, request.organization, matter))
+    from apps.billing.services import has_advanced
+    context['can_review_documents'] = can_edit(request) and has_advanced(request.organization)
     return render(request, "legal/matter_detail.html", context)
 
 
@@ -514,6 +524,8 @@ EXPORT_FIELDS = {
     GoalUpdate: ["goal_id", "previous_value", "value", "note", "actor_id", "created_at"],
     AuditEvent: ["actor_id", "action", "object_type", "object_id", "description", "created_at"],
 }
+from .extensions import EXTRA_EXPORT_FIELDS
+EXPORT_FIELDS.update(EXTRA_EXPORT_FIELDS)
 
 
 @organization_required
@@ -544,6 +556,8 @@ def export_workspace(request):
                         item[field] = value.isoformat() if hasattr(value, "isoformat") else str(value) if isinstance(value, (Decimal, UUID)) else value
                     if model is Matter:
                         item["member_ids"] = list(obj.members.values_list("pk", flat=True))
+                    if model._meta.label_lower == 'portal.clientaccess':
+                        item['user_id'] = obj.membership.user_id
                     if model is DocumentVersion:
                         safe_name = Path(obj.original_name.replace("\\", "/")).name
                         archive_path = f"files/{obj.document_id}/{obj.pk}-{safe_name}"
@@ -569,7 +583,7 @@ def export_workspace(request):
             user_ids = set()
             for rows in records.values():
                 for row in rows:
-                    for field in ("owner_id", "actor_id", "created_by_id", "uploaded_by_id", "confirmed_by_id"):
+                    for field in ("owner_id", "actor_id", "created_by_id", "uploaded_by_id", "confirmed_by_id", "completed_by_id", "requested_by_id", "reviewer_id", "published_by_id", "revoked_by_id", "user_id"):
                         if row.get(field):
                             user_ids.add(row[field])
                     user_ids.update(row.get("member_ids", []))

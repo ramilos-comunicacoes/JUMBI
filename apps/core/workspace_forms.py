@@ -29,7 +29,7 @@ class SignupForm(UserCreationForm):
 
 class InvitationForm(forms.Form):
     email = forms.EmailField(label="E-mail da pessoa convidada")
-    role = forms.ChoiceField(label="Perfil de acesso", choices=[("operator", "Operação"), ("viewer", "Somente consulta"), ("manager", "Gestão")])
+    role = forms.ChoiceField(label="Perfil de acesso", choices=[("operator", "Operação"), ("viewer", "Somente consulta"), ("manager", "Gestão"), ("client", "Cliente · somente portal")])
 
     def __init__(self, *args, membership=None, **kwargs):
         super().__init__(*args, **kwargs)
