@@ -1,0 +1,11 @@
+[Unit]
+Description=Atualiza a central do JUMBI a cada 15 minutos
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=20
+Unit=jumbi-reminders.service
+
+[Install]
+WantedBy=timers.target

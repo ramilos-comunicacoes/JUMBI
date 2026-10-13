@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     "apps.routines",
     "apps.fees",
     "apps.portal",
+    "apps.discovery",
+    "apps.notifications",
+    "apps.intake",
 ]
 
 MIDDLEWARE = [

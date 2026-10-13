@@ -1,0 +1,26 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-search.css' %}">{% endblock %}
+{% block content %}
+<section class="search-workspace">
+  <header class="page-heading"><div><p class="eyebrow">Seu acervo, em um só lugar</p><h1>Busca unificada</h1><p>Encontre cadastros e atividades sem percorrer cada aba.</p></div></header>
+  <form method="get" class="search-composer panel" role="search" aria-label="Buscar no escritório">
+    <div class="search-main-field"><label for="{{ form.q.id_for_label }}">{{ form.q.label }}</label><div>{{ form.q }}<button class="button button-primary" type="submit" aria-label="Buscar"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><span>Buscar</span></button></div>{{ form.q.errors }}</div>
+    <div class="search-filters"><div><label for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>{{ form.kind }}{{ form.kind.errors }}</div><div><label for="{{ form.niche.id_for_label }}">{{ form.niche.label }}</label>{{ form.niche }}{{ form.niche.errors }}</div></div>
+    <p class="search-note">A busca considera os campos dos cadastros. O conteúdo interno dos arquivos não é pesquisado.</p>
+  </form>
+  <div class="search-body">
+    <section aria-label="Resultados" class="search-results">
+      {% if searched %}
+      <div class="search-result-heading"><h2>{{ total }} resultado{{ total|pluralize }} <span>para “{{ criteria.q }}”</span></h2><a href="{% url 'discovery:search' %}">Limpar busca</a></div>
+      <nav class="search-counts" aria-label="Resultados por tipo">{% for group in groups %}<a href="{{ group.url }}" {% if criteria.kind == group.key %}aria-current="page"{% endif %}>{{ group.label }}<strong>{{ group.count }}</strong></a>{% endfor %}</nav>
+      {% for group in result_groups %}<section class="search-group"><h3><svg class="icon" aria-hidden="true"><use href="#i-{{ group.kind }}"/></svg>{{ group.label }}</h3>{% for item in group.items %}<a class="search-result" href="{{ item.url }}"><div><strong>{{ item.title }}</strong>{% if item.subtitle %}<p>{{ item.subtitle }}</p>{% endif %}</div><span class="search-result-action">{{ item.action }}<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a>{% endfor %}</section>{% empty %}<div class="search-empty panel"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><h3>Nenhum resultado neste recorte</h3><p>Experimente uma palavra do nome, confira o número ou amplie os filtros.</p></div>{% endfor %}
+      {% if page.paginator.num_pages > 1 %}<nav class="search-pagination" aria-label="Páginas de resultados">{% if pagination.previous %}<a class="button button-ghost" href="{{ pagination.previous }}">Anterior</a>{% endif %}<span>Página {{ page.number }} de {{ page.paginator.num_pages }}</span>{% if pagination.next %}<a class="button button-ghost" href="{{ pagination.next }}">Próxima</a>{% endif %}</nav>{% endif %}
+      {% else %}<div class="search-empty panel"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><h2>Menos procura. Mais contexto.</h2><p>Pesquise pessoas, pastas, processos, documentos, tarefas, prazos e compromissos. Combine palavras e um nicho para encontrar o que precisa.</p><div class="search-examples"><span>Nome de cliente</span><span>Número de processo</span><span>Título de documento</span></div></div>{% endif %}
+    </section>
+    <aside class="search-saved panel" aria-labelledby="saved-heading"><p class="eyebrow">Seus atalhos</p><h2 id="saved-heading">Buscas salvas</h2><p>Os filtros ficam só na sua conta e neste escritório. Os resultados são atualizados a cada acesso.</p>
+      {% if searched %}<form method="post" action="{% url 'discovery:save' %}" class="save-search-form">{% csrf_token %}<input type="hidden" name="q" value="{{ criteria.q }}"><input type="hidden" name="kind" value="{{ criteria.kind }}"><input type="hidden" name="niche" value="{{ criteria.niche }}"><label for="saved-search-name">Nome para esta busca</label><input id="saved-search-name" name="name" maxlength="60" required placeholder="Ex.: atendimentos da família Silva"><button class="button button-secondary" type="submit">Salvar busca atual</button></form>{% endif %}
+      <ul class="saved-searches">{% for saved in saved_searches %}<li><a href="{% url 'discovery:open_saved' saved.pk %}"><strong>{{ saved.name }}</strong><span>{{ saved.query }}</span></a><form action="{% url 'discovery:delete' saved.pk %}" method="post">{% csrf_token %}<button class="icon-button" aria-label="Excluir busca {{ saved.name }}" title="Excluir busca"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></form></li>{% empty %}<li class="saved-empty">Depois de pesquisar, salve os filtros que usa com frequência.</li>{% endfor %}</ul><small>Até 12 buscas pessoais por escritório.</small>
+    </aside>
+  </div>
+</section>
+{% endblock %}

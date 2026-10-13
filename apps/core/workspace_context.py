@@ -20,6 +20,10 @@ def workspace_context(request):
     if advanced:
         sections.append(("crm", "Relacionamento", "briefcase"))
     nav = [{"key": "dashboard", "label": "Visão geral", "url": reverse("legal:dashboard"), "icon": "grid"}]
+    nav.extend([
+        {"key": "search", "label": "Busca unificada", "url": reverse("discovery:search"), "icon": "search"},
+        {"key": "notifications", "label": "Notificações", "url": reverse("notifications:inbox"), "icon": "notifications"},
+    ])
     nav.extend({"key": key, "label": label, "icon": icon, "url": reverse("legal:list", args=[key])}
                for key, label, icon in sections)
     for item in nav:
@@ -38,6 +42,7 @@ def workspace_context(request):
     nav.append({"key": "security", "label": "Segurança da conta", "url": reverse("security:account"), "icon": "shield"})
     if manager:
         nav.extend([
+            {"key": "intake", "label": "Importar planilha", "url": reverse("intake:home"), "icon": "intake"},
             {"key": "team", "label": "Equipe", "url": reverse("core:team"), "icon": "users"},
             {"key": "audit", "label": "Auditoria", "url": reverse("core:audit"), "icon": "shield"},
         ])
@@ -51,23 +56,23 @@ def workspace_context(request):
             {'key': 'security', 'label': 'Segurança da conta', 'url': reverse('security:account'), 'icon': 'shield'},
         ]
     navigation_groups = [
-        ("Dia a dia", ["dashboard", "appointments", "tasks", "deadlines", "goals", "routines"]),
+        ("Dia a dia", ["dashboard", "search", "notifications", "appointments", "tasks", "deadlines", "goals", "routines"]),
         ("Acervo jurídico", ["matters", "contacts", "cases", "documents", "portal", "contracts"]),
         ("Gestão comercial", ["crm", "fees", "finance"]),
-        ("Administração", ["team", "audit", "subscription", "security", "platform"]),
+        ("Administração", ["intake", "team", "audit", "subscription", "security", "platform"]),
     ]
     indexed_nav = {item["key"]: item for item in nav}
     nav = [dict(indexed_nav[key], group=group) for group, keys in navigation_groups
            for key in keys if key in indexed_nav]
-    birthday_count = 0
+    notification_count = 0
     if organization and membership and membership.role != 'client' and subscription and subscription.is_available:
-        from apps.legal.calendar_services import birthday_context
-        birthday_count = birthday_context(request)["birthday_today_count"]
+        from apps.notifications.services import unread_count
+        notification_count = unread_count(request)
     return {
         "organization": organization, "membership": membership, "nav": nav,
         "can_edit": bool(membership and membership.role in {'owner', 'manager', 'operator'}),
         "can_manage": manager, "today": timezone.localdate(),
-        "birthday_notification_count": birthday_count,
+        "notification_count": notification_count,
         "is_demo": bool((subscription and subscription.status == "demo") or (organization and organization.slug in {"jumbi-demonstracao-local", "jumbi-demonstracao"})),
         "workspace_memberships": request.user.memberships.filter(is_active=True, organization__status="active", organization__business_type="office").select_related("organization") if request.user.is_authenticated else [],
     }

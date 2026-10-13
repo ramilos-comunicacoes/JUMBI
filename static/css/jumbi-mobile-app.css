@@ -222,3 +222,6 @@
     .app-body *, .app-body *::before, .app-body *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   }
 }
+
+/* Compact phones keep search in the drawer to preserve touch target spacing. */
+@media(max-width:359px){.app-body .topbar-search{display:none}}

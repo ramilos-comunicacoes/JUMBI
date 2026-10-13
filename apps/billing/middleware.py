@@ -16,7 +16,7 @@ class SubscriptionMiddleware:
         match = request.resolver_match
         if not match:
             return None
-        protected = match.namespace in {"legal", "performance", "contracts", "routines", "fees"} or (match.namespace == "core" and match.url_name in {"team", "audit", "revoke_member", "revoke_invitation"})
+        protected = match.namespace in {"legal", "performance", "contracts", "routines", "fees", "discovery", "notifications", "intake"} or (match.namespace == "core" and match.url_name in {"team", "audit", "revoke_member", "revoke_invitation"})
         # Portability remains available after expiration/suspension, subject to
         # the export view's existing membership and confidentiality checks.
         if not protected or match.url_name == "export":

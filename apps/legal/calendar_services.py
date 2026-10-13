@@ -91,7 +91,66 @@ def _event_url(obj, module, editable):
     return reverse("legal:list", args=[module])
 
 
-def calendar_context(request, month=None, selected_day=None, kind="", today=None):
+def _mark_conflicts(events):
+    """Only the same responsible person's visible, overlapping appointments conflict."""
+    by_owner = defaultdict(list)
+    for event in events:
+        event["conflict"] = False
+        if event.get("starts_at"):
+            by_owner[event["owner"].pk].append(event)
+    for owned in by_owner.values():
+        active = []
+        for event in sorted(owned, key=lambda item: item["starts_at"]):
+            active = [other for other in active if other["ends_at"] > event["starts_at"]]
+            for other in active:
+                other["conflict"] = event["conflict"] = True
+            active.append(event)
+
+
+def _timed_segments(current, events, tz):
+    """Clip multi-day events, then allocate non-overlapping visual columns."""
+    start = timezone.make_aware(datetime.combine(current, time.min), tz)
+    stop = timezone.make_aware(datetime.combine(current + timedelta(days=1), time.min), tz)
+    segments = []
+    for event in events:
+        if not event.get("starts_at"):
+            continue
+        begins, ends = max(start, event["starts_at"]), min(stop, event["ends_at"])
+        minutes = begins.hour * 60 + begins.minute
+        end_minutes = 1440 if ends == stop else ends.hour * 60 + ends.minute + ends.second / 60
+        # Short meetings retain a readable target; lanes also reserve that visual space.
+        visual_start = minutes
+        visual_end = max(end_minutes, visual_start + 36)
+        segments.append({**event, "segment_start": begins, "segment_end": ends,
+            "segment_time": begins.strftime("%H:%M") + "–" + ("24:00" if ends == stop else ends.strftime("%H:%M")),
+            "continues_before": event["starts_at"] < start, "continues_after": event["ends_at"] > stop,
+            "top": visual_start, "height": round(visual_end - visual_start, 2), "visual_end": visual_end})
+    segments.sort(key=lambda item: (item["top"], -item["visual_end"], item["id"]))
+    groups, group, latest = [], [], -1
+    for segment in segments:
+        if group and segment["top"] >= latest:
+            groups.append(group)
+            group = []
+        group.append(segment)
+        latest = max((item["visual_end"] for item in group))
+    if group:
+        groups.append(group)
+    for group in groups:
+        lanes = []
+        for segment in group:
+            lane = next((i for i, end in enumerate(lanes) if end <= segment["top"]), len(lanes))
+            if lane == len(lanes):
+                lanes.append(segment["visual_end"])
+            else:
+                lanes[lane] = segment["visual_end"]
+            segment["lane"] = lane
+        for segment in group:
+            segment["left"] = round(segment["lane"] * 100 / len(lanes), 3)
+            segment["width"] = round(100 / len(lanes), 3)
+    return segments
+
+
+def calendar_context(request, month=None, selected_day=None, kind="", today=None, view="month"):
     """Shared context for full calendar and dashboard's compact calendar."""
     from .calendar_forms import CalendarFilterForm
     from .views import can_edit, scoped_queryset
@@ -104,13 +163,25 @@ def calendar_context(request, month=None, selected_day=None, kind="", today=None
             month = filters.cleaned_data.get("month")
             selected_day = selected_day or filters.cleaned_data.get("day")
             kind = kind or filters.cleaned_data.get("kind", "")
-    month = (month or today).replace(day=1)
+    # Dashboard always defaults to its compact month, regardless of a view query string.
+    view = view if view in ("week", "day") else "month"
+    month = (month or selected_day or today).replace(day=1)
     next_month = (month.replace(day=28) + timedelta(days=4)).replace(day=1)
     previous_month = (month - timedelta(days=1)).replace(day=1)
-    dates = list(calendar.Calendar(firstweekday=6).itermonthdates(month.year, month.month))
-    first, last = dates[0], dates[-1]
-    if selected_day is None or not first <= selected_day <= last:
+    month_dates = list(calendar.Calendar(firstweekday=6).itermonthdates(month.year, month.month))
+    if selected_day is None or (view == "month" and not month_dates[0] <= selected_day <= month_dates[-1]):
         selected_day = today if today.year == month.year and today.month == month.month else month
+    if view == "week":
+        first = selected_day - timedelta(days=selected_day.weekday())
+        last = first + timedelta(days=6)
+        first, last = max(first, date(1901, 1, 1)), min(last, date(2099, 12, 31))
+        dates = [first + timedelta(days=offset) for offset in range((last - first).days + 1)]
+    elif view == "day":
+        first = last = selected_day
+        dates = [selected_day]
+    else:
+        dates = month_dates
+        first, last = dates[0], dates[-1]
     editable = can_edit(request)
     niche, choices = niche_selection(request)
     def records(model):
@@ -130,8 +201,10 @@ def calendar_context(request, month=None, selected_day=None, kind="", today=None
         # End is exclusive: an appointment ending at midnight does not occupy the following day.
         final_date = timezone.localtime(obj.ends_at - timedelta(microseconds=1), tz).date()
         events.append({"id": f"appointment-{obj.pk}", "kind": "important" if obj.kind == Appointment.Kind.IMPORTANT_DATE else "appointment", "title": obj.title, "date": local_start.date(), "end_date": final_date, "time": local_start.strftime("%H:%M"), "end_time": local_end.strftime("%H:%M"), "ends_at": local_end, "starts_at": local_start, "label": obj.get_kind_display(), "status": "", "done": False, "matter": obj.matter, "owner": obj.owner, "location": obj.location, "url": _event_url(obj, "appointments", editable), "sort": local_start.strftime("%H:%M")})
-    month_events = [e for e in events if e["date"] < next_month and e["end_date"] >= month]
-    counts = Counter(e["kind"] for e in month_events)
+    period_events = [e for e in events if e["date"] < next_month and e["end_date"] >= month] if view == "month" else events[:]
+    _mark_conflicts(events)
+    counts = Counter(e["kind"] for e in period_events)
+    conflict_count = sum(event["conflict"] for event in period_events)
     if kind in EVENT_LABELS:
         events = [event for event in events if event["kind"] == kind]
     else:
@@ -143,10 +216,24 @@ def calendar_context(request, month=None, selected_day=None, kind="", today=None
         while cursor <= min(last, event["end_date"]):
             per_day[cursor].append(event)
             cursor += timedelta(days=1)
+    def url_for(*, target_day=None, target_month=None, target_view=None, target_kind=None):
+        target_day = target_day or selected_day
+        return "?" + urlencode({"month": (target_month or target_day).strftime("%Y-%m"), "day": target_day.isoformat(), "view": target_view or view, "kind": kind if target_kind is None else target_kind, "niche": niche})
+
     cells = []
     for current in dates:
         day_events = per_day[current]
-        cells.append({"date": current, "current_month": current.month == month.month, "today": current == today, "selected": current == selected_day, "events": day_events, "preview": day_events[:3], "extra": max(0, len(day_events) - 3), "kinds": sorted(set(e["kind"] for e in day_events)), "url": "?" + urlencode({"month": month.strftime("%Y-%m"), "day": current.isoformat(), "kind": kind, "niche": niche}) + "#calendar-detail"})
+        segments = _timed_segments(current, day_events, tz) if view != "month" else []
+        cells.append({"date": current, "valid_date": 1901 <= current.year <= 2099, "current_month": current.month == month.month, "today": current == today, "selected": current == selected_day, "events": day_events, "timed": segments, "all_day": [event for event in day_events if not event.get("starts_at")], "preview": day_events[:3], "extra": max(0, len(day_events) - 3), "kinds": sorted(set(e["kind"] for e in day_events)), "url": url_for(target_day=current, target_month=month) + "#calendar-detail", "day_url": url_for(target_day=current, target_view="day")})
+    previous_day = previous_month if view == "month" else selected_day - timedelta(days=7 if view == "week" else 1)
+    next_day = next_month if view == "month" else selected_day + timedelta(days=7 if view == "week" else 1)
+    if view == "month":
+        period_label = f"{MONTH_NAMES[month.month]} {month.year}"
+    elif view == "week":
+        period_label = f"{first:%d/%m} – {last:%d/%m/%Y}"
+    else:
+        period_label = f"{selected_day.day} de {MONTH_NAMES[selected_day.month].lower()} de {selected_day.year}"
+    timed_hours = [segment["segment_start"].hour for cell in cells for segment in cell["timed"] if not segment["continues_before"]]
     result = {
         "calendar_month": month, "calendar_month_label": f"{MONTH_NAMES[month.month]} {month.year}",
         "calendar_previous": previous_month.strftime("%Y-%m") if month.year > 1901 or month.month > 1 else "",
@@ -154,11 +241,26 @@ def calendar_context(request, month=None, selected_day=None, kind="", today=None
         "calendar_today_month": today.strftime("%Y-%m"), "calendar_today": today,
         "calendar_days": cells, "calendar_selected_day": selected_day,
         "calendar_day_events": per_day[selected_day], "calendar_counts": dict(counts),
-        "calendar_event_count": len(month_events), "calendar_kind": kind,
-        "calendar_filters": [{"key": key, "label": label, "count": counts[key]} for key, label in EVENT_LABELS.items()],
+        "calendar_event_count": len(period_events), "calendar_kind": kind,
+        "calendar_filters": [{"key": key, "label": label, "count": counts[key], "url": url_for(target_month=month, target_kind=key)} for key, label in EVENT_LABELS.items()],
         "calendar_agenda": [{"date": current, "events": per_day[current]} for current in dates if current.month == month.month and per_day[current]],
+        "calendar_view": view, "calendar_period_label": period_label,
+        "calendar_period_name": {"month": "no mês", "week": "na semana", "day": "no dia"}[view],
+        "calendar_period_unit": {"month": "Mês", "week": "Semana", "day": "Dia"}[view],
+        "calendar_previous_url": url_for(target_day=previous_day) if previous_day.year >= 1901 else "",
+        "calendar_next_url": url_for(target_day=next_day) if next_day.year <= 2099 else "",
+        "calendar_today_url": url_for(target_day=today), "calendar_all_url": url_for(target_month=month, target_kind=""),
+        "calendar_views": [{"key": key, "label": label, "url": url_for(target_view=key)} for key, label in [("month", "Mês"), ("week", "Semana"), ("day", "Dia")]],
+        "calendar_hours": [{"label": f"{hour:02d}:00", "top": hour * 60} for hour in range(24)],
+        "calendar_scroll_start": max(0, min(timed_hours, default=8) - 1) * 60,
+        "calendar_conflict_count": conflict_count,
         "can_edit": editable,
         "niche": niche, "niche_choices": choices,
     }
-    result.update(birthday_context(request, month=month, today=today))
+    if view == "month":
+        result.update(birthday_context(request, month=month, today=today))
+    else:
+        birthday_months = {current.replace(day=1) for current in dates}
+        birthdays = [item for birthday_month in sorted(birthday_months) for item in birthday_context(request, month=birthday_month, today=today)["birthdays"] if first <= item["date"] <= last]
+        result.update({"birthdays": birthdays, "birthday_today_count": sum(item["is_today"] for item in birthdays)})
     return result

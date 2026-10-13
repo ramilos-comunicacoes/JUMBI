@@ -34,15 +34,17 @@ Até 980 px, o menu é uma gaveta com botão, fundo de fechamento, Escape e cont
 
 As evidências de validação e publicação ficam em `docs/operacao-piloto.md`. Emulação de larguras não equivale a teste em aparelhos físicos.
 
-## Próximas oportunidades — propostas, ainda não implementadas
+## Evolução das oportunidades
 
 Esta ordem é uma recomendação baseada nas necessidades do JUMBI e na pesquisa, não uma promessa de equivalência aos concorrentes.
 
-1. **Central persistente de notificações:** leitura/não leitura, responsável, prazo e link para a ação. Entrega de e-mail ou WhatsApp exige provedor, fila, tentativas e registro de falhas.
-2. **Importação assistida:** prévia de CSV/planilha, associação de colunas, duplicidades, validação e relatório dos registros rejeitados. Facilita trazer um escritório para o produto.
-3. **Busca unificada e filtros salvos:** atalhos para pessoas, pastas, processos e documentos, preservando o mesmo escopo de acesso e sigilo.
-4. **Agenda semanal e diária:** faixas de horário e conflitos visíveis, usando os compromissos já cadastrados. Sincronização com agendas externas requer integração própria.
+1. **Central persistente de notificações — v7:** leitura/não leitura, arquivamento, prazos/tarefas e aniversários com links para agir. Atualização interna periódica; entrega de e-mail ou WhatsApp exige integração própria.
+2. **Importação assistida — v7:** prévia CSV/XLSX para pessoas e processos, correspondência de cabeçalhos, duplicidades, validação por linha e confirmação atômica. Não cobre todos os módulos nem sobrescreve registros.
+3. **Busca unificada e filtros salvos — v7:** pessoas, pastas, processos, documentos, tarefas, prazos e agenda, preservando o mesmo escopo de acesso e sigilo. Filtros são pessoais, sem indexação do conteúdo dos arquivos.
+4. **Agenda semanal e diária — v7:** faixas de horário, dias expansíveis no celular e sobreposições do mesmo responsável, usando os compromissos cadastrados. Sincronização com agendas externas requer integração própria.
 5. **Recebíveis por atraso e previsão mensal:** separar saldo vencido, a vencer e recebimentos efetivos, com filtros por cliente e pasta; sem somar valores de clientes ao caixa do escritório.
 6. **Monitoramento processual e assinaturas:** avaliar fornecedores e custos antes da integração; tratar falhas, consentimentos, trilha de eventos e conferência humana. Não há captura de tribunais ou assinatura eletrônica na versão atual.
 
 Os preços Start de R$ 89,90 e Max de R$ 199,90 permanecem os definidos pelo usuário. A pesquisa não altera planos, limites ou contratação.
+
+Consulte [organização e importação](organizacao-e-importacao.md) para os fluxos, permissões e limites reais da v7. Os itens 5 e 6 continuam como propostas.

@@ -1,0 +1,19 @@
+[Unit]
+Description=Atualiza avisos internos e limpa previas expiradas do JUMBI
+After=postgresql.service network.target
+
+[Service]
+Type=oneshot
+User=jumbi
+Group=jumbi
+WorkingDirectory=/srv/jumbi/current
+EnvironmentFile=/srv/jumbi/shared/.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/srv/jumbi/venv/bin/python manage.py generate_notifications
+ExecStart=/srv/jumbi/venv/bin/python manage.py purge_import_previews
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+TimeoutStartSec=300

@@ -5,6 +5,7 @@ from django import forms
 
 
 class CalendarFilterForm(forms.Form):
+    view = forms.ChoiceField(required=False, choices=[("month", "Mês"), ("week", "Semana"), ("day", "Dia")])
     month = forms.CharField(required=False, max_length=7)
     day = forms.DateField(required=False)
     kind = forms.ChoiceField(required=False, choices=[
@@ -25,3 +26,9 @@ class CalendarFilterForm(forms.Form):
         if not 1901 <= result.year <= 2099:
             raise forms.ValidationError("Escolha um ano entre 1901 e 2099.")
         return result
+
+    def clean_day(self):
+        value = self.cleaned_data["day"]
+        if value and not 1901 <= value.year <= 2099:
+            raise forms.ValidationError("Escolha um ano entre 1901 e 2099.")
+        return value

@@ -2,7 +2,13 @@
 
 ## Estado da implantação — verificado em 13/10/2026
 
-O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). A release ativa é `20261013-v6`, publicada em 13/10 às 11:46 UTC (08:46 em Fortaleza), com menu automático no desktop, navegação agrupada e layouts próprios por módulo, incluindo regras de celular e tablet. A publicação confirmou o symlink, o serviço ativo, saúde HTTPS e sucesso do backup anterior à troca. Dashboard, nichos, metas, calendário/aniversários, Kanban, contratos, rotinas, honorários, portal, segurança e contratação por WhatsApp foram preservados. Nenhuma migração, senha ou cadastro de produção foi alterado nesta atualização.
+O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). A release ativa é `20261013-v7`, publicada em 13/10 às 14:09:43 UTC (11:09:43 em Fortaleza). Inclui busca unificada e filtros salvos, central persistente de avisos, importação assistida CSV/XLSX e agenda semanal/diária, preservando os módulos e a navegação da v6.
+
+A publicação confirmou o symlink, o serviço ativo, saúde HTTPS e sucesso do backup anterior à troca. Foram aplicadas três migrations aditivas (`discovery`, `notifications`, `intake`) exclusivamente em `jumbi_v2`. Senhas e cadastros operacionais de produção foram preservados. O timer `jumbi-reminders.timer` está ativo a cada 15 minutos: a primeira execução gerou 37 ocorrências internas e completou a limpeza de prévias com sucesso. Banco temporário de teste removido (contagem zero após a suíte).
+
+Validação prévia: **322 testes passaram em PostgreSQL** (260,431 s), **400 verificações locais de navegador** (286 gerais, 35 de busca/avisos, 37 da agenda e 42 de importação), incluindo CSV/XLSX com registros fictícios no SQLite local. Conferência de hashes confirmou os 403 arquivos de código/interface/configuração/deploy entre o workspace e a release testada. A checagem de configuração mantém somente os avisos intencionais de HSTS para subdomínios e preload, pois o domínio compartilha infraestrutura.
+
+**Validação após publicação:** 135 verificações de navegador passaram em produção, incluindo autenticação de administrador, demo e Cliente, 390/1440 px nos temas claro/escuro, três modos de agenda, busca com resultados, formulários, menu e bloqueios das áreas internas para Cliente. Sem overflow ou erros JavaScript. Os testes de produção não importaram planilhas nem alteraram registros jurídicos. As credenciais existentes foram confirmadas e preservadas.
 
 A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.service` e upstream `127.0.0.1:8040`. O banco `djumbi` é compartilhado com a instalação em `/var/www/apps/djumbi`: por esse motivo, a evolução foi feita no clone independente `jumbi_v2`. O banco original foi preservado, sem receber as migrações ou o isolamento de contas da nova versão.
 
@@ -10,8 +16,8 @@ A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.
 | --- | --- |
 | Serviço | `jumbi-v2.service`, executado pelo usuário de serviço `jumbi` |
 | Upstream | `127.0.0.1:8041` |
-| Release | `/srv/jumbi/releases/20261013-v6` |
-| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261013-v6` |
+| Release | `/srv/jumbi/releases/20261013-v7` |
+| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261013-v7` |
 | Banco exclusivo | `jumbi_v2` |
 | Configuração privada | `/srv/jumbi/shared/.env`, proprietário/grupo `root:jumbi`, modo `0640` |
 | Arquivos privados | `/srv/jumbi/shared/private_media`, diretório com modo `0750` |
@@ -108,6 +114,8 @@ O pacote ZIP exportado pela aplicação serve à portabilidade dos registros e a
 
 ## Reversão da publicação
 
+**V7 → V6:** desative `jumbi-reminders.timer` e aguarde eventual execução do serviço terminar antes de trocar o symlink para a release preservada `20261013-v6`. Reinicie somente `jumbi-v2.service` e confira saúde, login e estáticos. Preserve as tabelas e registros v7; não reverta migrations nem restaure banco por cima dos dados ativos. As barreiras de Cliente e MFA continuam na v6, e os novos recursos ficam indisponíveis até a retomada. Veja [organização e importação](organizacao-e-importacao.md).
+
 **V6 → V5:** esta revisão não muda o esquema nem as credenciais. A release `20261009-v5` foi preservada e mantém as barreiras de Cliente e MFA. Caso seja necessária reversão do código, preservar o backup atual, trocar atomicamente o symlink para essa v5 e reiniciar somente `jumbi-v2.service`; conferir saúde, autenticação e estáticos. Não restaurar banco por cima dos dados ativos. A advertência abaixo continua valendo para versões anteriores à v5.
 
 **V5: não aponte simplesmente para v4/v3 após cadastrar Clientes ou ativar MFA.** Essas versões não reconhecem as novas barreiras de acesso. Prefira uma correção da v5 preservando as tabelas e dados. Se uma volta ao código antigo for inevitável, faça backup e planeje o bloqueio dos acessos externos, contas com MFA e sessões antes da troca, documentando a restauração dos acessos depois. Não remova tabelas ou restaure um dump por cima do banco ativo. As instruções v4/v3 abaixo são históricas e não autorizam contornar essas barreiras.
@@ -130,8 +138,8 @@ Na v4, a base visual do aplicativo usa os tokens do Nabio BJJ com a marca JUMBI.
 
 A assinatura começa por mensagem preenchida no WhatsApp comercial **+55 88 99274-5456**. O visitante decide enviar; a ativação continua administrativa após a contratação. O link comercial não implementa API de WhatsApp, cobrança automática ou confirmação de pagamento.
 
-- Sem envio automático de convites, recuperação de senha por e-mail, armazenamento externo, antivírus de anexos, jobs, notificações garantidas ou integrações externas no núcleo atual.
+- Sem envio automático de convites, recuperação de senha por e-mail, armazenamento externo, antivírus de anexos, entrega externa garantida de notificações ou integrações com tribunais no núcleo atual. A v7 tem timer de avisos internos e limpeza de prévias a cada 15 minutos.
 - Uploads têm extensão permitida e limite de 15 MB; downloads exigem autenticação. O hash confere integridade, não ausência de conteúdo malicioso.
 - Valores de clientes têm classificação separada; repasses completos, conciliação bancária e contabilidade fiscal continuam pendentes.
-- Portal autenticado, revisão independente por versão/hash, publicação explícita, mensagens e revogação estão disponíveis no Max. Upload pelo cliente, assinatura eletrônica e importação geral pela interface permanecem pendentes. Downloads já publicados e revogação de acesso continuam possíveis após expiração/redução do plano, sob as mesmas permissões.
+- Portal autenticado, revisão independente por versão/hash, publicação explícita, mensagens e revogação estão disponíveis no Max. Upload pelo cliente e assinatura eletrônica permanecem pendentes. A v7 importa pessoas e processos por CSV/XLSX com conferência; os demais módulos não têm importação pela interface. Downloads já publicados e revogação de acesso continuam possíveis após expiração/redução do plano, sob as mesmas permissões.
 - As seis pendências da importação legada e a cópia de backup fora da VPS precisam permanecer visíveis na operação.

@@ -16,6 +16,7 @@ def calendar_view(request):
         month=form.cleaned_data.get("month") if valid else None,
         selected_day=form.cleaned_data.get("day") if valid else None,
         kind=form.cleaned_data.get("kind", "") if valid else "",
+        view=form.cleaned_data.get("view") if valid else "month",
     )
-    context.update({"page_title": "Calendário e agenda", "title": "Calendário e agenda", "active_nav": "appointments", "calendar_filter_form": form})
+    context.update({"page_title": "Calendário e agenda", "title": "Calendário e agenda", "active_nav": "appointments", "calendar_filter_form": form, "calendar_full": True})
     return render(request, "legal/calendar.html", context)

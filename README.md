@@ -44,7 +44,7 @@ $env:JUMBI_DEMO_PASSWORD = 'defina-uma-senha-local-exclusiva'
 ```powershell
 .\.venv\Scripts\python.exe manage.py check
 .\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
-.\.venv\Scripts\python.exe manage.py test apps.security apps.routines apps.fees apps.portal apps.legal apps.billing apps.contracts apps.performance apps.core.test_workspace apps.core.test_platform apps.core.test_legacy_isolation apps.core.test_platform_management
+.\.venv\Scripts\python.exe manage.py test apps.discovery apps.intake apps.notifications apps.security apps.routines apps.fees apps.portal apps.legal apps.billing apps.contracts apps.performance apps.core.test_workspace apps.core.test_platform apps.core.test_legacy_isolation apps.core.test_platform_management
 .\.venv\Scripts\python.exe manage.py collectstatic --noinput
 ```
 
@@ -87,3 +87,9 @@ Consulte [rotinas](docs/routines.md), [honorários](docs/honorarios.md), [portal
 Menu automático por mouse no desktop, com expansão por teclado, gaveta móvel e controle manual em telas grandes de toque. Navegação agrupada por rotina, acervo, comercial e administração. Pastas, pessoas, processos, prazos, documentos, financeiro e relacionamento têm apresentações próprias, com filtros, ações existentes e indicadores sobre o escopo autorizado. As demais abas receberam composição e orientação específicas. Os formulários explicam como cada registro participa do fluxo do escritório.
 
 As regras de celular, tablet e desktop e a pesquisa nas páginas oficiais de Astrea, ADVBOX, Projuris e Legal One estão em [experiência e concorrentes](docs/experiencia-e-concorrentes.md). O documento separa decisões desta revisão das integrações e funcionalidades propostas para etapas futuras.
+
+## Organização e importação — v7
+
+Busca unificada em sete áreas com até 12 filtros pessoais salvos; central persistente de avisos internos, leitura e arquivamento; importação assistida CSV/XLSX de pessoas e processos, com prévia, duplicidades e confirmação atômica; agenda em mês, semana e dia com sobreposições de responsável e composição própria no celular. Disponíveis nos dois planos, conforme os papéis de acesso. Importação é exclusiva de direção e gestão.
+
+O timer `jumbi-reminders.timer` gera os avisos e limpa prévias expiradas a cada 15 minutos. Não envia mensagens externas, não captura tribunais e não calcula prazos automaticamente. Veja [organização e importação](docs/organizacao-e-importacao.md) para regras, limites e operação.
