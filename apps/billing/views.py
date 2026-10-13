@@ -20,12 +20,14 @@ def contact(request, plan):
     if selected is None:
         raise Http404("Plano não encontrado.")
     matter_limit = f"{selected['matters']:,}".replace(",", ".")
+    version_limit = f"{selected['versions']:,}".replace(",", ".")
     text = (
         f"Olá! Quero assinar o JUMBI {selected['name']} por R$ {selected['price_label']}/mês.\n\n"
-        f"Plano para até {selected['members']} usuários e {matter_limit} pastas ativas.\n"
+        f"Plano para até {selected['members']} usuários ativos, {matter_limit} pastas ativas e {version_limit} versões de documentos.\n"
+        "Com gestão jurídica, calendário, Kanban e relacionamento com clientes (CRM).\n"
     )
     if selected["advanced"]:
-        text += "Com CRM e financeiro incluídos.\n"
+        text += "Inclui também financeiro, honorários, montagem de contratos, revisão e publicação no portal do cliente, estoque e patrimônio.\n"
     organization = getattr(request, "organization", None)
     membership = getattr(request, "membership", None)
     if organization and membership and membership.role == "owner" and "demonstracao" not in organization.slug:

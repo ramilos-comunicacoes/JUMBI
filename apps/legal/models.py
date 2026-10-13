@@ -148,12 +148,31 @@ class Contact(TenantModel):
         PERSON = "person", "Pessoa física"
         COMPANY = "company", "Pessoa jurídica"
 
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Ativo"
+        PROSPECT = "prospect", "Em atendimento inicial"
+        INACTIVE = "inactive", "Inativo"
+
     name = models.CharField("Nome", max_length=200)
     email = models.EmailField("E-mail", blank=True)
     phone = models.CharField("Telefone", max_length=40, blank=True)
     document = models.CharField("CPF / CNPJ", max_length=30, blank=True)
     kind = models.CharField("Tipo", max_length=12, choices=Kind.choices, default=Kind.PERSON)
     birth_date = models.DateField("Data de nascimento", null=True, blank=True)
+    trade_name = models.CharField("Nome fantasia", max_length=200, blank=True, default="", db_default="")
+    profession = models.CharField("Profissão", max_length=150, blank=True, default="", db_default="")
+    postal_code = models.CharField("CEP", max_length=20, blank=True, default="", db_default="")
+    address = models.CharField("Logradouro e número", max_length=240, blank=True, default="", db_default="")
+    address_complement = models.CharField("Complemento", max_length=150, blank=True, default="", db_default="")
+    district = models.CharField("Bairro", max_length=100, blank=True, default="", db_default="")
+    city = models.CharField("Cidade", max_length=120, blank=True, default="", db_default="")
+    state = models.CharField("Estado / província", max_length=80, blank=True, default="", db_default="")
+    country = models.CharField("País", max_length=80, blank=True, default="", db_default="")
+    state_registration = models.CharField("Inscrição estadual", max_length=40, blank=True, default="", db_default="")
+    municipal_registration = models.CharField("Inscrição municipal", max_length=40, blank=True, default="", db_default="")
+    representatives = models.TextField("Representantes legais e procuradores", max_length=4000, blank=True, default="", db_default="")
+    notes = models.TextField("Observações internas", max_length=6000, blank=True, default="", db_default="")
+    status = models.CharField("Relacionamento", max_length=12, choices=Status.choices, default=Status.ACTIVE, db_default=Status.ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

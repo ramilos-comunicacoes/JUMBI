@@ -1,0 +1,11 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-inventory.css' %}">{% endblock %}
+{% block content %}<div class="inventory-workspace">
+<div class="page-heading inventory-heading"><div><div class="eyebrow">RECURSOS DO ESCRITÓRIO</div><h1>{{ page_title }}</h1><p>{{ page_description|default:"Materiais organizados, equipamentos acompanhados e histórico de cada alteração." }}</p></div>{% block inventory_actions %}{% endblock %}</div>
+<nav class="inventory-tabs" aria-label="Estoque e patrimônio">
+<a href="{% url 'inventory:overview' %}" {% if inventory_tab == 'stock' %}aria-current="page"{% endif %}>Estoque</a>
+<a href="{% url 'inventory:purchases' %}" {% if inventory_tab == 'purchases' %}aria-current="page"{% endif %}>Compras</a>
+<a href="{% url 'inventory:movements' %}" {% if inventory_tab == 'movements' %}aria-current="page"{% endif %}>Movimentações</a>
+<a href="{% url 'inventory:assets' %}" {% if inventory_tab == 'assets' %}aria-current="page"{% endif %}>Patrimônio</a>
+<a href="{% url 'inventory:catalog' %}" {% if inventory_tab == 'catalog' %}aria-current="page"{% endif %}>Cadastros</a>
+</nav>{% block inventory_content %}{% endblock %}</div>{% endblock %}

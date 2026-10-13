@@ -149,9 +149,10 @@ class CalendarTests(TestCase):
         self.client.force_login(self.viewer)
         for params in [{"month": "2027-02"}, {"month": "invalid"}]:
             response = self.client.get(reverse("legal:calendar"), params)
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, "Calendário e agenda")
-            self.assertNotContains(response, "Novo compromisso")
+            expected = 400 if params["month"] == "invalid" else 200
+            self.assertEqual(response.status_code, expected)
+            self.assertContains(response, "Calendário e agenda", status_code=expected)
+            self.assertNotContains(response, "Novo compromisso", status_code=expected)
         response = self.client.get(reverse("legal:calendar"), {"month": "2027-02"})
         self.assertContains(response, "Ana &amp; Silva")
         self.assertNotContains(response, "Cliente sigiloso")

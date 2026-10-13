@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     "apps.discovery",
     "apps.notifications",
     "apps.intake",
+    "apps.inventory",
+    "apps.worklog",
 ]
 
 MIDDLEWARE = [

@@ -4,7 +4,7 @@
 
 Em **Administração JUMBI → Novo escritório**, o superusuário cadastra o escritório, nome e e-mail do responsável, senha inicial, plano, situação da assinatura e uma ou várias áreas de atuação. O catálogo permite combinar quantas áreas forem necessárias, inclusive três ou mais. A criação é atômica: falhas não deixam usuários ou escritórios incompletos. A conta cliente recebe o perfil de direção no próprio escritório, sem privilégios de administrador da plataforma.
 
-O nome do escritório na lista da plataforma abre sua configuração. Somente o superusuário altera os nichos, inclusive no Django Admin. Mudanças ficam no histórico. A ativação da assinatura é manual e não registra um pagamento. Os preços permanecem Start R$ 89,90/mês e Max R$ 199,90/mês.
+O nome do escritório na lista da plataforma abre sua configuração. Somente o superusuário altera os nichos, inclusive no Django Admin. Mudanças ficam no histórico. A ativação da assinatura é manual e não registra um pagamento. Os preços atuais são Start R$ 299,90/mês e Max R$ 599,90/mês; consulte os limites e recursos em planos-e-assinatura.md.
 
 Os códigos são persistidos em `Organization.practice_areas`, uma lista JSON validada pelo catálogo de `apps.core.niches`. `practice_area_choices(organization)` retorna pares `(código, rótulo)`; `practice_area_values(código)` retorna código e rótulo compatível para pastas históricas. Não há conversão destrutiva dos registros existentes.
 

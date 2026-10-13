@@ -9,7 +9,7 @@
 <div class="form-grid">{% for field in form %}<div class="form-field {% if field.name == 'practice_areas' %}field-full niche-options{% endif %} {% if field.errors %}has-error{% endif %}">
 {% if field.name == 'practice_areas' %}<fieldset><legend>{{ field.label }}</legend>{{ field }}{% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}</fieldset>{% else %}<label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}{% endif %}
 {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>{% endfor %}</div>
-{% if creating %}<p class="field-help">Start: R$ 89,90/mês · Max: R$ 199,90/mês. A ativação é manual e não registra cobrança. A conta criada terá acesso de direção apenas ao próprio escritório.</p>{% endif %}
+{% if creating %}<p class="field-help">Start: R$ {{ plan_catalog.start.price_label }}/mês · Max: R$ {{ plan_catalog.max.price_label }}/mês. A ativação é manual e não registra cobrança. A conta criada terá acesso de direção apenas ao próprio escritório.</p>{% endif %}
 <div class="form-actions"><a class="button button-secondary" href="{% url 'core:platform' %}">Cancelar</a><button type="submit" class="button button-primary">{% if creating %}Criar escritório e acesso{% else %}Salvar configuração{% endif %}</button></div>
 </form></section></div>
 </div>

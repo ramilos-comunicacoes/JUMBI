@@ -17,13 +17,14 @@ from django.db import close_old_connections, connection, transaction
 from django.test import Client as HttpClient, TestCase, TransactionTestCase, override_settings, skipUnlessDBFeature
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import strip_tags
 
 from apps.core.models import Membership, Organization, User, WorkspaceInvitation
 from apps.legal.models import Contact, Document, DocumentVersion, FinanceEntry, Matter, Opportunity, Payment
 from apps.legal.services import add_document_version, record_payment
 from .admin import SubscriptionForm
 from .models import OrganizationSubscription, SubscriptionEvent
-from .plans import PLANS
+from .plans import PLAN_CHOICES, PLANS
 from .services import check_capacity, require_access, usage, validate_plan_change
 
 
@@ -98,18 +99,111 @@ class BillingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(User.objects.filter(email="invalid-plan@billing.test").exists())
 
-    def test_start_blocks_direct_finance_and_crm_routes_get_and_post(self):
+    def test_start_blocks_direct_finance_and_max_module_routes_get_and_post(self):
         routes = []
-        for module, obj in [("finance", self.entry), ("crm", self.opportunity)]:
+        for module, obj in [("finance", self.entry)]:
             routes += [reverse("legal:list", args=[module]), reverse("legal:create", args=[module]),
                        reverse("legal:edit", args=[module, obj.pk])]
         routes.append(reverse("legal:action", args=["finance", self.entry.pk, "payment"]))
+        routes.extend(reverse(name) for name in ["fees:overview", "fees:create", "contracts:library", "contracts:template_create", "inventory:overview", "inventory:product_create", "inventory:asset_create", "portal:access_create", "portal:review_create"])
         for url in routes:
             for method in [self.client.get, self.client.post]:
                 with self.subTest(url=url, method=method.__name__):
                     self.assertEqual(method(url).status_code, 403)
         with self.assertRaises(PermissionDenied):
             record_payment(entry=self.entry, actor=self.owner, amount="20.00")
+        self.assertFalse(Payment.objects.exists())
+
+    def test_start_includes_crm_create_edit_and_read_without_financial_effects(self):
+        for url in [reverse("legal:list", args=["crm"]), reverse("legal:create", args=["crm"]), reverse("legal:edit", args=["crm", self.opportunity.pk])]:
+            self.assertEqual(self.client.get(url).status_code, 200)
+        dashboard = self.client.get(reverse("legal:dashboard"))
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertTrue(any(item["key"] == "crm" for item in dashboard.context["nav"]))
+        self.assertTrue(dashboard.context["crm_summary"])
+        data = {"contact": self.contact.pk, "title": "Atendimento incluído no Start", "stage": "new", "amount": "250.00", "owner": self.owner.pk, "next_action": "Agendar reunião", "lost_reason": ""}
+        self.assertEqual(self.client.post(reverse("legal:create", args=["crm"]), data).status_code, 302)
+        opportunity = Opportunity.objects.get(title=data["title"])
+        data.update(stage="proposal", next_action="Aguardar proposta")
+        self.assertEqual(self.client.post(reverse("legal:edit", args=["crm", opportunity.pk]), data).status_code, 302)
+        opportunity.refresh_from_db()
+        self.assertEqual(opportunity.stage, "proposal")
+        self.assertEqual(opportunity.organization_id, self.org.pk)
+        self.assertEqual(FinanceEntry.objects.count(), 1)
+        self.assertFalse(Payment.objects.exists())
+
+    def test_start_crm_keeps_readonly_profile_and_tenant_boundaries(self):
+        other = Organization.objects.create(name="Outro escritório", slug="crm-other", business_type="office")
+        outsider = User.objects.create_user("crm-other@billing.test")
+        Membership.objects.create(organization=other, user=outsider, role="owner")
+        other_contact = Contact.objects.create(organization=other, name="Pessoa externa")
+        foreign = Opportunity.objects.create(organization=other, contact=other_contact, owner=outsider, title="Oportunidade externa")
+        self.assertEqual(self.client.get(reverse("legal:edit", args=["crm", foreign.pk])).status_code, 404)
+        response = self.client.post(reverse("legal:create", args=["crm"]), {"contact": other_contact.pk, "title": "Inválida", "stage": "new", "amount": "0", "owner": self.owner.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Opportunity.objects.filter(title="Inválida").exists())
+        self.membership.role = "viewer"
+        self.membership.save()
+        self.assertEqual(self.client.get(reverse("legal:list", args=["crm"])).status_code, 200)
+        self.assertEqual(self.client.get(reverse("legal:create", args=["crm"])).status_code, 403)
+        self.assertEqual(self.client.post(reverse("legal:edit", args=["crm", self.opportunity.pk]), {}).status_code, 403)
+
+    def test_plan_catalog_uses_confirmed_prices_and_proportional_capacity(self):
+        self.assertEqual((PLANS["start"]["price"], PLANS["start"]["members"], PLANS["start"]["matters"], PLANS["start"]["versions"]), (Decimal("299.90"), 5, 300, 1000))
+        self.assertEqual((PLANS["max"]["price"], PLANS["max"]["members"], PLANS["max"]["matters"], PLANS["max"]["versions"]), (Decimal("599.90"), 20, 2000, 5000))
+        self.assertEqual(dict(PLAN_CHOICES), {"start": "Start — R$ 299,90/mês", "max": "Max — R$ 599,90/mês"})
+        self.subscription.refresh_from_db()
+        self.assertEqual((self.subscription.plan, self.subscription.status), ("start", "active"))
+        self.assertFalse(SubscriptionEvent.objects.exists())
+        self.assertFalse(Payment.objects.exists())
+
+    def test_public_home_signup_and_platform_render_current_catalog_consistently(self):
+        self.client.logout()
+        home = self.client.get(reverse("core:home"))
+        signup = self.client.get(reverse("core:signup"))
+        for response in [home, signup]:
+            self.assertEqual(response.status_code, 200)
+            plain = " ".join(strip_tags(response.content.decode()).split())
+            for price in ("299,90", "599,90"):
+                self.assertIn(price, plain)
+            for old in ("89,90", "199,90", "15 usuários", "100 pastas", "200 versões"):
+                self.assertNotIn(old, plain)
+        homepage = " ".join(strip_tags(home.content.decode()).split())
+        for capacity in ("Até 5 usuários ativos", "300 pastas jurídicas ativas", "1.000 versões de documentos", "Até 20 usuários ativos", "2.000 pastas jurídicas ativas", "5.000 versões de documentos"):
+            self.assertIn(capacity, homepage)
+        self.assertIn("fichas completas, mapa por estado e CRM", homepage)
+        self.assertEqual(list(signup.context["form"].fields["plan"].choices), PLAN_CHOICES)
+        self.assertContains(signup, "Nenhuma cobrança automática")
+        self.owner.is_staff = True
+        self.owner.is_superuser = True
+        self.owner.save(update_fields=["is_staff", "is_superuser"])
+        self.client.force_login(self.owner)
+        platform = self.client.get(reverse("platform:office_create"))
+        self.assertEqual(platform.status_code, 200)
+        self.assertEqual(list(platform.context["form"].fields["plan"].choices), PLAN_CHOICES)
+        self.assertContains(platform, "299,90")
+        self.assertContains(platform, "599,90")
+        self.assertContains(platform, "ativação é manual e não registra cobrança")
+        self.assertFalse(SubscriptionEvent.objects.exists())
+        self.assertFalse(Payment.objects.exists())
+
+    def test_subscription_and_upgrade_render_current_capacity_without_old_limits(self):
+        for plan in ("start", "max"):
+            self.set_subscription(plan=plan)
+            response = self.client.get(reverse("billing:subscription"))
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, PLANS[plan]["price_label"])
+            for key in ("members", "matters", "versions"):
+                self.assertContains(response, f'max="{PLANS[plan][key]}"')
+            self.assertContains(response, "Não há cobrança automática")
+        self.set_subscription(plan="start")
+        upgrade = self.client.get(reverse("legal:list", args=["finance"]))
+        self.assertEqual(upgrade.status_code, 403)
+        plain = " ".join(strip_tags(upgrade.content.decode()).split())
+        for expected in ("599,90", "20 usuários", "2.000 pastas ativas", "5.000 versões de documentos"):
+            self.assertIn(expected, plain)
+        self.assertNotIn("15 usuários", plain)
+        self.assertNotIn("1.000 pastas", plain)
         self.assertFalse(Payment.objects.exists())
 
     def test_max_grants_modules_but_does_not_override_membership_permissions(self):
@@ -197,7 +291,7 @@ class BillingTests(TestCase):
             self.assertEqual(document.versions.count(), 3)
 
     def test_full_seat_capacity_prevents_acceptance_and_user_creation(self):
-        for index in range(2):
+        for index in range(PLANS["start"]["members"] - 1):
             user = User.objects.create_user(f"member{index}@billing.test")
             Membership.objects.create(organization=self.org, user=user, role="viewer")
         invitation = self.invitation("new-seat@billing.test")
@@ -209,7 +303,7 @@ class BillingTests(TestCase):
         self.assertFalse(User.objects.filter(email=invitation.email).exists())
         invitation.refresh_from_db()
         self.assertIsNone(invitation.accepted_at)
-        self.assertEqual(usage(self.org)["members"], 3)
+        self.assertEqual(usage(self.org)["members"], PLANS["start"]["members"])
 
     def test_existing_active_member_acceptance_does_not_consume_a_seat(self):
         member = User.objects.create_user("existing-seat@billing.test")
@@ -233,7 +327,7 @@ class BillingTests(TestCase):
 
     def test_downgrade_validates_current_usage_and_admin_form(self):
         self.set_subscription(plan="max")
-        Matter.objects.bulk_create([Matter(organization=self.org, owner=self.owner, title=f"Pasta {index}") for index in range(100)])
+        Matter.objects.bulk_create([Matter(organization=self.org, owner=self.owner, title=f"Pasta {index}") for index in range(PLANS["start"]["matters"])])
         with self.assertRaisesMessage(ValidationError, "excede os limites"):
             validate_plan_change(self.org, "start")
         form = SubscriptionForm(data={"organization": self.org.pk, "plan": "start", "status": "active"}, instance=self.subscription)
@@ -265,8 +359,8 @@ class ConcurrentSeatAcceptanceTests(TransactionTestCase):
     def test_two_invites_compete_for_last_available_seat(self):
         org = Organization.objects.create(name="Concorrência", slug="concorrencia", business_type="office")
         owner = User.objects.create_user("concurrent-owner@billing.test")
-        member = User.objects.create_user("concurrent-member@billing.test")
-        for user, role in [(owner, "owner"), (member, "viewer")]:
+        occupants = [(owner, "owner")] + [(User.objects.create_user(f"concurrent-member-{index}@billing.test"), "viewer") for index in range(PLANS["start"]["members"] - 2)]
+        for user, role in occupants:
             Membership.objects.create(organization=org, user=user, role=role)
         OrganizationSubscription.objects.create(organization=org, plan="start", status="active")
         contenders = []
@@ -295,5 +389,5 @@ class ConcurrentSeatAcceptanceTests(TransactionTestCase):
         with ThreadPoolExecutor(max_workers=2) as executor:
             results = list(executor.map(accept, contenders))
         self.assertEqual(sorted(results), [302, 409])
-        self.assertEqual(Membership.objects.filter(organization=org, is_active=True).count(), 3)
+        self.assertEqual(Membership.objects.filter(organization=org, is_active=True).count(), PLANS["start"]["members"])
         self.assertEqual(WorkspaceInvitation.objects.filter(organization=org, accepted_at__isnull=False).count(), 1)

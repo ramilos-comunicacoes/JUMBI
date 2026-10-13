@@ -1,0 +1,3 @@
+{% for hidden in form.hidden_fields %}{{ hidden }}{% for error in hidden.errors %}<p class="inventory-error" role="alert">{{ error }}</p>{% endfor %}{% endfor %}
+{% if form.non_field_errors %}<div class="inventory-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+{% for field in form.visible_fields %}<div class="inventory-field{% if field.field.widget.input_type == 'checkbox' %} inventory-check{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span aria-hidden="true"> *</span>{% endif %}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<p class="inventory-error" role="alert">{{ error }}</p>{% endfor %}</div>{% endfor %}

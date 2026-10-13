@@ -7,6 +7,7 @@ def workspace_context(request):
     membership = getattr(request, "membership", None)
     manager = bool(membership and membership.role in {"owner", "manager"})
     from apps.billing.services import has_advanced, subscription_for
+    from apps.billing.plans import PLANS
     subscription = subscription_for(organization)
     advanced = has_advanced(organization)
     sections = [
@@ -17,8 +18,7 @@ def workspace_context(request):
     ]
     if manager and advanced:
         sections.append(("finance", "Financeiro", "wallet"))
-    if advanced:
-        sections.append(("crm", "Relacionamento", "briefcase"))
+    sections.append(("crm", "Relacionamento", "briefcase"))
     nav = [{"key": "dashboard", "label": "Visão geral", "url": reverse("legal:dashboard"), "icon": "grid"}]
     nav.extend([
         {"key": "search", "label": "Busca unificada", "url": reverse("discovery:search"), "icon": "search"},
@@ -35,11 +35,14 @@ def workspace_context(request):
     nav.append({"key": "routines", "label": "Rotinas por nicho", "url": reverse("routines:list"), "icon": "check"})
     if manager and advanced:
         nav.append({"key": "fees", "label": "Honorários", "url": reverse("fees:overview"), "icon": "wallet"})
+        nav.append({"key": "inventory", "label": "Estoque e patrimônio", "url": reverse("inventory:overview"), "icon": "box"})
     if membership and membership.role in {'owner', 'manager', 'operator'}:
         nav.append({"key": "portal", "label": "Revisão e portal", "url": reverse("portal:manage"), "icon": "file"})
     if advanced:
         nav.append({"key": "contracts", "label": "Montar contratos", "url": reverse("contracts:library"), "icon": "file"})
     nav.append({"key": "security", "label": "Segurança da conta", "url": reverse("security:account"), "icon": "shield"})
+    nav.append({"key": "client_map", "label": "Mapa de clientes", "url": reverse("legal:client_map"), "icon": "map"})
+    nav.append({"key": "guide", "label": "Como usar o JUMBI", "url": reverse("legal:guide"), "icon": "help"})
     if manager:
         nav.extend([
             {"key": "intake", "label": "Importar planilha", "url": reverse("intake:home"), "icon": "intake"},
@@ -57,9 +60,9 @@ def workspace_context(request):
         ]
     navigation_groups = [
         ("Dia a dia", ["dashboard", "search", "notifications", "appointments", "tasks", "deadlines", "goals", "routines"]),
-        ("Acervo jurídico", ["matters", "contacts", "cases", "documents", "portal", "contracts"]),
-        ("Gestão comercial", ["crm", "fees", "finance"]),
-        ("Administração", ["intake", "team", "audit", "subscription", "security", "platform"]),
+        ("Acervo jurídico", ["matters", "contacts", "client_map", "cases", "documents", "portal", "contracts"]),
+        ("Gestão do escritório", ["crm", "fees", "finance", "inventory"]),
+        ("Administração", ["intake", "team", "audit", "subscription", "guide", "security", "platform"]),
     ]
     indexed_nav = {item["key"]: item for item in nav}
     nav = [dict(indexed_nav[key], group=group) for group, keys in navigation_groups
@@ -70,6 +73,7 @@ def workspace_context(request):
         notification_count = unread_count(request)
     return {
         "organization": organization, "membership": membership, "nav": nav,
+        "plan_catalog": PLANS,
         "can_edit": bool(membership and membership.role in {'owner', 'manager', 'operator'}),
         "can_manage": manager, "today": timezone.localdate(),
         "notification_count": notification_count,

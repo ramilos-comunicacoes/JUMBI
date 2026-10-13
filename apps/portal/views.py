@@ -87,6 +87,12 @@ def manage(request):
 def access_create(request):
     authorize_staff(request.user, request.organization, manager=True)
     form = AccessForm(request.POST if request.method == "POST" else None, actor=request.user, organization=request.organization)
+    if request.method == "GET" and request.GET.get("contact"):
+        selected = request.GET["contact"]
+        if selected.isdecimal() and len(selected) <= 18:
+            permitted = form.fields["contact"].queryset.filter(pk=selected).first()
+            if permitted:
+                form.initial["contact"] = permitted.pk
     if request.method == "POST" and form.is_valid():
         try:
             grant_access(actor=request.user, organization=request.organization, membership=form.cleaned_data["membership"], contact=form.cleaned_data["contact"])
@@ -102,6 +108,12 @@ def access_create(request):
 def review_create(request):
     authorize_staff(request.user, request.organization)
     form = ReviewForm(request.POST if request.method == "POST" else None, actor=request.user, organization=request.organization)
+    if request.method == "GET" and request.GET.get("version"):
+        selected = request.GET["version"]
+        if selected.isdecimal() and len(selected) <= 18:
+            permitted = form.fields["version"].queryset.filter(pk=selected).first()
+            if permitted:
+                form.initial["version"] = permitted.pk
     if request.method == "POST" and form.is_valid():
         try:
             review = request_review(actor=request.user, organization=request.organization, **form.cleaned_data)

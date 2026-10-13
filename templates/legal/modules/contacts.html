@@ -1,5 +1,6 @@
+<p class="module-footnote"><a class="text-link" href="{% url 'legal:client_map' %}">Ver clientes por estado no mapa →</a> · Preencha o estado no cadastro para incluir a pessoa na distribuição nacional.</p>
 <div class="contact-directory">{% for row in module_rows %}<article class="contact-card">
-  <div class="contact-identity"><span class="contact-monogram" aria-hidden="true">{{ row.record.name|slice:':1'|upper }}</span><div><span class="module-note">{{ row.record.get_kind_display }}</span><h2>{{ row.record.name }}</h2></div></div>
+  <div class="contact-identity"><span class="contact-monogram" aria-hidden="true">{{ row.record.name|slice:':1'|upper }}</span><div><span class="module-note">{{ row.record.get_kind_display }}</span><h2><a href="{% url 'legal:contact_detail' row.record.pk %}">{{ row.record.name }}</a></h2></div></div>
   <dl class="contact-channels"><div><dt>E-mail</dt><dd>{% if row.record.email %}<a href="mailto:{{ row.record.email }}">{{ row.record.email }}</a>{% else %}Não informado{% endif %}</dd></div><div><dt>Telefone</dt><dd>{{ row.record.phone|default:"Não informado" }}</dd></div><div><dt>CPF / CNPJ</dt><dd>{{ row.record.document|default:"Não informado" }}</dd></div>{% if row.record.birth_date %}<div><dt>Nascimento</dt><dd>{{ row.record.birth_date|date:"d/m/Y" }}</dd></div>{% endif %}</dl>
-  {% if row.edit_url %}<a href="{{ row.edit_url }}" class="module-action contact-edit">Editar cadastro <span aria-hidden="true">↗</span></a>{% endif %}
+  <a href="{% url 'legal:contact_detail' row.record.pk %}" class="module-action contact-edit">Abrir ficha →</a>{% if row.edit_url %}<a href="{{ row.edit_url }}" class="module-action contact-edit">Editar cadastro <span aria-hidden="true">↗</span></a>{% endif %}
 </article>{% endfor %}</div>

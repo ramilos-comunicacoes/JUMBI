@@ -10,6 +10,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from apps.billing.models import OrganizationSubscription
+from apps.billing.plans import PLANS
 from .admin import PlatformMembershipForm, PlatformUserChangeForm
 from .management.commands.isolate_legacy_accounts import RESERVED_EMAILS
 from .models import AuditLog, Membership, Organization, OrganizationRole, User
@@ -139,7 +140,7 @@ class AdminCapacityTests(TestCase):
     def setUp(self):
         self.organization = Organization.objects.create(name="Start lotado", slug="start-full", business_type="office")
         OrganizationSubscription.objects.create(organization=self.organization, plan="start", status="active")
-        for index in range(3):
+        for index in range(PLANS['start']['members']):
             user = User.objects.create_user(f"active-{index}@example.test", "TestOnly!Capacity963")
             Membership.objects.create(organization=self.organization, user=user, role="operator")
         self.waiting = User.objects.create_user("waiting@example.test", "TestOnly!Capacity963")

@@ -179,7 +179,17 @@ class ProvisionAccountsTests(TestCase):
 
     def test_legal_admin_is_readonly_and_private_file_renders_without_public_url(self):
         self.provision(with_demo_data=True)
-        self.client.force_login(User.objects.get(email=self.admin_email))
+        platform_user = User.objects.get(email=self.admin_email)
+        self.client.force_login(platform_user)
+        # Platform administrators must receive an explicit office membership;
+        # superuser status alone no longer reveals legal records in Django Admin.
+        demo_org = Matter.objects.first().organization
+        hidden = self.client.get(reverse('admin:legal_matter_change', args=[Matter.objects.first().pk]))
+        self.assertEqual(hidden.status_code, 302)
+        Membership.objects.create(organization=demo_org, user=platform_user, role='manager')
+        session = self.client.session
+        session['active_organization_id'] = demo_org.pk
+        session.save()
         for model in (Matter, DocumentVersion, Payment, AuditEvent):
             obj = model.objects.first()
             url = reverse(f"admin:legal_{model._meta.model_name}_change", args=[obj.pk])

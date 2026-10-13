@@ -1,4 +1,4 @@
-"""Read-only support access; domain mutations stay in validated app services."""
+"""Read-only tenant access; platform status grants no legal-content bypass."""
 from django.contrib import admin
 
 from .models import (
@@ -14,13 +14,21 @@ class PlatformReadOnlyAdmin(admin.ModelAdmin):
     actions = None
 
     def get_queryset(self, request):
-        return super().get_queryset(request).filter(organization__business_type="office")
+        from .views import scoped_queryset, accessible_audit
+        from apps.legal.services import can_manage_finance
+        organization = getattr(request, "organization", None)
+        if organization is None or not self.has_module_permission(request):
+            return super().get_queryset(request).none()
+        if self.model in {FinanceEntry, Payment} and not can_manage_finance(request.user, organization):
+            return super().get_queryset(request).none()
+        return accessible_audit(request.user, organization) if self.model is AuditEvent else scoped_queryset(request.user, organization, self.model)
 
     def has_module_permission(self, request):
-        return request.user.is_active and request.user.is_superuser
+        from apps.core.models import Membership
+        return bool(request.user.is_active and request.user.is_superuser and Membership.objects.filter(user=request.user, organization=getattr(request, "organization", None), is_active=True, organization__status="active", role__in=["owner", "manager", "operator", "viewer"]).exists())
 
     def has_view_permission(self, request, obj=None):
-        return request.user.is_active and request.user.is_superuser
+        return self.has_module_permission(request) and (obj is None or self.get_queryset(request).filter(pk=obj.pk).exists())
 
     def has_add_permission(self, request):
         return False

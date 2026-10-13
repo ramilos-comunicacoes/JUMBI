@@ -1,0 +1,9 @@
+<details class="calendar-controls" {% if calendar_filters_active or calendar_filter_form.errors %}open{% endif %}>
+<summary><span><small>PERSONALIZE SUA VISÃO</small><strong>Filtros da agenda</strong><em>{% if calendar_filters_active %}Há filtros aplicados{% else %}Equipe, situação e área{% endif %}</em></span><b aria-hidden="true">+</b></summary>
+<form method="get"><input type="hidden" name="month" value="{{ calendar_month|date:'Y-m' }}"><input type="hidden" name="day" value="{{ calendar_selected_day|date:'Y-m-d' }}"><input type="hidden" name="view" value="{{ calendar_view }}"><input type="hidden" name="kind" value="{{ calendar_kind }}">
+<div><label for="{{ calendar_filter_form.responsible.id_for_label }}">Responsável</label>{{ calendar_filter_form.responsible }}</div>
+<div><label for="{{ calendar_filter_form.status.id_for_label }}">Situação</label>{{ calendar_filter_form.status }}</div>
+{% if niche_choices %}<div><label for="{{ calendar_filter_form.niche.id_for_label }}">Área de atuação</label>{{ calendar_filter_form.niche }}</div>{% endif %}
+<button class="button button-primary" type="submit">Aplicar filtros</button><a class="text-link" href="{{ calendar_reset_url }}">Limpar filtros</a>
+</form><details class="calendar-status-help"><summary>O que cada situação significa?</summary><dl><dt>Em aberto</dt><dd>Tarefas e prazos pendentes, inclusive atrasados, e compromissos que ainda não terminaram.</dd><dt>Concluídos</dt><dd>Somente tarefas concluídas e prazos cumpridos, conforme os registros da equipe.</dd><dt>Atrasados</dt><dd>Tarefas e prazos não concluídos com vencimento anterior a hoje.</dd><dt>Encerrados</dt><dd>Compromissos cujo horário de término já passou. Isso não confirma que foram realizados.</dd></dl></details>
+</details>

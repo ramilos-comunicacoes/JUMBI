@@ -8,13 +8,16 @@ from .models import OrganizationSubscription
 @override_settings(SECURE_SSL_REDIRECT=False, ALLOWED_HOSTS=["testserver"], STORAGES={"default": {"BACKEND": "django.core.files.storage.FileSystemStorage"}, "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}})
 class WhatsAppContactTests(TestCase):
     def test_plan_cta_uses_exact_whatsapp_and_trusted_price(self):
-        for plan, expected in [("start", "Start por R$ 89,90/mês"), ("max", "Max por R$ 199,90/mês")]:
+        for plan, expected, capacity in [("start", "Start por R$ 299,90/mês", "5 usuários ativos, 300 pastas ativas e 1.000 versões"), ("max", "Max por R$ 599,90/mês", "20 usuários ativos, 2.000 pastas ativas e 5.000 versões")]:
             response = self.client.get(reverse("billing:contact", args=[plan]), {"price": "0", "phone": "123"})
             self.assertEqual(response.status_code, 302)
             url = urlsplit(response.url)
             self.assertEqual((url.scheme, url.netloc, url.path), ("https", "wa.me", "/5588992745456"))
             message = parse_qs(url.query)["text"][0]
             self.assertIn(expected, message)
+            self.assertIn(capacity, message)
+            self.assertIn("relacionamento com clientes (CRM)", message)
+            self.assertEqual("estoque e patrimônio" in message, plan == "max")
             self.assertIn("contratação e a ativação", message)
             self.assertNotIn("Escritório:", message)
         self.assertEqual(self.client.get(reverse("billing:contact", args=["fake"])).status_code, 404)

@@ -4,9 +4,21 @@ from django.db.models import Q
 from apps.fees.models import FeePlan, FeeInstallment
 from apps.portal.models import ClientAccess, DocumentReview, ReviewDecision, Publication, PortalMessage
 from apps.routines.models import RoutineTemplate, RoutineApplication, MatterChecklist, MatterComment
+from apps.inventory.models import Category, Supplier, Product, StockLot, Movement, Purchase, PurchaseItem, Asset, AssetEvent
+from apps.worklog.models import TaskComment
 
 
 EXTRA_EXPORT_FIELDS = {
+    TaskComment: ['task_id', 'body', 'created_by_id', 'created_at', 'operation_key'],
+    Category: ['name'],
+    Supplier: ['name', 'document', 'phone', 'email', 'is_active'],
+    Product: ['code', 'name', 'category_id', 'unit', 'location', 'minimum_stock', 'is_active', 'created_at'],
+    StockLot: ['product_id', 'code', 'expires_on', 'quantity', 'created_at'],
+    Movement: ['product_id', 'lot_id', 'kind', 'quantity', 'balance_after', 'reason', 'actor_id', 'created_at', 'operation_key', 'reversal_of_id', 'purchase_item_id'],
+    Purchase: ['supplier_id', 'reference', 'notes', 'purchased_on', 'status', 'created_by_id', 'created_at', 'received_at', 'received_by_id', 'cancellation_reason', 'operation_key'],
+    PurchaseItem: ['purchase_id', 'product_id', 'quantity', 'unit_cost', 'lot_code', 'expires_on'],
+    Asset: ['code', 'name', 'serial_number', 'category_id', 'location', 'custodian_id', 'acquired_on', 'acquisition_value', 'status', 'notes', 'created_at'],
+    AssetEvent: ['asset_id', 'actor_id', 'reason', 'before', 'after', 'created_at'],
     RoutineTemplate: ['title', 'description', 'niches', 'tasks', 'checklist', 'documents', 'is_active', 'version', 'created_by_id', 'created_at', 'updated_at'],
     RoutineApplication: ['matter_id', 'template_id', 'template_version', 'snapshot', 'task_due_date', 'task_ids', 'created_by_id', 'created_at'],
     MatterChecklist: ['matter_id', 'application_id', 'title', 'kind', 'done', 'version', 'completion_note', 'completed_at', 'completed_by_id', 'created_by_id', 'created_at'],
@@ -22,6 +34,12 @@ EXTRA_EXPORT_FIELDS = {
 
 
 def extra_scope(user, organization, model, *, for_export=False):
+    if model is TaskComment:
+        from apps.worklog.services import visible_comments
+        return visible_comments(user, organization)
+    if model._meta.app_label == 'inventory':
+        from apps.inventory.services import visible_records as inventory_records
+        return inventory_records(user, organization, model, for_export=for_export)
     from apps.fees.services import visible_plans, visible_installments
     from apps.portal.services import visible_reviews, visible_publications, visible_accesses
     from apps.routines.services import visible_records, visible_templates

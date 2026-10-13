@@ -1,0 +1,5 @@
+{% for section in form.profile_sections %}
+<fieldset class="profile-fieldset"><legend>{{ section.title }}</legend><p class="profile-section-help">{{ section.description }}</p><div class="form-grid">
+{% for field in section.fields %}<div class="form-field {% if field.name == 'notes' or field.name == 'representatives' or field.name == 'address' %}field-full{% endif %} {% if field.errors %}has-error{% endif %}" data-field-name="{{ field.name }}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required-mark" aria-hidden="true">*</span><span class="sr-only"> (obrigatório)</span>{% endif %}</label>{{ field }}{% if field.help_text %}<div class="field-help" id="{{ field.id_for_label }}_helptext">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>{% endfor %}
+</div></fieldset>
+{% endfor %}

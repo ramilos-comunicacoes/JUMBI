@@ -15,3 +15,4 @@
 @media(prefers-reduced-motion:reduce){.j-mobile-preview:before,.j-context-core,.j-node,.j-context-ring,.j-steps article:before{animation:none!important}}
 /* Insets protect controls on devices with display cutouts. */
 .j-public{--m-page:max(20px,env(safe-area-inset-left),env(safe-area-inset-right))}.j-public .j-public-header{height:calc(78px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top)}.j-public .j-public-footer{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+@media(max-width:359px){.j-public .j-public-header{gap:8px}.j-public .j-public-header .public-brand{width:76px;max-width:76px;flex:0 0 76px}.j-public .public-nav>.button{font-size:10px;padding:10px 8px}}

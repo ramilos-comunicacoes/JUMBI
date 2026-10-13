@@ -49,7 +49,7 @@ def stats_for(queryset, module):
         values = queryset.aggregate(total=Count("pk", distinct=True), versions=Count("versions"), matters=Count("matter", distinct=True))
         labels = [("total", "Documentos"), ("versions", "Versões preservadas"), ("matters", "Pastas vinculadas")]
     elif module == "crm":
-        values = queryset.aggregate(open=Count("pk", filter=~Q(stage__in=["won", "lost"])), awaiting=Count("pk", filter=Q(next_action="") & ~Q(stage__in=["won", "lost"])), won=Count("pk", filter=Q(stage="won")))
+        values = queryset.aggregate(open=Count("pk", filter=~Q(stage__in=["won", "lost"])), awaiting=Count("pk", filter=Q(next_action__regex=r"^\s*$") & ~Q(stage__in=["won", "lost"])), won=Count("pk", filter=Q(stage="won")))
         labels = [("open", "Em negociação"), ("awaiting", "Sem próxima ação"), ("won", "Ganhas")]
     else:
         return []
@@ -63,7 +63,7 @@ def finance_totals(queryset, money_label):
     return [{"key": kind, "label": label, "forecast": money_label(totals.get(kind, Decimal("0"))), "moved": money_label(moved.get(kind, Decimal("0"))), "balance": money_label(totals.get(kind, Decimal("0")) - moved.get(kind, Decimal("0")))} for kind, label in FinanceEntry.Kind.choices]
 
 
-def present_list(request, module, queryset, page_obj, *, editable, actions, money_label, user_label):
+def present_list(request, module, queryset, page_obj, *, editable, actions, money_label, user_label, summary_queryset=None):
     if module not in MODULE_PAGES:
         return {}
     kicker, headline, help_text, create_label, placeholder, status_label, empty_title, empty_help = MODULE_PAGES[module]
@@ -88,11 +88,21 @@ def present_list(request, module, queryset, page_obj, *, editable, actions, mone
             row["urgency"] = "done" if obj.status == "fulfilled" else "overdue" if days < 0 else "soon" if days <= 7 else "later"
         if module == "crm":
             row["amount"] = money_label(obj.amount)
+            row["next_action"] = obj.next_action.strip()
         row["actions"] = actions(request, module, obj)
         rows.append(row)
     context = {"module_template": f"legal/modules/{module}.html", "module_kicker": kicker, "module_headline": headline, "module_help": help_text, "create_label": create_label, "search_placeholder": placeholder, "status_label": status_label, "empty_title": empty_title, "empty_help": empty_help, "module_rows": rows, "module_stats": stats_for(queryset, module)}
     if module == "finance":
         context["finance_totals"] = finance_totals(queryset, money_label)
     if module == "crm":
-        context["pipeline"] = [{"key": key, "label": label, "rows": [row for row in rows if row["record"].stage == key]} for key, label in Opportunity.Stage.choices]
+        if summary_queryset is not None:
+            context["module_stats"] = stats_for(summary_queryset, module)
+        grouped = {row["stage"]: row for row in queryset.order_by().values("stage").annotate(total=Count("pk"), amount=Sum("amount"))}
+        context["pipeline"] = [{"key": key, "label": label, "rows": [row for row in rows if row["record"].stage == key], "total": grouped.get(key, {}).get("total", 0), "amount": money_label(grouped.get(key, {}).get("amount", Decimal("0")))} for key, label in Opportunity.Stage.choices]
+        for stat, focus in zip(context["module_stats"], ["open", "no_action", "won"]):
+            params = request.GET.copy()
+            for name in ["page", "status"]:
+                params.pop(name, None)
+            params["focus"] = focus
+            stat["url"] = reverse("legal:list", args=["crm"]) + "?" + params.urlencode()
     return context

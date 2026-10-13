@@ -2,13 +2,17 @@
 
 ## Estado da implantação — verificado em 13/10/2026
 
-O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). A release ativa é `20261013-v7`, publicada em 13/10 às 14:09:43 UTC (11:09:43 em Fortaleza). Inclui busca unificada e filtros salvos, central persistente de avisos, importação assistida CSV/XLSX e agenda semanal/diária, preservando os módulos e a navegação da v6.
+O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A release ativa é `20261013-v8`, publicada em **13/10/2026 às 18:32:25 UTC (15:32:25 em Fortaleza)**. Inclui fichas PF/PJ, detalhe documental, comentários por tarefa, ZIP por pasta, estoque/patrimônio, mapa nacional de clientes, guia e os refinamentos de Pessoas, Processos, Agenda, Kanban e Relacionamento. Start está publicado por R$ 299,90/mês e Max por R$ 599,90/mês; o CRM também está no Start. Veja os limites em [planos e assinatura](planos-e-assinatura.md).
 
-A publicação confirmou o symlink, o serviço ativo, saúde HTTPS e sucesso do backup anterior à troca. Foram aplicadas três migrations aditivas (`discovery`, `notifications`, `intake`) exclusivamente em `jumbi_v2`. Senhas e cadastros operacionais de produção foram preservados. O timer `jumbi-reminders.timer` está ativo a cada 15 minutos: a primeira execução gerou 37 ocorrências internas e completou a limpeza de prévias com sucesso. Banco temporário de teste removido (contagem zero após a suíte).
+A publicação confirmou backup concluído antes da troca, symlink correto, `jumbi-v2.service` ativo e saúde HTTPS normal. Quatro migrations foram aplicadas exclusivamente em `jumbi_v2`: rótulos de planos, inventário, campos opcionais de Contact e comentários de tarefas. Senhas e registros existentes foram preservados. O timer de avisos continuou ativo; sua execução após a publicação terminou com sucesso. O banco temporário de testes foi removido (contagem zero).
 
-Validação prévia: **322 testes passaram em PostgreSQL** (260,431 s), **400 verificações locais de navegador** (286 gerais, 35 de busca/avisos, 37 da agenda e 42 de importação), incluindo CSV/XLSX com registros fictícios no SQLite local. Conferência de hashes confirmou os 403 arquivos de código/interface/configuração/deploy entre o workspace e a release testada. A checagem de configuração mantém somente os avisos intencionais de HSTS para subdomínios e preload, pois o domínio compartilha infraestrutura.
+**501 testes passaram em PostgreSQL** em 344,865 segundos, sem testes ignorados. A conferência de hashes validou os **487 arquivos** de código/interface/configuração/deploy entre o workspace e a release final. Uma rodada anterior detectou o fechamento tardio de um cursor PostgreSQL na simulação de conflito do seed do mapa; a lista passou a ser materializada antes do rollback, e a suíte completa foi repetida com sucesso. A checagem de configuração mantém apenas os avisos intencionais de HSTS para subdomínios e preload na infraestrutura compartilhada.
 
-**Validação após publicação:** 135 verificações de navegador passaram em produção, incluindo autenticação de administrador, demo e Cliente, 390/1440 px nos temas claro/escuro, três modos de agenda, busca com resultados, formulários, menu e bloqueios das áreas internas para Cliente. Sem overflow ou erros JavaScript. Os testes de produção não importaram planilhas nem alteraram registros jurídicos. As credenciais existentes foram confirmadas e preservadas.
+As verificações locais incluíram estoque/patrimônio (206), fichas (26), comentários/ZIP (19), mapa (39), guia/planos (32), refinamentos da agenda (34), telas inspiradas nas referências (83) e ajustes finais de filtros (13), além da rodada geral anterior de 379 verificações. São rodadas de teste, não números de funcionalidades nem cenários únicos. As telas foram conferidas em viewports de 320 a 1920 pixels e temas claro/escuro, com fluxos de teclado e alternativas sem JavaScript quando aplicáveis.
+
+**Validação em produção:** 167 verificações gerais passaram, incluindo autenticação de administrador, demo e Cliente, todas as abas principais, inventário, mapa, guia, formulários, menu, teclado/gaveta, 390/1440 pixels e temas claro/escuro. Outras 33 verificações conferiram guia/assinatura/home entre 320 e 1440 pixels, preços, destino/número/mensagem dos dois links comerciais e os sete exemplos do mapa. Sem erros JavaScript ou transbordamento. Nenhuma mensagem de WhatsApp foi enviada e as credenciais existentes foram preservadas. Serviço ativo, saúde OK, backup e timer de avisos com sucesso; banco temporário ausente.
+
+Somente a organização reservada `jumbi-demonstracao` recebeu os novos exemplos: dois materiais, dois lotes, duas entradas, uma compra pendente de dois itens e dois bens; sete novos contatos fictícios em CE (2), SP, RJ, PE, DF e RS. Os comandos executaram prévia, aplicação e repetição idempotente. Nenhum contato anterior foi alterado, nenhum processo foi criado e nenhum lançamento financeiro ou pagamento foi gerado pelos exemplos.
 
 A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.service` e upstream `127.0.0.1:8040`. O banco `djumbi` é compartilhado com a instalação em `/var/www/apps/djumbi`: por esse motivo, a evolução foi feita no clone independente `jumbi_v2`. O banco original foi preservado, sem receber as migrações ou o isolamento de contas da nova versão.
 
@@ -16,8 +20,8 @@ A instalação anterior do JUMBI permanece em `/var/www/apps/jumbi`, com `jumbi.
 | --- | --- |
 | Serviço | `jumbi-v2.service`, executado pelo usuário de serviço `jumbi` |
 | Upstream | `127.0.0.1:8041` |
-| Release | `/srv/jumbi/releases/20261013-v7` |
-| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261013-v7` |
+| Release | `/srv/jumbi/releases/20261013-v8` |
+| Caminho ativo da release | `/srv/jumbi/current` aponta para `/srv/jumbi/releases/20261013-v8` |
 | Banco exclusivo | `jumbi_v2` |
 | Configuração privada | `/srv/jumbi/shared/.env`, proprietário/grupo `root:jumbi`, modo `0640` |
 | Arquivos privados | `/srv/jumbi/shared/private_media`, diretório com modo `0750` |
@@ -57,7 +61,17 @@ A repetição do comando confirmou a idempotência: os registros já importados 
 
 O comando `import_legacy_office` é um procedimento administrativo para essa origem legada. Ele não substitui um assistente geral de importação com mapeamento de planilhas, tratamento assistido de erros e retomada pela interface. Itens antigos do tipo prazo não devem ser considerados prazos jurídicos conferidos sem revisão humana da fonte e do vencimento.
 
-## Verificações da release
+## Histórico verificado da v7
+
+O servidor usa Ubuntu 22.04, Nginx, PostgreSQL 14 e serviços systemd. A publicação inicial ocorreu em 07/10/2026 às 20:06 UTC (17:06 em Fortaleza). Naquele momento, a release ativa era `20261013-v7`, publicada em 13/10 às 14:09:43 UTC (11:09:43 em Fortaleza). Inclui busca unificada e filtros salvos, central persistente de avisos, importação assistida CSV/XLSX e agenda semanal/diária, preservando os módulos e a navegação da v6.
+
+A publicação confirmou o symlink, o serviço ativo, saúde HTTPS e sucesso do backup anterior à troca. Foram aplicadas três migrations aditivas (`discovery`, `notifications`, `intake`) exclusivamente em `jumbi_v2`. Senhas e cadastros operacionais de produção foram preservados. O timer `jumbi-reminders.timer` está ativo a cada 15 minutos: a primeira execução gerou 37 ocorrências internas e completou a limpeza de prévias com sucesso. Banco temporário de teste removido (contagem zero após a suíte).
+
+Validação prévia: **322 testes passaram em PostgreSQL** (260,431 s), **400 verificações locais de navegador** (286 gerais, 35 de busca/avisos, 37 da agenda e 42 de importação), incluindo CSV/XLSX com registros fictícios no SQLite local. Conferência de hashes confirmou os 403 arquivos de código/interface/configuração/deploy entre o workspace e a release testada. A checagem de configuração mantém somente os avisos intencionais de HSTS para subdomínios e preload, pois o domínio compartilha infraestrutura.
+
+**Validação após publicação:** 135 verificações de navegador passaram em produção, incluindo autenticação de administrador, demo e Cliente, 390/1440 px nos temas claro/escuro, três modos de agenda, busca com resultados, formulários, menu e bloqueios das áreas internas para Cliente. Sem overflow ou erros JavaScript. Os testes de produção não importaram planilhas nem alteraram registros jurídicos. As credenciais existentes foram confirmadas e preservadas.
+
+## Verificações das releases anteriores
 
 - **255 testes passaram em PostgreSQL**, em 188,298 segundos, sem testes ignorados, na v6. Os sete cenários novos cobrem filtros e sigilo dos indicadores, datas de prazos, perfis, separação de valores de clientes e estornos, paginação do pipeline e consultas financeiras constantes ao aumentar os registros.
 - **256 verificações locais no navegador** passaram: 240 combinações de páginas entre 360, 390, 768, 980, 981, 1024, 1440 e 1920 px, com claro/escuro em 390/1440, mais acessos, formulários e navegação. O menu foi exercitado por mouse, teclado e toque, inclusive redimensionamento com gaveta aberta, preferência antiga e movimento reduzido. Não houve erro JavaScript ou transbordamento.
@@ -113,6 +127,8 @@ Os arquivos `deploy/backup-jumbi.sh`, `deploy/jumbi-backup.service` e `deploy/ju
 O pacote ZIP exportado pela aplicação serve à portabilidade dos registros e arquivos autorizados. Ele não substitui esse backup administrativo: contas, sessões e segredos não integram a exportação do escritório.
 
 ## Reversão da publicação
+
+**V8 → V7:** prefira corrigir a v8 preservando os dados. A v8 acrescenta isolamento de conteúdo jurídico no Django Admin; voltar diretamente ao código v7 reintroduziria o acesso global antigo do superusuário. Antes de qualquer volta, aplique e valide a mesma barreira na release de contingência ou bloqueie o admin jurídico. Confira também o catálogo de preços/limites: a v7 possui o catálogo anterior. Depois dessas verificações e de backup atual, troque o symlink atomicamente, reinicie somente `jumbi-v2.service` e valide saúde, login e arquivos. O timer v7 de avisos pode permanecer ativo. Preserve todas as tabelas, os campos opcionais com defaults no banco e os dados v8; não reverta migrations nem restaure um dump sobre a produção. Os módulos v8 ficam inacessíveis enquanto o código anterior estiver ativo, sem apagar seus registros.
 
 **V7 → V6:** desative `jumbi-reminders.timer` e aguarde eventual execução do serviço terminar antes de trocar o symlink para a release preservada `20261013-v6`. Reinicie somente `jumbi-v2.service` e confira saúde, login e estáticos. Preserve as tabelas e registros v7; não reverta migrations nem restaure banco por cima dos dados ativos. As barreiras de Cliente e MFA continuam na v6, e os novos recursos ficam indisponíveis até a retomada. Veja [organização e importação](organizacao-e-importacao.md).
 

@@ -65,17 +65,20 @@ def overview(request):
     for item in months:
         item["height"] = max(3, round(item["count"] / peak * 100))
     crm = []
-    if has_advanced(request.organization):
+    if request.membership:
         opportunities = scoped_queryset(request.user, request.organization, Opportunity)
         if niche:
             opportunities = opportunities.filter(contact_id__in=matters.values("client_id"))
         crm = [{"label": label, "count": opportunities.filter(stage=code).count()} for code, label in Opportunity.Stage.choices]
-    calendar_form = CalendarFilterForm(request.GET)
+    calendar_form = CalendarFilterForm(request.GET, request=request)
     valid_calendar = calendar_form.is_valid()
     context = calendar_context(request,
         month=calendar_form.cleaned_data.get("month") if valid_calendar else None,
         selected_day=calendar_form.cleaned_data.get("day") if valid_calendar else None,
-        kind=calendar_form.cleaned_data.get("kind", "") if valid_calendar else "")
+        kind=calendar_form.cleaned_data.get("kind", "") if valid_calendar else "",
+        responsible=calendar_form.cleaned_data.get("responsible") if valid_calendar else None,
+        status=calendar_form.cleaned_data.get("status", "all") if valid_calendar else "all",
+        valid_filters=valid_calendar)
     context.update({
         "title": "Dashboard", "page_title": "Dashboard", "active_nav": "dashboard", "today": today,
         "niche": niche, "niche_choices": choices, "niche_distribution": distribution,
@@ -99,4 +102,7 @@ def overview(request):
     })
     from apps.routines.services import dashboard_routines
     context.update(dashboard_routines(request.user, request.organization, niche=niche))
+    if finance_allowed:
+        from apps.inventory.services import stock_summary
+        context['inventory_summary'] = stock_summary(request.user, request.organization)
     return render(request, "legal/dashboard.html", context)

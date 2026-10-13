@@ -37,7 +37,9 @@ class ModuleWorkspaceTests(TestCase):
             with self.subTest(module=module):
                 response = self.screen(module)
                 self.assertEqual(response.status_code, 200)
-                self.assertEqual(response.context["module_template"], f"legal/modules/{module}.html")
+                expected = {"contacts": "legal/contact_directory.html", "cases": "legal/case_directory.html"}.get(module, f"legal/modules/{module}.html")
+                self.assertEqual(response.context["module_template"], expected)
+                self.assertTemplateUsed(response, expected if module in {"contacts", "cases"} else "legal/list.html")
                 self.assertNotContains(response, "Exportar dados")
                 self.assertNotContains(response, "Novo registro")
 

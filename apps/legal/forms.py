@@ -51,10 +51,43 @@ class OrganizationModelForm(forms.ModelForm):
 class ContactForm(OrganizationModelForm):
     class Meta:
         model = Contact
-        fields = ("name", "kind", "document", "email", "phone", "birth_date")
+        fields = ("name", "kind", "document", "status", "email", "phone", "birth_date", "profession", "trade_name", "state_registration", "municipal_registration", "postal_code", "address", "address_complement", "district", "city", "state", "country", "representatives", "notes")
         labels = {"name": "Nome / razão social", "kind": "Tipo de pessoa", "document": "CPF / CNPJ", "email": "E-mail", "phone": "Telefone"}
-        widgets = {"birth_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
-        help_texts = {"birth_date": "Opcional, somente pessoa física. Os lembretes aparecem para clientes vinculados a uma pasta acessível."}
+        widgets = {"birth_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"), "representatives": forms.Textarea(attrs={"rows": 3}), "notes": forms.Textarea(attrs={"rows": 4})}
+        help_texts = {
+            "birth_date": "Opcional, somente pessoa física. Os lembretes aparecem para clientes vinculados a uma pasta acessível.",
+            "trade_name": "Quando houver, para pessoa jurídica.",
+            "profession": "Quando pertinente ao atendimento de pessoa física.",
+            "representatives": "Registre nome, vínculo e poderes conferidos. Este cadastro não concede acesso ao portal.",
+            "notes": "Informações internas do escritório. Não são publicadas no portal do cliente.",
+            "status": "Organiza o relacionamento; não revoga acessos nem encerra pastas.",
+            "state": "No Brasil, informe a UF (ex.: CE) ou o nome do estado (ex.: Ceará). Esse campo alimenta o mapa de clientes.",
+            "country": "Informe Brasil ou o país do endereço. País diferente de Brasil aparece separado no mapa; o CEP não é usado para adivinhar o estado.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["status"].required = False
+        if self.is_bound and self.instance.pk:
+            # A form opened before deployment must not erase the new profile.
+            self.data = self.data.copy()
+            for name in self.Meta.fields[6:]:
+                if name != "birth_date" and name not in self.data:
+                    self.data[name] = getattr(self.instance, name)
+
+    def clean_status(self):
+        # Legacy imports and already-open forms may omit this new optional field.
+        return self.cleaned_data.get("status") or self.instance.status or Contact.Status.ACTIVE
+
+    @property
+    def profile_sections(self):
+        groups = [
+            ("Identificação", "Dados essenciais da pessoa ou empresa.", ("name", "kind", "document", "status", "email", "phone")),
+            ("Dados complementares", "Preencha apenas os campos pertinentes ao tipo de pessoa.", ("birth_date", "profession", "trade_name", "state_registration", "municipal_registration")),
+            ("Endereço", "Opcional. Registre o endereço informado pelo cliente.", ("postal_code", "address", "address_complement", "district", "city", "state", "country")),
+            ("Contexto do atendimento", "Informações internas e representação, sem concessão automática de acesso.", ("representatives", "notes")),
+        ]
+        return [{"title": title, "description": description, "fields": [self[name] for name in names]} for title, description, names in groups]
 
 
 class MatterForm(OrganizationModelForm):

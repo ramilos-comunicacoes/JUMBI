@@ -3,6 +3,8 @@ from django.urls import include, path
 from apps.core.workspace_views import error403, error404, error500
 
 urlpatterns = [
+    path('estoque/', include('apps.inventory.urls')),
+    path('tarefas/', include('apps.worklog.urls')),
     path('busca/', include('apps.discovery.urls')),
     path('notificacoes/', include('apps.notifications.urls')),
     path('importar/', include('apps.intake.urls')),

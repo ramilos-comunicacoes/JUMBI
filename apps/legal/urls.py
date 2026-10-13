@@ -1,15 +1,20 @@
 from django.urls import path
 
-from . import views, calendar_views, kanban_views
+from . import views, calendar_views, kanban_views, profile_views, client_map_views, guide_views
 
 app_name = "legal"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
+    path("mapa-clientes/", client_map_views.client_map, name="client_map"),
+    path("como-usar/", guide_views.guide, name="guide"),
     path("calendario/", calendar_views.calendar_view, name="calendar"),
     path("quadro/", kanban_views.board, name="kanban"),
     path("quadro/<int:pk>/mover/", kanban_views.move, name="kanban_move"),
     path("exportar/", views.export_workspace, name="export"),
+    path("pasta/<int:pk>/exportar/", views.export_workspace, name="export_matter"),
+    path("pessoa/<int:pk>/", profile_views.contact_detail, name="contact_detail"),
+    path("documento/<int:pk>/", profile_views.document_detail, name="document_detail"),
     path("arquivo/<int:pk>/", views.document_download, name="document_download"),
     path("documento/<int:pk>/versao/", views.document_upload, name="document_upload"),
     path("pasta/<int:pk>/", views.matter_detail, name="detail"),

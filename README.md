@@ -28,7 +28,7 @@ Abra `http://127.0.0.1:8000/` e escolha o plano. O cadastro cria usuário e escr
 - Busca e filtros nas listas, painel com números reais, auditoria e exportação ZIP com relações, arquivos autorizados e manifesto.
 - Pastas sigilosas exigem acesso específico, inclusive de gestores. URLs, buscas e exportações respeitam o mesmo escopo.
 
-Esta entrega é uma **base funcional para piloto**. Aprovação de documentos por versão e portal autenticado foram acrescentados na v5. Permanecem etapas do estudo: importação guiada, negociação e assinatura eletrônica de contratos, conciliação e repasses completos, filas/automações, conectores, PWA e aplicativos. Não há cálculo automático de prazo jurídico nem consulta automática a tribunais.
+Esta entrega é uma **base funcional para piloto**. Aprovação de documentos por versão e portal autenticado foram acrescentados na v5. Permanecem etapas do estudo: negociação e assinatura eletrônica de contratos, conciliação e repasses completos, filas/automações, conectores, PWA e aplicativos. Não há cálculo automático de prazo jurídico nem consulta automática a tribunais.
 
 ## Demonstração local opcional
 
@@ -60,7 +60,7 @@ Veja [auditoria do estudo](docs/auditoria-documentacao.md) para o escopo real e 
 
 ## Planos
 
-Start: R$ 89,90/mês, 3 usuários ativos, 100 pastas ativas e 200 versões de documentos. Max: R$ 199,90/mês, 15 usuários ativos, 1.000 pastas ativas e 2.000 versões, incluindo CRM, financeiro e montagem de contratos. Ambos incluem calendário, Kanban, metas operacionais, auditoria e exportação dos dados autorizados. Ativação e vigência são administradas em `/admin/billing/organizationsubscription/`; não há cobrança automática ou gateway.
+Start: R$ 299,90/mês, 5 usuários ativos, 300 pastas ativas e 1.000 versões de documentos, incluindo CRM e mapa de clientes. Max: R$ 599,90/mês, 20 usuários ativos, 2.000 pastas ativas e 5.000 versões, incluindo financeiro, honorários, contratos, portal, estoque e patrimônio. Ambos incluem calendário, Kanban, metas operacionais, auditoria e exportação dos dados autorizados. Ativação e vigência são administradas em `/admin/billing/organizationsubscription/`; não há cobrança automática ou gateway.
 
 A contratação pode começar pelo WhatsApp: os botões dos planos preenchem a mensagem com plano e valor para o número comercial informado. A mensagem depende do envio pelo visitante; abrir o link não ativa assinatura.
 
@@ -93,3 +93,19 @@ As regras de celular, tablet e desktop e a pesquisa nas páginas oficiais de Ast
 Busca unificada em sete áreas com até 12 filtros pessoais salvos; central persistente de avisos internos, leitura e arquivamento; importação assistida CSV/XLSX de pessoas e processos, com prévia, duplicidades e confirmação atômica; agenda em mês, semana e dia com sobreposições de responsável e composição própria no celular. Disponíveis nos dois planos, conforme os papéis de acesso. Importação é exclusiva de direção e gestão.
 
 O timer `jumbi-reminders.timer` gera os avisos e limpa prévias expiradas a cada 15 minutos. Não envia mensagens externas, não captura tribunais e não calcula prazos automaticamente. Veja [organização e importação](docs/organizacao-e-importacao.md) para regras, limites e operação.
+
+## Fichas, colaboração e recursos do escritório · v8
+
+- Fichas PF/PJ com endereço, dados profissionais/cadastrais, representantes, situação e observações; pastas e vínculos autorizados na página da pessoa.
+- Página individual de documento com versões, hashes, revisões e publicações existentes, sem publicação automática.
+- Comentários imutáveis por tarefa, acessíveis pelo Kanban, com autor/data e proteção contra duplicidade.
+- Exportação ZIP por pasta, com registros vinculados, originais e manifesto de integridade. A exportação do escritório também inclui comentários, estoque e patrimônio conforme as permissões.
+- Estoque e patrimônio no Max para direção/gestão: materiais, categorias, fornecedores, lotes, validade, entradas, consumo, perdas, contagem, estornos e compras com recebimento confirmado. Equipamentos têm responsável/local/situação e histórico. Nenhum pagamento é lançado automaticamente.
+- Django Admin jurídico limitado ao escritório e às pastas autorizadas; ser superusuário não concede acesso ao conteúdo de terceiros.
+- Mapa nacional por UF com filtros e ranking, baseado nos cadastros autorizados, sem envio de dados a serviços externos. Arquivos geográficos locais com atribuição ao IBGE.
+- Pessoas e Processos com indicadores clicáveis, filtros, ordenação e paginação; profissões/faixas etárias e distribuição por nicho calculadas sobre os registros existentes. Agenda por responsável/situação, recortes do Kanban e CRM em quadro ou lista.
+- Guia “Como usar o JUMBI”, explicações recolhíveis e layouts específicos para celular. Start inclui CRM, mapa e a operação jurídica; Max acrescenta a gestão financeira e os recursos avançados publicados.
+
+Consulte [a matriz da documentação v0.2](docs/requisitos-v02.md) e [os fluxos de estoque e patrimônio](docs/estoque-e-patrimonio.md). A matriz distingue recursos entregues de etapas futuras, como editor rico, assinatura e integrações judiciais. A arquitetura permanece Django SSR/PostgreSQL.
+
+Veja também [planos e limites](docs/planos-e-assinatura.md), [mapa de clientes](docs/mapa-clientes.md) e [aprimoramentos das referências de interface](docs/referencia-interface.md).

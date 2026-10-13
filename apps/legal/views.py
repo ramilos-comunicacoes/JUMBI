@@ -42,7 +42,7 @@ from .services import (
 
 MODULES = {
     "matters": {"model": Matter, "title": "Pastas jurídicas", "singular": "pasta", "subtitle": "O trabalho do escritório, do primeiro atendimento à conclusão.", "columns": ["Pasta", "Cliente", "Natureza", "Responsável", "Situação"], "search": ["title", "client__name", "area"], "status": "status"},
-    "contacts": {"model": Contact, "title": "Pessoas", "singular": "pessoa", "subtitle": "Um cadastro, todas as relações do escritório.", "columns": ["Nome", "Tipo", "CPF / CNPJ", "E-mail", "Telefone"], "search": ["name", "email", "document", "phone"], "status": "kind"},
+    "contacts": {"model": Contact, "title": "Pessoas", "singular": "pessoa", "subtitle": "Um cadastro, todas as relações do escritório.", "columns": ["Nome", "Tipo", "CPF / CNPJ", "E-mail", "Telefone"], "search": ["name", "trade_name", "email", "phone", "document", "city"], "status": "kind"},
     "cases": {"model": CourtCase, "title": "Processos", "singular": "processo", "subtitle": "Processos judiciais e administrativos vinculados às pastas.", "columns": ["Número", "Pasta", "Tribunal / órgão", "Parte contrária"], "search": ["number", "court", "matter__title", "opposing_party"]},
     "tasks": {"model": Task, "title": "Tarefas", "singular": "tarefa", "subtitle": "Responsabilidade, prioridades e evidências de cada entrega.", "columns": ["Tarefa", "Pasta", "Responsável", "Entrega", "Prioridade", "Situação"], "search": ["title", "description", "matter__title"], "status": "status"},
     "deadlines": {"model": Deadline, "title": "Prazos e controladoria", "singular": "prazo", "subtitle": "Conferência humana e histórico das obrigações jurídicas.", "columns": ["Obrigação", "Pasta", "Responsável", "Vencimento", "Situação"], "search": ["title", "source", "matter__title"], "status": "status"},
@@ -268,7 +268,26 @@ def dashboard(request):
 @require_GET
 def record_list(request, module):
     config = get_module(request, module)
+    if module == "contacts":
+        from .contact_directory import directory
+        return directory(request)
+    if module == "cases":
+        from .case_directory import directory
+        return directory(request)
     queryset = scoped_queryset(request.user, request.organization, config["model"])
+    relationship_form = None
+    relationship_valid = True
+    if module == "crm":
+        from .relationship_filters import RelationshipFilterForm
+        relationship_form = RelationshipFilterForm(request.GET, request=request)
+        relationship_valid = relationship_form.is_valid()
+        if not relationship_valid:
+            queryset = queryset.none()
+        else:
+            data = relationship_form.cleaned_data
+            if data["owner"]:
+                queryset = queryset.filter(owner_id=data["owner"])
+            queryset = queryset.order_by(*{"": ("-created_at", "-pk"), "oldest": ("created_at", "pk"), "amount": ("-amount", "pk"), "name": ("title", "pk")}[data["sort"]])
     from .niches import filter_niche, niche_selection
     niche, niche_choices = niche_selection(request)
     if config["model"] is Matter:
@@ -285,6 +304,15 @@ def record_list(request, module):
             search |= Q(**{f"{field}__icontains": q})
         queryset = queryset.filter(search)
     status_field = config.get("status")
+    relationship_summary = queryset if module == "crm" else None
+    if module == "crm" and relationship_valid:
+        focus = relationship_form.cleaned_data["focus"]
+        if focus in {"open", "no_action"}:
+            queryset = queryset.exclude(stage__in=["won", "lost"])
+        if focus == "no_action":
+            queryset = queryset.filter(next_action__regex=r"^\s*$")
+        elif focus == "won":
+            queryset = queryset.filter(stage="won")
     status_choices = list(config["model"]._meta.get_field(status_field).choices) if status_field else []
     status = request.GET.get("status", "")
     if status and status in dict(status_choices):
@@ -303,8 +331,11 @@ def record_list(request, module):
         "niche": niche, "niche_choices": niche_choices,
         "create_url": reverse("legal:create", args=[module]), "can_create": can_edit(request),
     }
-    context.update(present_list(request, module, queryset, page_obj, editable=can_edit(request), actions=record_actions, money_label=money_label, user_label=user_label))
-    return render(request, "legal/list.html" if module in MODULE_PAGES else "legal/modules-generic.html", context)
+    context.update(present_list(request, module, queryset, page_obj, editable=can_edit(request), actions=record_actions, money_label=money_label, user_label=user_label, summary_queryset=relationship_summary))
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+    context.update(relationship_form=relationship_form, relationship_view=request.GET.get("view", ""), pagination_query=query_params.urlencode(), has_relationship_filters=module == "crm" and any(request.GET.get(key) for key in ["q", "status", "niche", "owner", "focus"]), invalid_relationship=not relationship_valid)
+    return render(request, "legal/list.html" if module in MODULE_PAGES else "legal/modules-generic.html", context, status=200 if relationship_valid else 400)
 
 
 def add_validation_errors(form, error):
@@ -520,7 +551,7 @@ from apps.performance.models import Goal, GoalUpdate
 
 EXPORT_FIELDS = {
     Matter: ["title", "client_id", "nature", "area", "status", "description", "confidential", "owner_id", "created_at"],
-    Contact: ["name", "email", "phone", "document", "kind", "birth_date", "created_at"],
+    Contact: ["name", "email", "phone", "document", "kind", "birth_date", "trade_name", "profession", "postal_code", "address", "address_complement", "district", "city", "state", "country", "state_registration", "municipal_registration", "representatives", "notes", "status", "created_at"],
     CourtCase: ["matter_id", "number", "court", "opposing_party", "notes", "created_at"],
     Task: ["matter_id", "title", "description", "owner_id", "due_date", "status", "priority", "completion_note", "completed_at", "created_at"],
     Deadline: ["matter_id", "title", "source", "due_date", "owner_id", "status", "confirmed_by_id", "confirmed_at", "evidence", "created_at"],
@@ -544,8 +575,9 @@ EXPORT_FIELDS.update(EXTRA_EXPORT_FIELDS)
 
 @organization_required
 @require_GET
-def export_workspace(request):
+def export_workspace(request, pk=None):
     """Export authorized records and original bytes without exposing storage paths."""
+    matter = get_object_or_404(scoped_queryset(request.user, request.organization, Matter, for_export=True), pk=pk) if pk is not None else None
     output = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
     finance_allowed = request.membership.role in {"owner", "manager"}
     manifest = {
@@ -555,12 +587,19 @@ def export_workspace(request):
         "notes": ["Valores monetários são strings decimais. Datas usam ISO 8601.", "Usuários referenciados têm somente identificador e nome de exibição; credenciais e dados de autenticação não são exportados.", "A auditoria contém apenas eventos de objetos ainda acessíveis.", "Modelos arquivados referenciados por contratos autorizados preservam os vínculos de reconstrução.", "Metas financeiras seguem as permissões de direção/gestão; a portabilidade permanece disponível após expiração do plano.", "Metas automáticas exportam a configuração; seu progresso pode ser recalculado pelos registros autorizados incluídos no pacote.", "Este pacote não inclui módulos ainda não implementados nem substitui o backup operacional."],
     }
     records = {}
+    if matter:
+        manifest["matter"] = {"id": matter.pk, "title": matter.title}
+        manifest["scope"] = "Somente esta pasta e seus registros vinculados autorizados no momento da exportação."
+        manifest["notes"].append("Cadastros gerais sem vínculo com esta pasta, metas, estoque e oportunidades comerciais não integram este recorte.")
     try:
         with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             for model, fields in EXPORT_FIELDS.items():
                 if model in {FinanceEntry, Payment} and not finance_allowed:
                     continue
                 queryset = accessible_audit(request.user, request.organization, request.membership.role, for_export=True) if model is AuditEvent else scoped_queryset(request.user, request.organization, model, for_export=True)
+                if matter:
+                    from .export_scopes import matter_scope, matter_audit
+                    queryset = matter_audit(queryset, user=request.user, organization=request.organization, matter=matter, models=EXPORT_FIELDS) if model is AuditEvent else matter_scope(queryset, matter)
                 key = model._meta.model_name
                 values = []
                 for obj in queryset.iterator():
@@ -597,10 +636,14 @@ def export_workspace(request):
             user_ids = set()
             for rows in records.values():
                 for row in rows:
-                    for field in ("owner_id", "actor_id", "created_by_id", "uploaded_by_id", "confirmed_by_id", "completed_by_id", "requested_by_id", "reviewer_id", "published_by_id", "revoked_by_id", "user_id"):
+                    for field in ("owner_id", "actor_id", "created_by_id", "uploaded_by_id", "confirmed_by_id", "completed_by_id", "requested_by_id", "reviewer_id", "published_by_id", "revoked_by_id", "user_id", "custodian_id", "received_by_id"):
                         if row.get(field):
                             user_ids.add(row[field])
                     user_ids.update(row.get("member_ids", []))
+                    if "before" in row and "after" in row:
+                        for snapshot in (row['before'], row['after']):
+                            if isinstance(snapshot, dict) and snapshot.get('custodian_id'):
+                                user_ids.add(snapshot['custodian_id'])
             records["users"] = [
                 {"id": user.pk, "display_name": user.get_full_name() or f"Usuário #{user.pk}"}
                 for user in get_user_model().objects.filter(pk__in=user_ids).order_by("pk")
@@ -611,8 +654,9 @@ def export_workspace(request):
             manifest["files"].append({"path": "records.json", "sha256": hashlib.sha256(payload).hexdigest(), "bytes": len(payload)})
             archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8"))
         output.seek(0)
-        audit(organization=request.organization, actor=request.user, action="workspace.exported", description="Exportação dos registros e arquivos autorizados.")
-        response = FileResponse(output, as_attachment=True, filename=f"jumbi-exportacao-{timezone.localdate().isoformat()}.zip", content_type="application/zip")
+        audit(organization=request.organization, actor=request.user, action="matter.exported" if matter else "workspace.exported", obj=matter, description="Exportação da pasta e seus arquivos autorizados." if matter else "Exportação dos registros e arquivos autorizados.")
+        filename = f"jumbi-pasta-{matter.pk}-{timezone.localdate().isoformat()}.zip" if matter else f"jumbi-exportacao-{timezone.localdate().isoformat()}.zip"
+        response = FileResponse(output, as_attachment=True, filename=filename, content_type="application/zip")
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"
         return response

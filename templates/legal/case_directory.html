@@ -1,0 +1,67 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-case-directory.css' %}">{% endblock %}
+{% block content %}
+<div class="case-directory">
+  <header class="case-heading">
+    <div><span class="case-eyebrow"><svg class="icon" aria-hidden="true"><use href="#i-cases"/></svg>Registro processual</span><h1>Processos</h1><p>Números, partes e pastas. O contexto de cada processo em um só lugar.</p></div>
+    {% if can_create %}<a href="{{ create_url }}" class="button button-primary"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Novo processo</a>{% endif %}
+  </header>
+
+  <section class="case-filter-panel" aria-labelledby="case-filter-title">
+    <div class="case-panel-heading"><h2 id="case-filter-title"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>Encontre o processo</h2>{% if has_filters or not filters_valid %}<a href="{{ clear_url }}" class="case-clear">Limpar filtros</a>{% endif %}</div>
+    {% if not filters_valid %}<div class="case-filter-error" role="alert"><strong>Revise os filtros para continuar.</strong><p>Nenhum resultado foi exibido para esta consulta inválida.</p>{% for error in filter_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}{% for error in filter_form.page.errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+    <form method="get" class="case-filters" role="search" aria-label="Filtrar processos">
+      <div class="case-field case-field-search"><label for="{{ filter_form.q.id_for_label }}">{{ filter_form.q.label }}</label>{{ filter_form.q }}{{ filter_form.q.errors }}</div>
+      <div class="case-field case-field-owner"><label for="{{ filter_form.owner.id_for_label }}">{{ filter_form.owner.label }}</label>{{ filter_form.owner }}{{ filter_form.owner.errors }}</div>
+      <div class="case-field"><label for="{{ filter_form.status.id_for_label }}">{{ filter_form.status.label }}</label>{{ filter_form.status }}{{ filter_form.status.errors }}</div>
+      <div class="case-field"><label for="{{ filter_form.niche.id_for_label }}">{{ filter_form.niche.label }}</label>{{ filter_form.niche }}{{ filter_form.niche.errors }}</div>
+      <div class="case-field"><label for="{{ filter_form.sort.id_for_label }}">{{ filter_form.sort.label }}</label>{{ filter_form.sort }}{{ filter_form.sort.errors }}</div>
+      <div class="case-field"><label for="{{ filter_form.per_page.id_for_label }}">{{ filter_form.per_page.label }}</label>{{ filter_form.per_page }}{{ filter_form.per_page.errors }}</div>
+      <button type="submit" class="button button-secondary case-filter-submit">Aplicar filtros<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+    </form>
+  </section>
+
+  {% if filters_valid %}
+  <section class="case-status-overview" aria-labelledby="case-status-title">
+    <div class="case-section-heading"><h2 id="case-status-title">Situação da pasta jurídica</h2><p>Contagem de processos por situação da pasta. Respeita busca, responsável e nicho.</p></div>
+    <div class="case-stat-grid">{% for stat in case_stats %}<a href="{{ stat.url }}" class="case-stat case-stat-{{ stat.key }}{% if stat.selected %} is-selected{% endif %}" {% if stat.selected %}aria-current="true"{% endif %}><span class="case-stat-top"><span class="case-stat-dot" aria-hidden="true"></span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span><strong>{{ stat.value }}</strong><span>{{ stat.label }}</span><span class="case-stat-action">{% if stat.selected %}Filtro atual{% else %}Ver processos{% endif %}</span></a>{% endfor %}</div>
+  </section>
+
+  <div class="case-content-grid">
+    <section class="case-results" aria-labelledby="case-results-title">
+      <header class="case-results-heading"><div><span class="case-eyebrow">Sua carteira processual</span><h2 id="case-results-title">{{ result_total }} processo{{ result_total|pluralize:"s" }}</h2><p>Em {{ matter_total }} pasta{{ matter_total|pluralize:"s" }} · resultados{% if has_filters %} filtrados{% else %} autorizados{% endif %}</p></div><span class="case-page-counter">{% if result_total %}{{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ result_total }}{% else %}Nenhum registro{% endif %}</span></header>
+      {% if case_rows %}
+      <div class="case-table-scroll" tabindex="0" role="region" aria-label="Tabela de processos; role na horizontal se necessário">
+        <table class="case-table"><caption class="case-visually-hidden">Processos autorizados que correspondem aos filtros. Situação, nicho e responsável pertencem à pasta vinculada.</caption><thead><tr><th scope="col">Processo / órgão</th><th scope="col">Partes</th><th scope="col">Pasta / nicho</th><th scope="col">Responsável<br>pela pasta</th><th scope="col">Cadastro<br>no JUMBI</th><th scope="col"><span class="case-visually-hidden">Ações</span></th></tr></thead><tbody>
+        {% for row in case_rows %}<tr>
+          <th scope="row" class="case-identity"><a href="{{ row.url }}" class="case-number">{{ row.record.number }}</a><span class="case-secondary">{{ row.record.court|default:"Órgão não informado" }}</span>{% if row.record.notes %}<details class="case-notes"><summary>Anotações do processo</summary><div>{{ row.record.notes|linebreaksbr }}</div></details>{% endif %}</th>
+          <td><div class="case-party"><span class="case-cell-label">Cliente</span><strong>{{ row.matter.client.name|default:"Não vinculado" }}</strong></div><div class="case-party case-opposing"><span class="case-cell-label">Contraparte</span><span>{{ row.record.opposing_party|default:"Não informada" }}</span></div></td>
+          <td><a href="{{ row.url }}" class="case-matter-link">{{ row.matter.title }}</a><span class="case-secondary">{{ row.area }}</span><span class="case-status case-status-{{ row.matter.status }}">Pasta: {{ row.matter.get_status_display }}</span>{% if row.matter.confidential %}<span class="case-confidential"><svg class="icon" aria-hidden="true"><use href="#i-audit"/></svg>Pasta sigilosa</span>{% endif %}</td>
+          <td><span class="case-owner">{{ row.owner }}</span></td><td><time class="case-date" datetime="{{ row.record.created_at|date:'c' }}">{{ row.record.created_at|date:"d/m/Y" }}</time></td>
+          <td><div class="case-row-actions"><a href="{{ row.url }}" aria-label="Abrir pasta de {{ row.record.number }}">Abrir pasta<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>{% if row.edit_url %}<a href="{{ row.edit_url }}" class="case-edit" aria-label="Editar processo {{ row.record.number }}">Editar</a>{% endif %}</div></td>
+        </tr>{% endfor %}</tbody></table>
+      </div>
+      <div class="case-mobile-cards">
+        {% for row in case_rows %}<article class="case-mobile-card" aria-label="Processo {{ row.record.number }}">
+          <header><span class="case-status case-status-{{ row.matter.status }}">Pasta: {{ row.matter.get_status_display }}</span>{% if row.matter.confidential %}<span class="case-confidential"><svg class="icon" aria-hidden="true"><use href="#i-audit"/></svg>Sigilosa</span>{% endif %}<h3><a href="{{ row.url }}">{{ row.record.number }}</a></h3><p>{{ row.record.court|default:"Órgão não informado" }}</p></header>
+          <div class="case-mobile-parties"><div><span class="case-cell-label">Cliente</span><strong>{{ row.matter.client.name|default:"Não vinculado" }}</strong></div><span class="case-versus" aria-hidden="true">×</span><div><span class="case-cell-label">Contraparte</span><strong>{{ row.record.opposing_party|default:"Não informada" }}</strong></div></div>
+          <a href="{{ row.url }}" class="case-mobile-matter"><svg class="icon" aria-hidden="true"><use href="#i-matters"/></svg><span><span class="case-cell-label">Pasta jurídica</span><strong>{{ row.matter.title }}</strong></span></a>
+          <dl class="case-mobile-facts"><div><dt>Nicho da pasta</dt><dd>{{ row.area }}</dd></div><div><dt>Responsável pela pasta</dt><dd>{{ row.owner }}</dd></div><div><dt>Cadastro no JUMBI</dt><dd><time datetime="{{ row.record.created_at|date:'c' }}">{{ row.record.created_at|date:"d/m/Y" }}</time></dd></div></dl>
+          {% if row.record.notes %}<details class="case-notes"><summary>Anotações do processo</summary><div>{{ row.record.notes|linebreaksbr }}</div></details>{% endif %}
+          <footer><a href="{{ row.url }}" class="button button-secondary">Abrir pasta<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>{% if row.edit_url %}<a href="{{ row.edit_url }}" class="case-edit" aria-label="Editar processo {{ row.record.number }}">Editar processo</a>{% endif %}</footer>
+        </article>{% endfor %}
+      </div>
+      {% else %}<div class="case-empty"><span class="case-empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-cases"/></svg></span><h3>{% if has_filters %}Nenhum processo com estes filtros{% else %}Sua carteira começa aqui{% endif %}</h3><p>{% if has_filters %}Revise a busca, a situação, o nicho ou o responsável pela pasta.{% else %}Vincule um processo a uma pasta jurídica para reunir número, partes, órgão e anotações.{% endif %}</p>{% if has_filters %}<a href="{{ clear_url }}" class="button button-secondary">Limpar filtros</a>{% elif can_create %}<a href="{{ create_url }}" class="button button-primary">Cadastrar processo</a>{% endif %}</div>{% endif %}
+      {% if page_obj.has_other_pages %}<nav class="case-pagination" aria-label="Paginação dos processos"><span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span><div>{% if previous_url %}<a href="{{ previous_url }}" class="button button-secondary" rel="prev">Anterior</a>{% endif %}{% if next_url %}<a href="{{ next_url }}" class="button button-secondary" rel="next">Próxima</a>{% endif %}</div></nav>{% endif %}
+    </section>
+
+    <aside class="case-niche-panel" aria-labelledby="case-niche-title">
+      <span class="case-eyebrow">Composição da carteira</span><h2 id="case-niche-title">Processos por nicho</h2><p>Distribuição dos resultados filtrados, incluindo a situação da pasta.</p>
+      {% if case_distribution %}<div class="case-distribution">{% for item in case_distribution %}<a href="{{ item.url }}" class="case-niche-row{% if item.selected %} is-selected{% endif %}" {% if item.selected %}aria-current="true"{% endif %}><span class="case-niche-label"><span>{{ item.label }}</span><strong>{{ item.count }}</strong></span><span class="case-niche-track" aria-hidden="true"><span style="width:{{ item.width }}%"></span></span><span class="case-niche-percent">{{ item.percent }}% dos resultados<span aria-hidden="true">↗</span></span></a>{% endfor %}</div>{% else %}<p class="case-chart-empty">A distribuição aparece quando há processos nesta consulta.</p>{% endif %}
+      <div class="case-context-note"><svg class="icon" aria-hidden="true"><use href="#i-matters"/></svg><p><strong>A pasta dá o contexto.</strong>Nicho, responsável e situação vêm da pasta vinculada. Cadastro é a data de inclusão do processo no JUMBI.</p></div>
+    </aside>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

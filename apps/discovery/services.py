@@ -57,6 +57,8 @@ def result_card(obj, kind, *, editable):
         subtitle = obj.matter.title
     if kind == "matters":
         url = reverse("legal:detail", args=[obj.pk])
+    elif kind in {"contacts", "documents", "tasks"}:
+        url = reverse({"contacts": "legal:contact_detail", "documents": "legal:document_detail", "tasks": "worklog:task"}[kind], args=[obj.pk])
     elif editable:
         url = reverse("legal:edit", args=[kind, obj.pk])
     elif getattr(obj, "matter_id", None):
@@ -64,4 +66,4 @@ def result_card(obj, kind, *, editable):
     else:
         url = reverse("legal:list", args=[kind]) + "?" + urlencode({"q": title})
     return {"title": title, "subtitle": subtitle, "url": url, "kind": kind, "id": obj.pk,
-            "action": "Abrir pasta" if kind == "matters" or (not editable and getattr(obj, "matter_id", None)) else "Abrir cadastro" if editable else "Ver na lista"}
+            "action": "Ver detalhes" if kind in {"contacts", "documents", "tasks"} else "Abrir pasta" if kind == "matters" or (not editable and getattr(obj, "matter_id", None)) else "Abrir cadastro" if editable else "Ver na lista"}

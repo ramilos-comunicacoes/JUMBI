@@ -150,19 +150,23 @@ def _timed_segments(current, events, tz):
     return segments
 
 
-def calendar_context(request, month=None, selected_day=None, kind="", today=None, view="month"):
+def calendar_context(request, month=None, selected_day=None, kind="", today=None, view="month", responsible=None, status="all", valid_filters=True):
     """Shared context for full calendar and dashboard's compact calendar."""
     from .calendar_forms import CalendarFilterForm
     from .views import can_edit, scoped_queryset
 
     today = today or timezone.localdate()
     # Shared dashboard include also supports month/day/category navigation.
-    if month is None:
-        filters = CalendarFilterForm(request.GET)
-        if filters.is_valid():
+    filters = CalendarFilterForm(request.GET, request=request)
+    if filters.is_valid():
+        responsible = responsible or filters.cleaned_data.get("responsible")
+        status = filters.cleaned_data.get("status", "all") if status == "all" else status
+        if month is None:
             month = filters.cleaned_data.get("month")
             selected_day = selected_day or filters.cleaned_data.get("day")
             kind = kind or filters.cleaned_data.get("kind", "")
+    else:
+        valid_filters = False
     # Dashboard always defaults to its compact month, regardless of a view query string.
     view = view if view in ("week", "day") else "month"
     month = (month or selected_day or today).replace(day=1)
@@ -185,7 +189,10 @@ def calendar_context(request, month=None, selected_day=None, kind="", today=None
     editable = can_edit(request)
     niche, choices = niche_selection(request)
     def records(model):
-        return filter_niche(scoped_queryset(request.user, request.organization, model), niche, choices, relation="matter__")
+        queryset = filter_niche(scoped_queryset(request.user, request.organization, model), niche, choices, relation="matter__")
+        if not valid_filters:
+            return queryset.none()
+        return queryset.filter(owner=responsible) if responsible else queryset
 
     tz = timezone.get_current_timezone()
     start = timezone.make_aware(datetime.combine(first, time.min), tz)
@@ -201,6 +208,18 @@ def calendar_context(request, month=None, selected_day=None, kind="", today=None
         # End is exclusive: an appointment ending at midnight does not occupy the following day.
         final_date = timezone.localtime(obj.ends_at - timedelta(microseconds=1), tz).date()
         events.append({"id": f"appointment-{obj.pk}", "kind": "important" if obj.kind == Appointment.Kind.IMPORTANT_DATE else "appointment", "title": obj.title, "date": local_start.date(), "end_date": final_date, "time": local_start.strftime("%H:%M"), "end_time": local_end.strftime("%H:%M"), "ends_at": local_end, "starts_at": local_start, "label": obj.get_kind_display(), "status": "", "done": False, "matter": obj.matter, "owner": obj.owner, "location": obj.location, "url": _event_url(obj, "appointments", editable), "sort": local_start.strftime("%H:%M")})
+    now = timezone.now()
+    for event in events:
+        event["overdue"] = not event["done"] and not event.get("starts_at") and event["date"] < today
+        event["ended"] = bool(event.get("ends_at") and event["ends_at"] <= now)
+        event["state"] = "completed" if event["done"] else "overdue" if event["overdue"] else "ended" if event["ended"] else "pending"
+        if event.get("starts_at"):
+            event["status"] = "Encerrado" if event["ended"] else "Em andamento" if event["starts_at"] <= now else "Agendado"
+    def matches_status(event):
+        if status == "pending":
+            return event["state"] in ("pending", "overdue")
+        return status == "all" or event["state"] == status
+    events = [event for event in events if matches_status(event)]
     period_events = [e for e in events if e["date"] < next_month and e["end_date"] >= month] if view == "month" else events[:]
     _mark_conflicts(events)
     counts = Counter(e["kind"] for e in period_events)
@@ -218,7 +237,7 @@ def calendar_context(request, month=None, selected_day=None, kind="", today=None
             cursor += timedelta(days=1)
     def url_for(*, target_day=None, target_month=None, target_view=None, target_kind=None):
         target_day = target_day or selected_day
-        return "?" + urlencode({"month": (target_month or target_day).strftime("%Y-%m"), "day": target_day.isoformat(), "view": target_view or view, "kind": kind if target_kind is None else target_kind, "niche": niche})
+        return "?" + urlencode({"month": (target_month or target_day).strftime("%Y-%m"), "day": target_day.isoformat(), "view": target_view or view, "kind": kind if target_kind is None else target_kind, "niche": niche, "responsible": responsible.pk if responsible else "", "status": status})
 
     cells = []
     for current in dates:
@@ -254,10 +273,17 @@ def calendar_context(request, month=None, selected_day=None, kind="", today=None
         "calendar_hours": [{"label": f"{hour:02d}:00", "top": hour * 60} for hour in range(24)],
         "calendar_scroll_start": max(0, min(timed_hours, default=8) - 1) * 60,
         "calendar_conflict_count": conflict_count,
+        "calendar_responsible": responsible,
+        "calendar_status": status,
+        "calendar_filters_active": bool(responsible or status != "all" or niche or kind),
+        "calendar_reset_url": "?" + urlencode({"month": month.strftime("%Y-%m"), "day": selected_day.isoformat(), "view": view}),
+        "calendar_filter_form": filters,
         "can_edit": editable,
         "niche": niche, "niche_choices": choices,
     }
-    if view == "month":
+    if not valid_filters:
+        result.update({"birthdays": [], "birthday_today_count": 0})
+    elif view == "month":
         result.update(birthday_context(request, month=month, today=today))
     else:
         birthday_months = {current.replace(day=1) for current in dates}

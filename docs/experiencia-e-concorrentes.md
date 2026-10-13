@@ -45,6 +45,6 @@ Esta ordem é uma recomendação baseada nas necessidades do JUMBI e na pesquisa
 5. **Recebíveis por atraso e previsão mensal:** separar saldo vencido, a vencer e recebimentos efetivos, com filtros por cliente e pasta; sem somar valores de clientes ao caixa do escritório.
 6. **Monitoramento processual e assinaturas:** avaliar fornecedores e custos antes da integração; tratar falhas, consentimentos, trilha de eventos e conferência humana. Não há captura de tribunais ou assinatura eletrônica na versão atual.
 
-Os preços Start de R$ 89,90 e Max de R$ 199,90 permanecem os definidos pelo usuário. A pesquisa não altera planos, limites ou contratação.
+Na pesquisa anterior, os preços eram Start R$ 89,90 e Max R$ 199,90. Na v8, o usuário definiu Start R$ 299,90 e Max R$ 599,90; os novos recursos e limites estão em planos-e-assinatura.md. A pesquisa de concorrentes não determina automaticamente preços.
 
 Consulte [organização e importação](organizacao-e-importacao.md) para os fluxos, permissões e limites reais da v7. Os itens 5 e 6 continuam como propostas.
