@@ -1,0 +1,135 @@
+{% extends 'legal/base.html' %}
+{% block title %}Comunica PJe & DJEN · Pesquisa Diária{% endblock %}
+{% block extra_css %}
+<style>
+.badge-urgent { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
+.badge-attention { background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.4); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
+.badge-horizon { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
+.badge-pending { background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow">COMUNICAÇÕES PROCESSUAIS <span class="eyebrow-divider">/</span> COMUNICA PJe & DJEN</div>
+    <h1>Pesquisa Diária: Geórgia de Andrade Almeida</h1>
+    <p>Rotina diária em 3 campos separados: teor da comunicação, nome da parte e nome da advogada.</p>
+  </div>
+  <div class="heading-actions">
+    {% if selected_run %}
+      <a href="{% url 'legal:djen_download_word_report' selected_run.pk %}" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-documents"/></svg> Baixar Relatório Word (.docx)
+      </a>
+    {% endif %}
+    {% if can_edit %}
+      <form method="post" action="{% url 'legal:djen_execute_search' %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="button button-primary">
+          <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg> Executar pesquisa do dia
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="matter-grid">
+  {% if selected_run %}
+  <section class="panel span-full">
+    <div class="panel-heading">
+      <div>
+        <div class="section-kicker">EXECUÇÃO SELECIONADA</div>
+        <h2>Data-base: {{ selected_run.base_date|date:"d/m/Y" }} — {{ selected_run.get_status_display }}</h2>
+      </div>
+      <span class="muted small">Conferência por: {{ selected_run.operator.get_full_name|default:selected_run.operator.email }}</span>
+    </div>
+
+    <dl class="detail-grid" style="margin-bottom: 1rem;">
+      <div><dt>Nome pesquisado</dt><dd>{{ selected_run.queried_name }}</dd></div>
+      <div><dt>Campos consultados</dt><dd>Teor, Nome da Parte, Nome do Advogado</dd></div>
+      <div><dt>Total localizado</dt><dd>{{ selected_run.total_found }} ocorrência(s)</dd></div>
+      <div><dt>Deduplicadas (IDs únicos)</dt><dd><strong>{{ selected_run.total_deduplicated }}</strong></dd></div>
+    </dl>
+
+    {% if selected_run.errors %}
+      <div class="alert alert-warning" style="margin-bottom: 1rem;">
+        <svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>
+        <span><strong>Pesquisa parcial:</strong> {{ selected_run.errors }}</span>
+      </div>
+    {% endif %}
+
+    <div class="table-scroll">
+      <table role="table" class="mobile-records">
+        <thead role="rowgroup">
+          <tr role="row">
+            <th role="columnheader">Processo / Unidade</th>
+            <th role="columnheader">Tribunal</th>
+            <th role="columnheader">Partes</th>
+            <th role="columnheader">Critérios Encontrados</th>
+            <th role="columnheader">Menção de Prazo</th>
+            <th role="columnheader">Vencimento Sugerido</th>
+            <th role="columnheader">Situação</th>
+          </tr>
+        </thead>
+        <tbody role="rowgroup">
+          {% for comm in comms %}
+          <tr role="row">
+            <td role="cell" data-label="Processo">
+              <strong>{{ comm.case_number }}</strong><br>
+              <span class="muted small">{{ comm.court_unit|default:comm.court }}</span>
+            </td>
+            <td role="cell" data-label="Tribunal">{{ comm.court }}</td>
+            <td role="cell" data-label="Partes">{{ comm.parties|default:"—" }}</td>
+            <td role="cell" data-label="Critérios">
+              {% for field in comm.matched_fields %}
+                <span class="badge badge-slate" style="font-size: 0.75rem;">{{ field }}</span>
+              {% empty %}—{% endfor %}
+            </td>
+            <td role="cell" data-label="Menção de prazo">{{ comm.deadline_text }}</td>
+            <td role="cell" data-label="Vencimento">
+              {% if comm.proposed_due_date %}
+                <strong>{{ comm.proposed_due_date|date:"d/m/Y" }}</strong>
+              {% else %}
+                <span class="badge-pending">A conferir</span>
+              {% endif %}
+            </td>
+            <td role="cell" data-label="Situação">
+              <span class="badge">{{ comm.get_status_display }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% else %}
+  <section class="panel span-full">
+    <div class="empty-state">
+      <h3>Nenhuma pesquisa DJEN executada ainda.</h3>
+      <p>Clique no botão acima para rodar a rotina diária nos 3 campos do Comunica PJe.</p>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if runs|length > 1 %}
+  <section class="panel span-full">
+    <div class="panel-heading">
+      <h2>Histórico de Pesquisas Anteriores</h2>
+    </div>
+    <div class="task-list">
+      {% for run in runs %}
+        <div class="task-item" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="item-main">
+            <strong>Data-base: {{ run.base_date|date:"d/m/Y" }}</strong>
+            <span class="muted small">{{ run.total_deduplicated }} comunicação/ões deduplicada(s) · {{ run.get_status_display }}</span>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="?run={{ run.pk }}" class="table-action">Ver na tela</a>
+            <a href="{% url 'legal:djen_download_word_report' run.pk %}" class="table-action">Baixar Word</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

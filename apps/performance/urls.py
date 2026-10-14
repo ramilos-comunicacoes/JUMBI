@@ -7,4 +7,6 @@ urlpatterns = [
     path("nova/", views.goal_edit, name="create"),
     path("<int:pk>/editar/", views.goal_edit, name="edit"),
     path("<int:pk>/progresso/", views.goal_progress, name="progress"),
+    path("ranking/", views.ranking_view, name="ranking"),
 ]
+

@@ -1,0 +1,73 @@
+{% extends 'legal/base.html' %}
+{% block title %}Ranking da Equipe · Metas e Pontuação{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow">ACOMPANHAMENTO DE DESEMPENHO <span class="eyebrow-divider">/</span> {{ request.organization.name }}</div>
+    <h1>Ranking e Metas da Equipe</h1>
+    <p>Pontuação por contratos formalizados, protocolos com comprovante, tarefas concluídas e atendimentos declarados.</p>
+  </div>
+  <div class="heading-actions">
+    <a href="{% url 'performance:list' %}" class="button button-secondary">Metas do escritório</a>
+  </div>
+</div>
+
+<div class="matter-grid">
+  <section class="panel span-full">
+    <div class="panel-heading">
+      <div>
+        <div class="section-kicker">CLASSIFICAÇÃO GERAL</div>
+        <h2>Tabela de Pontuação</h2>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <a href="?days=7" class="button {% if period == 7 %}button-primary{% else %}button-secondary{% endif %} button-small">7 dias</a>
+        <a href="?days=30" class="button {% if period == 30 %}button-primary{% else %}button-secondary{% endif %} button-small">30 dias</a>
+        <a href="?days=90" class="button {% if period == 90 %}button-primary{% else %}button-secondary{% endif %} button-small">90 dias</a>
+        <a href="?days=0" class="button {% if period == 0 %}button-primary{% else %}button-secondary{% endif %} button-small">Tudo</a>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="margin-bottom: 1.5rem;">
+      <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
+      <span>O ranking geral exibe posições e pontuação calculadas sobre entregas efetivas e auditáveis. <strong>Pastas sigilosas e valores individuais de honorários não são expostos aos demais participantes.</strong></span>
+    </div>
+
+    {% if leaderboard %}
+    <div class="table-scroll">
+      <table role="table" class="mobile-records">
+        <thead role="rowgroup">
+          <tr role="row">
+            <th role="columnheader" style="width: 80px;">Posição</th>
+            <th role="columnheader">Colaborador</th>
+            <th role="columnheader">Entregas Elegíveis</th>
+            <th role="columnheader" style="text-align: right;">Pontos Líquidos</th>
+          </tr>
+        </thead>
+        <tbody role="rowgroup">
+          {% for item in leaderboard %}
+          <tr role="row" {% if item.user == request.user %}style="background: rgba(245, 160, 0, 0.08);"{% endif %}>
+            <td role="cell" data-label="Posição">
+              <strong>{{ item.rank }}º</strong>
+              {% if item.rank == 1 %}🥇{% elif item.rank == 2 %}🥈{% elif item.rank == 3 %}🥉{% endif %}
+            </td>
+            <td role="cell" data-label="Colaborador">
+              <strong>{{ item.name }}</strong>
+              {% if item.user == request.user %}
+                <span class="badge badge-amber" style="font-size: 0.75rem; margin-left: 0.5rem;">Você</span>
+              {% endif %}
+            </td>
+            <td role="cell" data-label="Entregas">{{ item.deliveries }} entrega(s)</td>
+            <td role="cell" data-label="Pontos" style="text-align: right;">
+              <strong style="font-size: 1.15rem; color: var(--gold, #f5a000);">{{ item.points }} pts</strong>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state compact"><p>Nenhuma pontuação registrada para o período selecionado.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

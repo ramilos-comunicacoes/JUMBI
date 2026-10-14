@@ -76,3 +76,49 @@ class GoalUpdate(ImmutableTenantModel):
             raise ValidationError({"note": "Registre uma evidência ou observação do progresso."})
         if self.value is not None and self.value < 0:
             raise ValidationError({"value": "O progresso não pode ser negativo."})
+
+
+class ScoreRule(TenantModel):
+    class EventType(models.TextChoices):
+        CONTRACT_CLOSED = "contract_closed", "Contrato formalizado e validado"
+        COURT_FILING = "court_filing", "Protocolo realizado com comprovante"
+        TASK_COMPLETED = "task_completed", "Tarefa concluída com evidência"
+        CLIENT_CONTACT = "client_contact", "Atendimento com cliente declarado"
+
+    event_type = models.CharField("Tipo de evento", max_length=30, choices=EventType.choices)
+    title = models.CharField("Descrição da regra", max_length=180)
+    points = models.DecimalField("Pontos", max_digits=8, decimal_places=2, default=Decimal("10.00"))
+    is_active = models.BooleanField("Ativa", default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["event_type", "title"]
+
+    def __str__(self):
+        return f"{self.get_event_type_display()} (+{self.points} pts)"
+
+
+class ScoreEvent(ImmutableTenantModel):
+    rule = models.ForeignKey(ScoreRule, on_delete=models.PROTECT, related_name="events")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="score_events")
+    points = models.DecimalField("Pontos atribuídos", max_digits=8, decimal_places=2)
+    source_model = models.CharField("Modelo de origem", max_length=100)
+    source_id = models.CharField("ID de origem", max_length=100)
+    description = models.TextField("Motivo / evidência", blank=True)
+    is_reversal = models.BooleanField("Estorno / ajuste", default=False)
+    reversal_of = models.OneToOneField("self", on_delete=models.PROTECT, null=True, blank=True, related_name="reversed_by")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "rule", "source_model", "source_id"],
+                condition=models.Q(is_reversal=False),
+                name="performance_score_event_unique_source",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} · {'-' if self.is_reversal else '+'}{self.points} pts ({self.description})"
+

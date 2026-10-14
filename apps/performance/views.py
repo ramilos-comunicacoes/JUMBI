@@ -74,3 +74,23 @@ def goal_progress(request, pk):
         "form": form, "page_title": f"Atualizar progresso · {goal.title}", "active_nav": "goals",
         "goal": goal, "history": goal.updates.select_related("actor")[:20],
     })
+
+
+@organization_required
+@require_GET
+def ranking_view(request):
+    require_access(request.organization)
+    try:
+        period = int(request.GET.get("days", "30"))
+    except ValueError:
+        period = 30
+    from .scoring_services import team_ranking
+    leaderboard = team_ranking(request.organization, period_days=period)
+    return render(request, "performance/ranking.html", {
+        "title": "Ranking e Pontuação da Equipe",
+        "page_title": "Ranking da Equipe",
+        "active_nav": "goals",
+        "leaderboard": leaderboard,
+        "period": period,
+    })
+

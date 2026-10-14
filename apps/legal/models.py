@@ -264,7 +264,10 @@ class Task(TenantModel):
     class Status(models.TextChoices):
         TODO = "todo", "A fazer"
         DOING = "doing", "Em execução"
+        IN_REVIEW = "in_review", "Em revisão"
+        BLOCKED = "blocked", "Aguardando terceiros"
         DONE = "done", "Concluída"
+        CANCELLED = "cancelled", "Cancelada"
 
     class Priority(models.TextChoices):
         NORMAL = "normal", "Normal"
@@ -276,10 +279,14 @@ class Task(TenantModel):
     description = models.TextField("Descrição", blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="legal_tasks")
     due_date = models.DateField("Vencimento")
-    status = models.CharField("Situação", max_length=12, choices=Status.choices, default=Status.TODO)
+    status = models.CharField("Situação", max_length=15, choices=Status.choices, default=Status.TODO)
     priority = models.CharField("Prioridade", max_length=10, choices=Priority.choices, default=Priority.NORMAL)
     completion_note = models.TextField("Evidência de conclusão", blank=True)
     completed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    delegated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="delegated_tasks")
+    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="reviewing_tasks")
+    deadline = models.ForeignKey("Deadline", on_delete=models.SET_NULL, null=True, blank=True, related_name="tasks")
+    internal_due_date = models.DateField("Prazo interno", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -301,12 +308,21 @@ class Deadline(TenantModel):
         CONFIRMED = "confirmed", "Conferido"
         FULFILLED = "fulfilled", "Cumprido"
 
+    class Kind(models.TextChoices):
+        COURT = "court", "Processual / Judicial"
+        ADMINISTRATIVE = "administrative", "Administrativo"
+        INTERNAL = "internal", "Interno de execução"
+        CLIENT_RETURN = "client_return", "Retorno ao cliente"
+
     matter = models.ForeignKey(Matter, on_delete=models.PROTECT, related_name="deadlines")
     title = models.CharField("Obrigação", max_length=240)
     source = models.TextField("Origem / publicação")
     due_date = models.DateField("Vencimento")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="legal_deadlines")
     status = models.CharField("Situação", max_length=15, choices=Status.choices, default=Status.PENDING)
+    kind = models.CharField("Tipo de prazo", max_length=20, choices=Kind.choices, default=Kind.COURT, db_default=Kind.COURT)
+    internal_date = models.DateField("Data interna de execução", null=True, blank=True)
+    client_deadline = models.DateField("Data limite para cliente", null=True, blank=True)
     confirmed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="confirmed_deadlines")
     confirmed_at = models.DateTimeField(null=True, blank=True)
     evidence = models.TextField("Evidência do cumprimento", blank=True)
@@ -329,6 +345,60 @@ class Deadline(TenantModel):
             if original and not getattr(self, "_allow_transition", False):
                 if any(original[field] != getattr(self, field) for field in original):
                     raise ValidationError("Use os serviços de conferência, revisão e cumprimento para alterar o prazo.")
+
+    @property
+    def days_remaining(self):
+        if not self.due_date:
+            return None
+        today = timezone.localdate()
+        return (self.due_date - today).days
+
+    @property
+    def urgency_level(self):
+        if self.status == self.Status.PENDING:
+            return "pending"
+        if self.status == self.Status.FULFILLED:
+            return "fulfilled"
+        days = self.days_remaining
+        if days is None:
+            return "pending"
+        if days < 0:
+            return "overdue"
+        if days <= 2:
+            return "urgent"
+        if days <= 5:
+            return "attention"
+        return "horizon"
+
+    @property
+    def urgency_label(self):
+        level = self.urgency_level
+        if level == "pending":
+            return "A conferir"
+        if level == "fulfilled":
+            return "Cumprido"
+        if level == "overdue":
+            days = abs(self.days_remaining)
+            return f"Vencido ({days}d)"
+        if level == "urgent":
+            if self.days_remaining == 0:
+                return "Vence hoje"
+            return f"Urgente ({self.days_remaining}d)"
+        if level == "attention":
+            return f"Atenção ({self.days_remaining}d)"
+        return f"No horizonte ({self.days_remaining}d)"
+
+    @property
+    def urgency_color(self):
+        mapping = {
+            "horizon": "green",
+            "attention": "yellow",
+            "urgent": "red",
+            "overdue": "darkred",
+            "pending": "slate",
+            "fulfilled": "gray",
+        }
+        return mapping.get(self.urgency_level, "slate")
 
     def __str__(self):
         return self.title
@@ -590,3 +660,179 @@ class LegacyImportRecord(ImmutableTenantModel):
             pk=self.target_id, organization_id=self.organization_id,
         ).exists():
             raise ValidationError({"target_id": "O destino deve pertencer ao mesmo escritório."})
+
+
+class MessageTemplate(TenantModel):
+    class Category(models.TextChoices):
+        CASE_UPDATE = "case_update", "Atualização do caso"
+        DOC_REQUEST = "doc_request", "Solicitação de documentos"
+        ACTION_REMINDER = "action_reminder", "Lembrete de providência"
+        FILING_CONFIRM = "filing_confirm", "Confirmação de protocolo"
+        APPOINTMENT = "appointment", "Agendamento"
+        BILLING = "billing", "Cobrança de pendência / FPRE"
+        PAYMENT_CONFIRM = "payment_confirm", "Confirmação de pagamento"
+
+    category = models.CharField("Categoria", max_length=30, choices=Category.choices)
+    title = models.CharField("Título do modelo", max_length=200)
+    body = models.TextField("Texto padrão", max_length=4000)
+    is_active = models.BooleanField("Ativo", default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["category", "title"]
+
+    def __str__(self):
+        return f"{self.get_category_display()} · {self.title}"
+
+
+class ClientContact(TenantModel):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Rascunho preparado"
+        LINK_OPENED = "link_opened", "Abertura solicitada"
+        COMPLETED_MANUAL = "completed_manual", "Concluída manualmente"
+        AWAITING_REPLY = "awaiting_reply", "Aguardando retorno"
+        CANCELLED = "cancelled", "Sem sucesso / cancelada"
+
+    matter = models.ForeignKey(Matter, on_delete=models.PROTECT, null=True, blank=True, related_name="client_contacts")
+    contact = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name="client_contacts")
+    template = models.ForeignKey(MessageTemplate, on_delete=models.SET_NULL, null=True, blank=True, related_name="contacts")
+    channel = models.CharField("Canal", max_length=30, default="whatsapp")
+    phone = models.CharField("Telefone / destino", max_length=40)
+    prepared_text = models.TextField("Texto preparado")
+    sent_text = models.TextField("Texto informado como enviado", blank=True)
+    status = models.CharField("Situação", max_length=20, choices=Status.choices, default=Status.DRAFT)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="performed_client_contacts", verbose_name="Colaborador atendente")
+    case_owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="case_client_contacts", verbose_name="Responsável pelo caso")
+    result_note = models.TextField("Resultado declarado", blank=True)
+    client_reply = models.TextField("Retorno do cliente", blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+    def __str__(self):
+        return f"Contato com {self.contact} ({self.get_status_display()})"
+
+
+class PaymentReceipt(ImmutableTenantModel):
+    receipt_number = models.CharField("Número do recibo", max_length=40)
+    payment = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name="receipts")
+    matter = models.ForeignKey(Matter, on_delete=models.PROTECT, null=True, blank=True, related_name="receipts")
+    payer_name = models.CharField("Nome do pagador", max_length=200)
+    payer_document = models.CharField("CPF / CNPJ do pagador", max_length=30, blank=True)
+    amount = models.DecimalField("Valor do recibo", max_digits=14, decimal_places=2)
+    payment_date = models.DateField("Data do pagamento")
+    payment_method = models.CharField("Meio de pagamento", max_length=60, default="PIX / Transferência")
+    reference_description = models.CharField("Referência / serviço", max_length=240)
+    remaining_balance = models.DecimalField("Saldo remanescente", max_digits=14, decimal_places=2, default=Decimal("0.00"))
+    issued_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="issued_receipts")
+    confirmed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="confirmed_receipts")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        constraints = [
+            models.UniqueConstraint(fields=["organization", "receipt_number"], name="legal_receipt_number_unique"),
+        ]
+
+    def __str__(self):
+        return f"Recibo #{self.receipt_number} · R$ {self.amount}"
+
+
+class AdministrativeDemand(TenantModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Em análise"
+        REQUIREMENT = "requirement", "Em exigência"
+        CONCLUDED = "concluded", "Concluído / Deferido"
+        REJECTED = "rejected", "Indeferido"
+        SUSPENDED = "suspended", "Suspenso"
+
+    class SyncStatus(models.TextChoices):
+        SUCCESS = "success", "Atualizado com sucesso"
+        PENDING_UPDATE = "pending_update", "Atualização pendente"
+        FAILED = "failed", "Falha de comunicação"
+
+    matter = models.ForeignKey(Matter, on_delete=models.PROTECT, related_name="administrative_demands")
+    contact = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name="administrative_demands")
+    protocol_number = models.CharField("Protocolo / requerimento", max_length=80)
+    service_name = models.CharField("Benefício / serviço", max_length=200)
+    source_agency = models.CharField("Órgão", max_length=100, default="INSS")
+    original_status = models.CharField("Situação na fonte", max_length=200)
+    status = models.CharField("Situação interna", max_length=20, choices=Status.choices, default=Status.PENDING)
+    demands_summary = models.TextField("Exigências ou decisões", blank=True)
+    next_action = models.TextField("Próxima providência do escritório", blank=True)
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="assigned_admin_demands")
+    sync_status = models.CharField("Status da sincronização", max_length=20, choices=SyncStatus.choices, default=SyncStatus.SUCCESS)
+    last_sync_at = models.DateTimeField("Última sincronização", null=True, blank=True)
+    sync_notes = models.TextField("Observações da sincronização", blank=True)
+    is_manual_entry = models.BooleanField("Cadastro manual", default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-pk"]
+        constraints = [
+            models.UniqueConstraint(fields=["organization", "protocol_number"], name="legal_admin_demand_protocol_unique"),
+        ]
+
+    def __str__(self):
+        return f"{self.protocol_number} · {self.service_name}"
+
+
+class DJENSearchRun(TenantModel):
+    class Status(models.TextChoices):
+        COMPLETE = "complete", "Completa"
+        PARTIAL = "partial", "Parcial (com falhas ou páginas pendentes)"
+
+    base_date = models.DateField("Data-base da pesquisa")
+    queried_name = models.CharField("Nome pesquisado", max_length=200, default="Geórgia de Andrade Almeida")
+    fields_searched = models.JSONField("Campos consultados", default=list)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField("Status", max_length=20, choices=Status.choices, default=Status.COMPLETE)
+    total_found = models.PositiveIntegerField("Total localizado", default=0)
+    total_deduplicated = models.PositiveIntegerField("Total após deduplicação", default=0)
+    courts_searched = models.JSONField("Tribunais e páginas", default=list)
+    errors = models.TextField("Falhas registradas", blank=True)
+    operator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="djen_runs")
+
+    class Meta:
+        ordering = ["-base_date", "-started_at"]
+
+    def __str__(self):
+        return f"DJEN {self.base_date} · {self.queried_name} ({self.get_status_display()})"
+
+
+class DJENCommunication(TenantModel):
+    class Status(models.TextChoices):
+        PENDING_REVIEW = "pending_review", "Aguardando conferência"
+        LINKED = "linked", "Vinculada a caso"
+        DISMISSED = "dismissed", "Dispensada"
+
+    search_run = models.ForeignKey(DJENSearchRun, on_delete=models.CASCADE, related_name="communications")
+    communication_id = models.CharField("Identificador da comunicação", max_length=120)
+    court = models.CharField("Tribunal", max_length=100)
+    court_unit = models.CharField("Órgão / Vara", max_length=200, blank=True)
+    case_number = models.CharField("Número do processo", max_length=80)
+    parties = models.CharField("Partes", max_length=300, blank=True)
+    content_summary = models.TextField("Resumo do ato")
+    full_text = models.TextField("Teor integral", blank=True)
+    matched_fields = models.JSONField("Campos com correspondência", default=list)
+    proposed_due_date = models.DateField("Vencimento proposto", null=True, blank=True)
+    deadline_text = models.CharField("Menção de prazo", max_length=200, blank=True)
+    matter = models.ForeignKey(Matter, on_delete=models.SET_NULL, null=True, blank=True, related_name="djen_communications")
+    deadline = models.ForeignKey(Deadline, on_delete=models.SET_NULL, null=True, blank=True, related_name="djen_communications")
+    status = models.CharField("Situação", max_length=20, choices=Status.choices, default=Status.PENDING_REVIEW)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["court", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["organization", "search_run", "communication_id"], name="legal_djen_comm_unique"),
+        ]
+
+    def __str__(self):
+        return f"{self.court} · {self.case_number} ({self.communication_id})"
+

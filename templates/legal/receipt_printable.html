@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Recibo #{{ receipt.receipt_number }} · {{ org.name }}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; background: #fff; margin: 0; padding: 2rem; }
+    .receipt-container { max-width: 700px; margin: 0 auto; border: 2px solid #cbd5e1; border-radius: 8px; padding: 2.5rem; }
+    .receipt-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e2e8f0; padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+    .org-title { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0; }
+    .receipt-badge { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.5rem 1rem; border-radius: 6px; text-align: right; }
+    .receipt-badge strong { font-size: 1.25rem; display: block; color: #b45309; }
+    .receipt-amount-box { background: #fef3c7; border: 1px solid #fde68a; padding: 1rem 1.5rem; border-radius: 6px; font-size: 1.5rem; font-weight: 700; color: #92400e; text-align: right; margin-bottom: 2rem; }
+    .receipt-body { line-height: 1.8; font-size: 1.05rem; }
+    .receipt-details { margin: 1.5rem 0; padding: 1rem; background: #f8fafc; border-radius: 6px; font-size: 0.95rem; }
+    .receipt-details dl { display: grid; grid-template-columns: 180px 1fr; gap: 0.5rem; margin: 0; }
+    .receipt-details dt { font-weight: 600; color: #64748b; }
+    .receipt-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 3.5rem; text-align: center; }
+    .sig-line { border-top: 1px solid #94a3b8; padding-top: 0.5rem; font-size: 0.9rem; }
+    .print-button { margin-bottom: 1.5rem; padding: 0.6rem 1.2rem; background: #0f172a; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    @media print { .no-print { display: none !important; } body { padding: 0; } .receipt-container { border: 1px solid #94a3b8; } }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="max-width: 700px; margin: 0 auto; text-align: right;">
+    <button class="print-button" onclick="window.print()">Imprimir / Salvar PDF</button>
+    <a href="{% url 'legal:receipt_download_docx' receipt.pk %}" style="display: inline-block; margin-left: 0.5rem; padding: 0.6rem 1.2rem; background: #e2e8f0; color: #1e293b; text-decoration: none; border-radius: 6px; font-weight: 600;">Baixar Word (.docx)</a>
+  </div>
+
+  <div class="receipt-container">
+    <div class="receipt-header">
+      <div>
+        <h1 class="org-title">{{ org.name }}</h1>
+        <p style="margin: 0.25rem 0; color: #64748b;">{{ org.document|default:"CNPJ / OAB não informados" }}</p>
+        <p style="margin: 0.25rem 0; color: #64748b;">{{ org.contact_email|default:"" }} · {{ org.contact_phone|default:"" }}</p>
+      </div>
+      <div class="receipt-badge">
+        <span style="font-size: 0.8rem; text-transform: uppercase; color: #64748b;">Recibo de Pagamento</span>
+        <strong>#{{ receipt.receipt_number }}</strong>
+      </div>
+    </div>
+
+    <div class="receipt-amount-box">
+      VALOR: R$ {{ receipt.amount|floatformat:"2g" }}
+    </div>
+
+    <div class="receipt-body">
+      <p>Recebemos de <strong>{{ receipt.payer_name }}</strong>{% if receipt.payer_document %} (CPF/CNPJ: {{ receipt.payer_document }}){% endif %}, a importância supra de <strong>R$ {{ receipt.amount|floatformat:"2g" }}</strong>, referente a <strong>{{ receipt.reference_description }}</strong>.</p>
+    </div>
+
+    <div class="receipt-details">
+      <dl>
+        <dt>Data do pagamento:</dt><dd>{{ receipt.payment_date|date:"d/m/Y" }}</dd>
+        <dt>Meio de pagamento:</dt><dd>{{ receipt.payment_method }}</dd>
+        <dt>Saldo remanescente:</dt><dd><strong>R$ {{ receipt.remaining_balance|floatformat:"2g" }}</strong></dd>
+        {% if receipt.matter %}<dt>Pasta / Demanda:</dt><dd>{{ receipt.matter.title }}</dd>{% endif %}
+      </dl>
+    </div>
+
+    <div class="receipt-signatures">
+      <div>
+        <div class="sig-line">
+          <strong>{{ receipt.issued_by.get_full_name|default:receipt.issued_by.email }}</strong><br>
+          <span style="color: #64748b; font-size: 0.8rem;">Emissor</span>
+        </div>
+      </div>
+      <div>
+        <div class="sig-line">
+          <strong>{{ org.name }}</strong><br>
+          <span style="color: #64748b; font-size: 0.8rem;">Escritório recebedor</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

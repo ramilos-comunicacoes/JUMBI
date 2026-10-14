@@ -1,0 +1,199 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block title %}Minha Rotina{% endblock %}
+{% block extra_css %}
+<style>
+.routine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+@media (max-width: 900px) { .routine-grid { grid-template-columns: 1fr; } }
+.badge-urgent { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
+.badge-attention { background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.4); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
+.badge-horizon { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
+.badge-pending { background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
+.badge-overdue { background: rgba(153, 27, 27, 0.3); color: #fca5a5; border: 1px solid rgba(153, 27, 27, 0.6); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 700; font-size: 0.8rem; }
+.bulk-reassign-box { margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0.5rem; }
+.quick-stats { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem; }
+.quick-stat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 0.75rem 1.25rem; border-radius: 0.5rem; display: flex; flex-direction: column; }
+.quick-stat-card span { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); }
+.quick-stat-card strong { font-size: 1.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow">ESPAÇO INDIVIDUAL DO COLABORADOR <span class="eyebrow-divider">/</span> {{ request.organization.name }}</div>
+    <h1>Minha Rotina</h1>
+    <p>Organização das suas tarefas, prazos com alerta de urgência, contatos e casos autorizados.</p>
+    <div class="quick-stats">
+      <div class="quick-stat-card"><span>Tarefas ativas</span><strong>{{ tasks|length }}</strong></div>
+      <div class="quick-stat-card"><span>Prazos atribuídos</span><strong>{{ deadlines|length }}</strong></div>
+      <div class="quick-stat-card"><span>Prazos urgentes</span><strong style="color: #ef4444;">{{ urgent_deadlines_count }}</strong></div>
+      <div class="quick-stat-card"><span>A conferir</span><strong style="color: #94a3b8;">{{ pending_deadlines_count }}</strong></div>
+      <div class="quick-stat-card"><span>Contatos pendentes</span><strong>{{ contacts|length }}</strong></div>
+    </div>
+  </div>
+  <div class="heading-actions">
+    {% if can_edit %}
+      <a href="{% url 'legal:create' 'tasks' %}" class="button button-primary">+ Nova tarefa</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="routine-grid">
+  <!-- 1. TAREFAS E DELEGAÇÃO -->
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <div class="section-kicker">FLUXO DE TRABALHO</div>
+        <h2>Minhas Tarefas ({{ tasks|length }})</h2>
+      </div>
+      <a href="{% url 'legal:kanban' %}" class="text-link">Ver Kanban</a>
+    </div>
+
+    {% if tasks %}
+    <form method="post" action="{% url 'legal:bulk_reassign_tasks' %}">
+      {% csrf_token %}
+      <div class="task-list">
+        {% for task in tasks %}
+        <div class="task-item" style="display: flex; align-items: center; gap: 0.75rem;">
+          <input type="checkbox" name="task_ids" value="{{ task.pk }}" aria-label="Selecionar {{ task.title }}">
+          <div class="item-main" style="flex: 1;">
+            <strong><a href="{% url 'worklog:task' task.pk %}">{{ task.title }}</a></strong>
+            <span class="muted small">
+              {{ task.matter|default:"Sem pasta" }} · 
+              {{ task.get_status_display }}
+              {% if task.delegated_by %}· Delegada por {{ task.delegated_by.get_full_name|default:task.delegated_by }}{% endif %}
+              · Vencimento: {{ task.due_date|date:"d/m/Y" }}
+            </span>
+          </div>
+          {% if can_edit %}
+            <a href="{% url 'legal:edit' 'tasks' task.pk %}" class="table-action">Editar</a>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if can_edit and colleagues %}
+      <details class="bulk-reassign-box">
+        <summary><strong>Redistribuir tarefas selecionadas (férias / ausência)</strong></summary>
+        <div style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <label for="new_owner_select" class="small muted">Novo colaborador responsável:</label>
+          <select id="new_owner_select" name="new_owner" class="input">
+            <option value="">Selecione o destinatário...</option>
+            {% for c in colleagues %}
+              {% if c != request.user %}
+                <option value="{{ c.pk }}">{{ c.get_full_name|default:c.email }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+          <label for="reassign_reason" class="small muted">Motivo da redistribuição:</label>
+          <input type="text" id="reassign_reason" name="reason" placeholder="Ex: Cobertura de férias, readequação de equipe..." class="input">
+          <button type="submit" class="button button-secondary" style="align-self: flex-start; margin-top: 0.5rem;">Transferir selecionadas</button>
+        </div>
+      </details>
+      {% endif %}
+    </form>
+    {% else %}
+    <div class="empty-state compact"><p>Você não possui tarefas pendentes no momento.</p></div>
+    {% endif %}
+  </section>
+
+  <!-- 2. PRAZOS E CONTROLADORIA -->
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <div class="section-kicker">CONTROLADORIA</div>
+        <h2>Próximos Prazos ({{ deadlines|length }})</h2>
+      </div>
+      <a href="{% url 'legal:list' 'deadlines' %}" class="text-link">Todos os prazos</a>
+    </div>
+
+    {% if deadlines %}
+    <div class="deadline-list">
+      {% for d in deadlines %}
+      <div class="deadline-item" style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="date-tile">
+          <strong>{{ d.due_date|date:"d" }}</strong>
+          <span>{{ d.due_date|date:"M" }}</span>
+        </span>
+        <div class="item-main" style="flex: 1; margin: 0 1rem;">
+          <strong><a href="{% url 'legal:detail' d.matter.pk %}">{{ d.title }}</a></strong>
+          <span class="muted small">{{ d.matter }} · {{ d.get_kind_display }} · {{ d.get_status_display }}</span>
+        </div>
+        <div>
+          {% if d.urgency_level == 'urgent' %}
+            <span class="badge-urgent">{{ d.urgency_label }}</span>
+          {% elif d.urgency_level == 'attention' %}
+            <span class="badge-attention">{{ d.urgency_label }}</span>
+          {% elif d.urgency_level == 'horizon' %}
+            <span class="badge-horizon">{{ d.urgency_label }}</span>
+          {% elif d.urgency_level == 'overdue' %}
+            <span class="badge-overdue">{{ d.urgency_label }}</span>
+          {% else %}
+            <span class="badge-pending">{{ d.urgency_label }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state compact"><p>Nenhum prazo pendente sob sua responsabilidade.</p></div>
+    {% endif %}
+  </section>
+
+  <!-- 3. CONTATOS E MENSAGENS PENDENTES -->
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <div class="section-kicker">RELACIONAMENTO COM CLIENTES</div>
+        <h2>Mensagens e Contatos ({{ contacts|length }})</h2>
+      </div>
+      <a href="{% url 'legal:contact_messages_list' %}" class="text-link">Central de contatos</a>
+    </div>
+
+    {% if contacts %}
+    <div class="task-list">
+      {% for c in contacts %}
+      <div class="task-item" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="item-main">
+          <strong>{{ c.contact.name }}</strong>
+          <span class="muted small">{{ c.matter|default:"Sem pasta" }} · {{ c.get_status_display }} · {{ c.created_at|date:"d/m H:i" }}</span>
+          <p class="small" style="margin-top: 0.25rem;">{{ c.prepared_text|truncatechars:100 }}</p>
+        </div>
+        <div>
+          <a href="{% url 'legal:contact_message_detail' c.pk %}" class="button button-secondary button-small">Ver / Enviar</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state compact"><p>Nenhum contato pendente de realização.</p></div>
+    {% endif %}
+  </section>
+
+  <!-- 4. PASTAS E DEMANDAS AUTORIZADAS -->
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <div class="section-kicker">ACERVO JURÍDICO</div>
+        <h2>Minhas Pastas Recentes</h2>
+      </div>
+      <a href="{% url 'legal:list' 'matters' %}" class="text-link">Todas as pastas</a>
+    </div>
+
+    {% if matters %}
+    <div class="task-list">
+      {% for m in matters %}
+      <div class="task-item" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="item-main">
+          <strong><a href="{% url 'legal:detail' m.pk %}">{{ m.title }}</a></strong>
+          <span class="muted small">{{ m.client|default:"Cliente não informado" }}{% if m.area %} · {{ m.area_label }}{% endif %}</span>
+        </div>
+        <span class="badge">{{ m.get_status_display }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state compact"><p>Nenhuma pasta vinculada a você.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends 'legal/base.html' %}
+{% block title %}Central de Mensagens e Contatos{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow">ATENDIMENTO COM RASTREABILIDADE <span class="eyebrow-divider">/</span> {{ request.organization.name }}</div>
+    <h1>Central de Mensagens e WhatsApp</h1>
+    <p>Modelos de mensagem contextualizados, links para envio e declaração de atendimento pelo colaborador.</p>
+  </div>
+</div>
+
+<div class="matter-grid">
+  <section class="panel span-full">
+    <div class="panel-heading">
+      <div>
+        <div class="section-kicker">HISTÓRICO RECENTE</div>
+        <h2>Atendimentos e Mensagens ({{ contacts|length }})</h2>
+      </div>
+    </div>
+    {% if contacts %}
+    <div class="table-scroll">
+      <table role="table" class="mobile-records">
+        <thead role="rowgroup">
+          <tr role="row">
+            <th role="columnheader">Cliente / Contato</th>
+            <th role="columnheader">Pasta / Caso</th>
+            <th role="columnheader">Situação</th>
+            <th role="columnheader">Atendente</th>
+            <th role="columnheader">Responsável</th>
+            <th role="columnheader">Data / Horário</th>
+            <th role="columnheader">Ações</th>
+          </tr>
+        </thead>
+        <tbody role="rowgroup">
+          {% for c in contacts %}
+          <tr role="row">
+            <td role="cell" data-label="Cliente"><strong>{{ c.contact.name }}</strong><br><span class="muted small">{{ c.phone }}</span></td>
+            <td role="cell" data-label="Pasta">{% if c.matter %}<a href="{% url 'legal:detail' c.matter.pk %}">{{ c.matter.title }}</a>{% else %}—{% endif %}</td>
+            <td role="cell" data-label="Situação">
+              {% if c.status == 'completed_manual' %}
+                <span class="badge badge-green">Concluída</span>
+              {% elif c.status == 'link_opened' %}
+                <span class="badge badge-blue">Abertura solicitada</span>
+              {% elif c.status == 'draft' %}
+                <span class="badge badge-slate">Rascunho</span>
+              {% else %}
+                <span class="badge">{{ c.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td role="cell" data-label="Atendente">{{ c.actor.get_full_name|default:c.actor.email }}</td>
+            <td role="cell" data-label="Responsável">{{ c.case_owner.get_full_name|default:c.case_owner.email|default:"—" }}</td>
+            <td role="cell" data-label="Data">{{ c.created_at|date:"d/m/Y H:i" }}</td>
+            <td role="cell" data-label="Ações">
+              <a href="{% url 'legal:contact_message_detail' c.pk %}" class="table-action">Ver / Declarar</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state compact"><p>Nenhum atendimento registrado nesta central.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -79,14 +79,29 @@ def overview(request):
         responsible=calendar_form.cleaned_data.get("responsible") if valid_calendar else None,
         status=calendar_form.cleaned_data.get("status", "all") if valid_calendar else "all",
         valid_filters=valid_calendar)
+    from apps.contracts.models import Contract
+    from .models import ClientContact
+    first_day_month = today.replace(day=1)
+    contracts_count = Contract.objects.filter(organization=request.organization, created_at__date__gte=first_day_month).count()
+    protocols_count = scoped(CourtCase).filter(created_at__date__gte=first_day_month).count()
+    pending_messages_count = ClientContact.objects.filter(organization=request.organization).exclude(status=ClientContact.Status.COMPLETED_MANUAL).count()
+
+    compact_mode = request.GET.get("view") == "compact"
     context.update({
         "title": "Dashboard", "page_title": "Dashboard", "active_nav": "dashboard", "today": today,
         "niche": niche, "niche_choices": choices, "niche_distribution": distribution,
         "stats": {"matters": active_total, "tasks": pending.count(), "deadlines": deadlines.count(), "receivable": receivable},
+        "compact_mode": compact_mode,
+        "contracts_count": contracts_count,
+        "protocols_count": protocols_count,
+        "pending_messages_count": pending_messages_count,
         "overdue_tasks": pending.filter(due_date__lt=today).count(),
         "overdue_deadlines": deadlines.filter(due_date__lt=today).count(),
         "unconfirmed_deadlines": deadlines.filter(status=Deadline.Status.PENDING).count(),
         "due_today": deadlines.filter(due_date=today).count(),
+        "urgent_deadlines_count": deadlines.filter(status=Deadline.Status.CONFIRMED, due_date__gte=today, due_date__lte=today + timedelta(days=2)).count(),
+        "attention_deadlines_count": deadlines.filter(status=Deadline.Status.CONFIRMED, due_date__gte=today + timedelta(days=3), due_date__lte=today + timedelta(days=5)).count(),
+        "horizon_deadlines_count": deadlines.filter(status=Deadline.Status.CONFIRMED, due_date__gt=today + timedelta(days=5)).count(),
         "completed_tasks": tasks.filter(status=Task.Status.DONE).count(),
         "case_count": scoped(CourtCase).count(), "document_count": scoped(Document).count(),
         "contact_count": Contact.objects.filter(organization=request.organization, pk__in=matters.exclude(client=None).values("client_id")).count(),
@@ -102,6 +117,7 @@ def overview(request):
     })
     from apps.routines.services import dashboard_routines
     context.update(dashboard_routines(request.user, request.organization, niche=niche))
+
     if finance_allowed:
         from apps.inventory.services import stock_summary
         context['inventory_summary'] = stock_summary(request.user, request.organization)

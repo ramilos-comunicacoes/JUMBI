@@ -456,7 +456,10 @@ def matter_detail(request, pk):
     context.update(matter_context(request.user, request.organization, matter))
     from apps.billing.services import has_advanced
     context['can_review_documents'] = can_edit(request) and has_advanced(request.organization)
+    from .timeline_services import get_matter_unified_timeline
+    context["timeline_events"] = get_matter_unified_timeline(matter, request.user, request.organization)
     return render(request, "legal/matter_detail.html", context)
+
 
 
 @organization_required

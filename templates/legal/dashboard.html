@@ -2,9 +2,33 @@
 {% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}"><link rel="stylesheet" href="{% static 'css/jumbi-calendar.css' %}"><link rel="stylesheet" href="{% static 'css/jumbi-dashboard.css' %}">{% endblock %}
 {% block content %}
 <div class="section-workspace section-overview">
-<div class="page-heading"><div><div class="eyebrow"><span class="live-dot"></span> SEU ESCRITÓRIO, EM PERSPECTIVA</div><h1>Visão geral do escritório.</h1><p>{{ today|date:'l, d F' }} · {{ organization.name }}</p></div>{% if can_edit %}<div class="heading-actions"><a href="{% url 'legal:create' 'appointments' %}" class="button button-secondary">Agendar</a><a href="{% url 'legal:create' 'matters' %}" class="button button-primary"><svg class="icon"><use href="#i-plus"/></svg>Nova pasta</a></div>{% endif %}</div>
+<div class="page-heading"><div><div class="eyebrow"><span class="live-dot"></span> SEU ESCRITÓRIO, EM PERSPECTIVA</div><h1>Visão geral do escritório.</h1><p>{{ today|date:'l, d F' }} · {{ organization.name }}</p></div><div class="heading-actions"><a href="{% url 'legal:my_routine' %}" class="button button-secondary">Minha rotina</a><a href="?view={% if compact_mode %}office{% else %}compact{% endif %}" class="button button-secondary">{% if compact_mode %}Visão completa{% else %}Dashboard enxuto{% endif %}</a>{% if can_edit %}<a href="{% url 'legal:create' 'appointments' %}" class="button button-secondary">Agendar</a><a href="{% url 'legal:create' 'matters' %}" class="button button-primary"><svg class="icon"><use href="#i-plus"/></svg>Nova pasta</a>{% endif %}</div></div>
+{% if compact_mode %}
+<section class="panel span-full" style="margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); padding: 1.25rem; border-radius: 0.5rem;">
+  <div class="panel-heading"><div class="section-kicker">PAINEL ENXUTO</div><h2>Operação e Metas em Tempo Real</h2></div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 1rem; border-radius: 0.5rem;">
+      <span class="muted small">Prazos e Urgência</span>
+      <p style="margin: 0.5rem 0 0; font-size: 1.1rem;"><strong>{{ due_today }}</strong> hoje · <strong style="color: #ef4444;">{{ urgent_deadlines_count }}</strong> urgentes<br><span class="small muted">{{ unconfirmed_deadlines }} a conferir · {{ overdue_deadlines }} vencidos</span></p>
+    </div>
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 1rem; border-radius: 0.5rem;">
+      <span class="muted small">Trabalho da Equipe</span>
+      <p style="margin: 0.5rem 0 0; font-size: 1.1rem;"><strong>{{ stats.tasks }}</strong> tarefas ativas<br><span class="small muted">{{ completed_tasks }} concluídas · {{ overdue_tasks }} atrasadas</span></p>
+    </div>
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 1rem; border-radius: 0.5rem;">
+      <span class="muted small">Contratos e Protocolos</span>
+      <p style="margin: 0.5rem 0 0; font-size: 1.1rem;"><strong>{{ contracts_count }}</strong> contrato(s) no mês<br><span class="small muted"><strong>{{ protocols_count }}</strong> protocolo(s) de processo</span></p>
+    </div>
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 1rem; border-radius: 0.5rem;">
+      <span class="muted small">Relacionamento com Clientes</span>
+      <p style="margin: 0.5rem 0 0; font-size: 1.1rem;"><strong>{{ pending_messages_count }}</strong> contato(s) pendente(s)<br><a href="{% url 'legal:contact_messages_list' %}" class="small text-link">Ver mensagens WhatsApp →</a></p>
+    </div>
+  </div>
+</section>
+{% endif %}
 {% if niche_choices %}<nav class="workspace-scope" aria-label="Filtrar dashboard por nicho"><a href="{% url 'legal:dashboard' %}" class="{% if not niche %}is-active{% endif %}">Todos os nichos</a>{% for code,label in niche_choices %}<a href="?niche={{ code }}" class="{% if niche == code %}is-active{% endif %}">{{ label }}</a>{% endfor %}</nav>{% else %}<p class="dashboard-scope-note">Visão integrada do escritório · As áreas de atuação podem ser configuradas pela administração.</p>{% endif %}
 <section class="dashboard-metrics" aria-label="Indicadores do escritório">
+
 <a class="stat-card" href="{% url 'legal:list' 'matters' %}?niche={{ niche }}"><div class="stat-top"><span>Pastas ativas</span><svg class="icon"><use href="#i-matters"/></svg></div><strong class="stat-number">{{ stats.matters }}</strong><div class="stat-bottom">{{ case_count }} processos · {{ contact_count }} clientes</div></a>
 <a class="stat-card" href="{% url 'legal:kanban' %}?niche={{ niche }}"><div class="stat-top"><span>Tarefas pendentes</span><svg class="icon"><use href="#i-tasks"/></svg></div><strong class="stat-number">{{ stats.tasks }}</strong><div class="stat-bottom">{% if overdue_tasks %}<span class="text-danger">{{ overdue_tasks }} atrasadas</span>{% else %}Entregas em dia{% endif %} · {{ completed_tasks }} concluídas</div></a>
 <a class="stat-card" href="{% url 'legal:list' 'deadlines' %}?niche={{ niche }}"><div class="stat-top"><span>Prazos em aberto</span><svg class="icon"><use href="#i-deadlines"/></svg></div><strong class="stat-number">{{ stats.deadlines }}</strong><div class="stat-bottom">{{ due_today }} hoje · {{ unconfirmed_deadlines }} a conferir</div></a>
