@@ -1,16 +1,326 @@
 {% extends 'legal/base.html' %}{% load static %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-routines.css' %}">{% endblock %}
+{% block title %}Tutoriais & Treinamentos por Setor · JUMBI{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-routines.css' %}">
+<style>
+.academy-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+.mode-tabs { display: flex; gap: 0.5rem; background: rgba(255,255,255,0.04); padding: 4px; border-radius: 10px; border: 1px solid var(--border-soft); margin-bottom: 1.5rem; }
+.mode-tab { padding: 8px 18px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; text-decoration: none; color: var(--muted); transition: all 0.15s ease; }
+.mode-tab.active { background: #3b82f6; color: #fff; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); }
+
+.sector-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+.sector-pill {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 6px 14px; border-radius: 9999px; font-size: 0.85rem; font-weight: 500;
+  text-decoration: none; color: var(--text-secondary, #94a3b8);
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  transition: all 0.15s ease;
+}
+.sector-pill:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.sector-pill.active {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: #3b82f6;
+  color: #60a5fa;
+  font-weight: 600;
+}
+.sector-pill .pill-count {
+  font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 9999px;
+}
+
+.tutorial-video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.75rem;
+  margin-bottom: 3rem;
+}
+.video-card {
+  background: var(--surface, #1e293b);
+  border: 1px solid var(--border-soft, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+.video-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.3);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+.video-thumb-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 */
+  background: #0f172a;
+  overflow: hidden;
+}
+.video-thumb-img {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.video-card:hover .video-thumb-img {
+  transform: scale(1.05);
+}
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  transition: background 0.2s ease;
+}
+.video-card:hover .play-overlay {
+  background: rgba(0, 0, 0, 0.15);
+}
+.play-btn-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.95);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease;
+}
+.video-card:hover .play-btn-circle {
+  transform: scale(1.12);
+  background: #2563eb;
+}
+.video-card-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.video-sector-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #60a5fa;
+  margin-bottom: 0.4rem;
+}
+.video-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  margin-bottom: 0.6rem;
+  line-height: 1.4;
+}
+.video-card-desc {
+  font-size: 0.88rem;
+  color: var(--muted, #94a3b8);
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+  flex: 1;
+}
+.video-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 0.75rem;
+  margin-top: auto;
+}
+.watch-link {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #3b82f6;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.watch-link:hover { text-decoration: underline; }
+.admin-card-actions {
+  display: flex; gap: 0.5rem;
+}
+</style>
+{% endblock %}
 {% block content %}
-<div class="page-heading"><div><div class="eyebrow">BIBLIOTECA DE TRABALHO</div><h1>Rotinas por nicho</h1><p>Escolha um roteiro e transforme seus itens em tarefas e conferências de uma pasta.</p></div>{% if can_manage_templates %}<a href="{% url 'routines:create' %}" class="button button-primary">Criar rotina</a>{% endif %}</div>
-<div class="routine-catalog-layout">
-  <aside class="routine-catalog-tools" aria-label="Organizar biblioteca">
-    <form method="get" class="panel routine-filters"><h2>Encontre seu roteiro</h2><div><label for="niche">Área de atuação</label><select id="niche" name="niche" class="form-control"><option value="">Todas as áreas</option>{% for value,label in niche_choices %}<option value="{{ value }}" {% if selected_niche == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>{% if can_manage_templates %}<div><label for="archived">Catálogo</label><select id="archived" name="archived" class="form-control"><option value="0">Disponíveis</option><option value="1" {% if archived %}selected{% endif %}>Arquivados</option></select></div>{% endif %}<button class="button button-secondary">Aplicar filtros</button>{% if selected_niche or archived %}<a class="text-link" href="{% url 'routines:list' %}">Limpar filtros</a>{% endif %}</form>
-    <details class="routine-guide"><summary>Como a rotina vira trabalho?</summary><ol><li><strong>Escolha e confira.</strong> O modelo reúne tarefas, conferências e documentos a solicitar.</li><li><strong>Aplique em uma pasta.</strong> Revise o destino e a data antes de confirmar.</li><li><strong>Acompanhe a execução.</strong> As tarefas vão para o Kanban; as conferências ficam na rotina da pasta.</li></ol><p>Editar o modelo não altera rotinas já aplicadas.</p></details>
-  </aside>
-  <section class="routine-catalog-results" aria-label="Rotinas disponíveis"><div class="routine-result-heading"><h2>{% if archived %}Modelos arquivados{% else %}Seus modelos{% endif %}</h2><span>{{ page.paginator.count }} resultado{{ page.paginator.count|pluralize }}</span></div>
-    <div class="routine-cards">{% for item in page %}<article class="panel routine-card"><div class="routine-card-top"><span class="badge">Versão {{ item.version }}</span>{% if not item.is_active %}<span class="badge">Arquivada</span>{% endif %}</div><h2>{{ item.title }}</h2><p>{{ item.description|default:"Roteiro de trabalho do escritório."|truncatechars:170 }}</p><div class="routine-tags">{% for label in item.niche_labels %}<span>{{ label }}</span>{% empty %}<span>Todas as áreas</span>{% endfor %}</div><dl class="routine-counts"><div><dt>Tarefas</dt><dd>{{ item.tasks|length }}</dd></div><div><dt>Conferências</dt><dd>{{ item.checklist|length }}</dd></div><div><dt>Documentos</dt><dd>{{ item.documents|length }}</dd></div></dl><a class="button button-secondary" href="{% url 'routines:detail' item.pk %}">{% if item.is_active %}Conferir e aplicar{% else %}Consultar modelo{% endif %} <span aria-hidden="true">→</span></a></article>{% empty %}<section class="panel routine-empty"><h2>Nenhuma rotina neste filtro</h2><p>{% if can_manage_templates %}Crie um roteiro ou personalize um exemplo abaixo para começar.{% else %}A direção ou gestão prepara os modelos que sua equipe pode usar.{% endif %}</p></section>{% endfor %}</div>
-    {% if page.has_other_pages %}<nav class="pagination" aria-label="Páginas de rotinas">{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}&niche={{ selected_niche }}&archived={{ archived|yesno:'1,0' }}">Anterior</a>{% endif %}<span>{{ page.number }} de {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?page={{ page.next_page_number }}&niche={{ selected_niche }}&archived={{ archived|yesno:'1,0' }}">Próxima</a>{% endif %}</nav>{% endif %}
-  </section>
+<div class="academy-header">
+  <div>
+    <div class="eyebrow">ACADEMIA DO ESCRITÓRIO & CAPACITAÇÃO</div>
+    <h1>Tutoriais & Treinamentos da Equipe</h1>
+    <p>Aprenda o passo a passo de cada setor com vídeos práticos, orientações operacionais e modelos de peças.</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem; align-items: center;">
+    {% if can_manage_templates %}
+      <a href="{% url 'routines:tutorial_create' %}" class="button button-primary">+ Novo Tutorial em Vídeo</a>
+    {% endif %}
+  </div>
 </div>
-{% if can_manage_templates %}<details class="panel routine-examples routine-example-library" {% if not page.paginator.count and not selected_niche and not archived %}open{% endif %}><summary><span>Exemplos para personalizar</span><small>Copie um roteiro e ajuste ao seu escritório</small></summary><div class="routine-example-grid">{% for example in examples %}<article><h3>{{ example.title }}</h3><span>{{ example.tasks|length }} tarefas · {{ example.checklist|length }} conferências</span><form method="post" action="{% url 'routines:import' example.key %}">{% csrf_token %}<button class="text-link">Personalizar exemplo →</button></form></article>{% endfor %}</div></details>{% endif %}
+
+<!-- TABS DE NAVEGAÇÃO -->
+<div class="mode-tabs">
+  <a href="?tab=tutorials{% if selected_sector %}&sector={{ selected_sector }}{% endif %}" class="mode-tab {% if tab == 'tutorials' %}active{% endif %}">
+    ▶ Tutoriais em Vídeo por Setor
+  </a>
+  <a href="?tab=checklists" class="mode-tab {% if tab == 'checklists' %}active{% endif %}">
+    📋 Checklists & Modelos de Rotina
+  </a>
+</div>
+
+{% if tab == 'tutorials' %}
+  <!-- FILTROS POR SETOR -->
+  <div class="sector-pills" role="navigation" aria-label="Filtrar por setor">
+    <a href="?tab=tutorials" class="sector-pill {% if not selected_sector %}active{% endif %}">
+      Todos os Setores
+    </a>
+    {% for code, label in sector_choices %}
+      <a href="?tab=tutorials&sector={{ code }}" class="sector-pill {% if selected_sector == code %}active{% endif %}">
+        {% if code == 'previdenciario' %}🏛️ {% elif code == 'civil' %}⚖️ {% elif code == 'trabalhista' %}💼 {% elif code == 'controladoria' %}⏱️ {% elif code == 'atendimento' %}💬 {% elif code == 'financeiro' %}💰 {% else %}📁 {% endif %}
+        {{ label }}
+      </a>
+    {% endfor %}
+  </div>
+
+  <!-- GRID DE TUTORIAIS -->
+  {% if tutorials %}
+    <div class="tutorial-video-grid">
+      {% for tut in tutorials %}
+        <article class="video-card">
+          <a href="{% url 'routines:tutorial_detail' tut.pk %}" class="video-thumb-wrapper" aria-label="Assistir {{ tut.title }}">
+            {% if tut.thumbnail_url %}
+              <img src="{{ tut.thumbnail_url }}" alt="" class="video-thumb-img" loading="lazy">
+            {% else %}
+              <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #1e3a8a, #0f172a); display: flex; align-items: center; justify-content: center;">
+                <svg class="icon" style="width: 48px; height: 48px; color: rgba(255,255,255,0.4);"><use href="#i-tutorials"/></svg>
+              </div>
+            {% endif %}
+            <div class="play-overlay">
+              <div class="play-btn-circle">
+                <svg class="icon" style="width: 22px; height: 22px; margin-left: 2px;"><use href="#i-play"/></svg>
+              </div>
+            </div>
+          </a>
+          <div class="video-card-body">
+            <span class="video-sector-tag">{{ tut.get_sector_display }}</span>
+            <h2 class="video-card-title">
+              <a href="{% url 'routines:tutorial_detail' tut.pk %}" style="color: inherit; text-decoration: none;">
+                {{ tut.title }}
+              </a>
+            </h2>
+            <p class="video-card-desc">{{ tut.description|truncatechars:140 }}</p>
+            <div class="video-card-footer">
+              <a href="{% url 'routines:tutorial_detail' tut.pk %}" class="watch-link">
+                Assistir e ver roteiro →
+              </a>
+              {% if can_manage_templates %}
+                <div class="admin-card-actions">
+                  <a href="{% url 'routines:tutorial_edit' tut.pk %}" class="table-action">Editar</a>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="panel" style="padding: 3rem 2rem; text-align: center;">
+      <svg class="icon" style="width: 56px; height: 56px; color: var(--muted); margin-bottom: 1rem;"><use href="#i-tutorials"/></svg>
+      <h2>Nenhum tutorial encontrado neste setor</h2>
+      <p class="muted" style="max-width: 500px; margin: 0 auto 1.5rem;">
+        {% if can_manage_templates %}
+          Clique no botão abaixo para gravar ou colar o link do YouTube de um treinamento da sua equipe.
+        {% else %}
+          Os tutoriais deste setor estão sendo preparados pela coordenação do escritório.
+        {% endif %}
+      </p>
+      {% if can_manage_templates %}
+        <a href="{% url 'routines:tutorial_create' %}{% if selected_sector %}?sector={{ selected_sector }}{% endif %}" class="button button-primary">+ Cadastrar Primeiro Tutorial</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+{% else %}
+  <!-- ABA DE CHECKLISTS E MODELOS DE ROTINA ANTERIORES -->
+  <div class="routine-catalog-layout">
+    <aside class="routine-catalog-tools" aria-label="Organizar biblioteca">
+      <form method="get" class="panel routine-filters">
+        <input type="hidden" name="tab" value="checklists">
+        <h2>Encontre seu roteiro</h2>
+        <div>
+          <label for="niche">Área de atuação</label>
+          <select id="niche" name="niche" class="form-control">
+            <option value="">Todas as áreas</option>
+            {% for value,label in niche_choices %}
+              <option value="{{ value }}" {% if selected_niche == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% if can_manage_templates %}
+        <div>
+          <label for="archived">Catálogo</label>
+          <select id="archived" name="archived" class="form-control">
+            <option value="0">Disponíveis</option>
+            <option value="1" {% if archived %}selected{% endif %}>Arquivados</option>
+          </select>
+        </div>
+        {% endif %}
+        <button class="button button-secondary">Aplicar filtros</button>
+        {% if selected_niche or archived %}
+          <a class="text-link" href="{% url 'routines:list' %}?tab=checklists">Limpar filtros</a>
+        {% endif %}
+      </form>
+      <details class="routine-guide">
+        <summary>Como a rotina vira trabalho?</summary>
+        <ol>
+          <li><strong>Escolha e confira.</strong> O modelo reúne tarefas, conferências e documentos a solicitar.</li>
+          <li><strong>Aplique em uma pasta.</strong> Revise o destino e a data antes de confirmar.</li>
+          <li><strong>Acompanhe a execução.</strong> As tarefas vão para o Kanban; as conferências ficam na rotina da pasta.</li>
+        </ol>
+      </details>
+    </aside>
+
+    <section class="routine-catalog-results" aria-label="Rotinas disponíveis">
+      <div class="routine-result-heading">
+        <h2>{% if archived %}Modelos arquivados{% else %}Seus modelos de rotina{% endif %}</h2>
+        <span>{{ page.paginator.count }} resultado{{ page.paginator.count|pluralize }}</span>
+      </div>
+      <div class="routine-cards">
+        {% for item in page %}
+        <article class="panel routine-card">
+          <div class="routine-card-top">
+            <span class="badge">Versão {{ item.version }}</span>
+            {% if not item.is_active %}<span class="badge">Arquivada</span>{% endif %}
+          </div>
+          <h2>{{ item.title }}</h2>
+          <p>{{ item.description|default:"Roteiro de trabalho do escritório."|truncatechars:170 }}</p>
+          <div class="routine-tags">
+            {% for label in item.niche_labels %}<span>{{ label }}</span>{% empty %}<span>Todas as áreas</span>{% endfor %}
+          </div>
+          <dl class="routine-counts">
+            <div><dt>Tarefas</dt><dd>{{ item.tasks|length }}</dd></div>
+            <div><dt>Conferências</dt><dd>{{ item.checklist|length }}</dd></div>
+            <div><dt>Documentos</dt><dd>{{ item.documents|length }}</dd></div>
+          </dl>
+          <a class="button button-secondary" href="{% url 'routines:detail' item.pk %}">
+            {% if item.is_active %}Conferir e aplicar{% else %}Consultar modelo{% endif %} <span aria-hidden="true">→</span>
+          </a>
+        </article>
+        {% empty %}
+        <section class="panel routine-empty">
+          <h2>Nenhuma rotina neste filtro</h2>
+          <p>{% if can_manage_templates %}Crie um roteiro ou personalize um exemplo abaixo para começar.{% else %}A direção ou gestão prepara os modelos que sua equipe pode usar.{% endif %}</p>
+        </section>
+        {% endfor %}
+      </div>
+      {% if page.has_other_pages %}
+      <nav class="pagination" aria-label="Páginas de rotinas">
+        {% if page.has_previous %}<a href="?tab=checklists&page={{ page.previous_page_number }}&niche={{ selected_niche }}&archived={{ archived|yesno:'1,0' }}">Anterior</a>{% endif %}
+        <span>{{ page.number }} de {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}<a href="?tab=checklists&page={{ page.next_page_number }}&niche={{ selected_niche }}&archived={{ archived|yesno:'1,0' }}">Próxima</a>{% endif %}
+      </nav>
+      {% endif %}
+    </section>
+  </div>
+{% endif %}
+
 {% endblock %}

@@ -76,3 +76,33 @@ class CheckStatusForm(StyledForm):
 class CommentForm(StyledForm):
     body = forms.CharField(label="Comentário interno", max_length=3000, widget=forms.Textarea(attrs={"rows": 3}),
         help_text="Visível à equipe com acesso à pasta. Comentários ficam preservados no histórico.")
+
+
+class SectorTutorialForm(forms.ModelForm):
+    class Meta:
+        from .models import SectorTutorial
+        model = SectorTutorial
+        fields = [
+            "sector",
+            "title",
+            "description",
+            "video_url",
+            "attachment_name",
+            "attachment_url",
+            "order",
+            "is_published",
+        ]
+        widgets = {
+            "sector": forms.Select(attrs={"class": "form-control"}),
+            "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ex: Como protocolar requerimento de Aposentadoria no SAG/INSS"}),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 8, "placeholder": "Descreva o passo a passo completo, telas que o colaborador deve acessar, documentos e procedimentos..."}),
+            "video_url": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://www.youtube.com/watch?v=... ou Loom / Vimeo"}),
+            "attachment_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ex: Modelo de Requerimento Administrativo (DOCX)"}),
+            "attachment_url": forms.URLInput(attrs={"class": "form-control", "placeholder": "Link do arquivo de apoio (Google Drive, Dropbox, PDF...)"}),
+            "order": forms.NumberInput(attrs={"class": "form-control", "style": "max-width: 120px;"}),
+            "is_published": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+        help_texts = {
+            "video_url": "Cole o link do YouTube, Loom ou Vimeo. O player é exibido automaticamente no sistema para os funcionários assistirem.",
+            "description": "Roteiro operacional de como fazer a atividade desse setor.",
+        }

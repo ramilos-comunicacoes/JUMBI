@@ -1,7 +1,181 @@
 {% extends 'legal/base.html' %}{% load static %}
-{% block title %}Minha Rotina{% endblock %}
+{% block title %}Minha Rotina & Produtividade{% endblock %}
 {% block extra_css %}
 <style>
+.productivity-hero {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+.prod-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.prod-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+.prod-kpi-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.5rem;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+.prod-kpi-card.highlight {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+.prod-kpi-card.alert {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+.prod-kpi-card.success {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+.prod-kpi-card span {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted, #94a3b8);
+}
+.prod-kpi-card strong {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+  color: var(--text, #f8fafc);
+}
+.prod-kpi-card small {
+  font-size: 0.75rem;
+  color: var(--muted, #94a3b8);
+  margin-top: 0.2rem;
+}
+
+/* Previdenciario Hub Section */
+.prev-hub-panel {
+  margin-top: 1.5rem;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 0.6) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+.prev-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.prev-badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.prev-badge-card {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+}
+.prev-badge-card.req {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+}
+.prev-badge-card.req strong { color: #f59e0b; }
+.prev-badge-card.pend {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.08);
+}
+.prev-badge-card.pend strong { color: #60a5fa; }
+.prev-badge-card.conc {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.08);
+}
+.prev-badge-card.conc strong { color: #4ade80; }
+.prev-badge-card.rej {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+}
+.prev-badge-card.rej strong { color: #f87171; }
+
+.demand-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.demand-card-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  transition: border-color 0.15s ease;
+}
+.demand-card-item:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+}
+.demand-info {
+  flex: 1;
+  min-width: 250px;
+}
+.demand-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+.badge-demand-req {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+.badge-demand-pend {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+.badge-demand-conc {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
 .routine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
 @media (max-width: 900px) { .routine-grid { grid-template-columns: 1fr; } }
 .badge-urgent { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
@@ -10,33 +184,200 @@
 .badge-pending { background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
 .badge-overdue { background: rgba(153, 27, 27, 0.3); color: #fca5a5; border: 1px solid rgba(153, 27, 27, 0.6); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 700; font-size: 0.8rem; }
 .bulk-reassign-box { margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0.5rem; }
-.quick-stats { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem; }
-.quick-stat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 0.75rem 1.25rem; border-radius: 0.5rem; display: flex; flex-direction: column; }
-.quick-stat-card span { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); }
-.quick-stat-card strong { font-size: 1.5rem; }
 </style>
 {% endblock %}
+
 {% block content %}
 <div class="page-heading">
   <div>
     <div class="eyebrow">ESPAÇO INDIVIDUAL DO COLABORADOR <span class="eyebrow-divider">/</span> {{ request.organization.name }}</div>
-    <h1>Minha Rotina</h1>
-    <p>Organização das suas tarefas, prazos com alerta de urgência, contatos e casos autorizados.</p>
-    <div class="quick-stats">
-      <div class="quick-stat-card"><span>Tarefas ativas</span><strong>{{ tasks|length }}</strong></div>
-      <div class="quick-stat-card"><span>Prazos atribuídos</span><strong>{{ deadlines|length }}</strong></div>
-      <div class="quick-stat-card"><span>Prazos urgentes</span><strong style="color: #ef4444;">{{ urgent_deadlines_count }}</strong></div>
-      <div class="quick-stat-card"><span>A conferir</span><strong style="color: #94a3b8;">{{ pending_deadlines_count }}</strong></div>
-      <div class="quick-stat-card"><span>Contatos pendentes</span><strong>{{ contacts|length }}</strong></div>
-    </div>
+    <h1>Minha Rotina & Produtividade</h1>
+    <p>Painel de desempenho diário, protocolos previdenciários no INSS, cumprimento de prazos e fluxo de trabalho.</p>
   </div>
   <div class="heading-actions">
     {% if can_edit %}
+      <a href="{% url 'legal:create' 'demands' %}" class="button button-secondary">+ Novo Protocolo INSS</a>
       <a href="{% url 'legal:create' 'tasks' %}" class="button button-primary">+ Nova tarefa</a>
     {% endif %}
   </div>
 </div>
 
+<!-- PAINEL DE PRODUTIVIDADE & RANKING DO COLABORADOR -->
+<section class="productivity-hero">
+  <div class="prod-top-row">
+    <div>
+      <div class="section-kicker" style="color: #818cf8;">DESEMPENHO INDIVIDUAL</div>
+      <h2 style="font-size: 1.3rem; margin: 0.2rem 0;">Minha Produtividade no Escritório</h2>
+    </div>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <a href="{% url 'performance:ranking' %}" class="button button-secondary button-small" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+        <svg class="icon" style="width: 1rem; height: 1rem;"><use href="#i-ranking"/></svg>
+        Ver Ranking da Equipe
+      </a>
+      <a href="{% url 'performance:list' %}" class="button button-secondary button-small">Minhas Metas</a>
+    </div>
+  </div>
+
+  <div class="prod-kpis">
+    <div class="prod-kpi-card highlight">
+      <span>Pontuação no Ranking</span>
+      <strong style="color: #a5b4fc;">{{ net_score }} pts</strong>
+      <small>{{ scored_deliveries }} entrega(s) pontuada(s)</small>
+    </div>
+
+    <div class="prod-kpi-card {% if punctuality_rate and punctuality_rate >= 80 %}success{% elif punctuality_rate and punctuality_rate < 50 %}alert{% endif %}">
+      <span>Pontualidade em Prazos</span>
+      <strong style="color: {% if punctuality_rate and punctuality_rate >= 80 %}#4ade80{% elif punctuality_rate and punctuality_rate < 50 %}#f87171{% else %}#facc15{% endif %};">
+        {% if punctuality_rate is not None %}{{ punctuality_rate }}%{% else %}100%{% endif %}
+      </strong>
+      <small>{{ fulfilled_deadlines }} prazo(s) cumprido(s)</small>
+    </div>
+
+    <div class="prod-kpi-card">
+      <span>Tarefas no Mês</span>
+      <strong>{{ completed_tasks_month }}</strong>
+      <small>Concluídas com evidência</small>
+    </div>
+
+    <div class="prod-kpi-card {% if urgent_deadlines_count > 0 %}alert{% endif %}">
+      <span>Prazos Urgentes</span>
+      <strong style="color: {% if urgent_deadlines_count > 0 %}#f87171{% else %}#94a3b8{% endif %};">
+        {{ urgent_deadlines_count }}
+      </strong>
+      <small>Vencendo em até 48h</small>
+    </div>
+
+    <div class="prod-kpi-card">
+      <span>Protocolos INSS Ativos</span>
+      <strong style="color: #38bdf8;">{{ prev_total_active }}</strong>
+      <small>{{ prev_requirement_count }} com exigência aberta</small>
+    </div>
+  </div>
+</section>
+
+<!-- HUB PREVIDENCIÁRIO (INSS & BENEFÍCIOS) -->
+<section class="prev-hub-panel">
+  <div class="prev-header">
+    <div>
+      <div class="section-kicker" style="color: #34d399; display: flex; align-items: center; gap: 0.4rem;">
+        <svg class="icon" style="width: 1rem; height: 1rem;"><use href="#i-previdencia"/></svg>
+        HUB PREVIDENCIÁRIO & INSS
+      </div>
+      <h2 style="font-size: 1.25rem; margin: 0.2rem 0;">Requerimentos, Exigências e Benefícios</h2>
+      <p class="muted small" style="margin: 0;">Gestão ágil de benefícios por incapacidade (B31), aposentadorias, BPC/LOAS e recursos administrativos.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="{% url 'legal:list' 'demands' %}" class="button button-secondary button-small">Ver Todos os Protocolos</a>
+      {% if can_edit %}
+        <a href="{% url 'legal:create' 'demands' %}" class="button button-primary button-small">+ Cadastrar Protocolo</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="prev-badges">
+    <div class="prev-badge-card req">
+      <span class="muted small">EM EXIGÊNCIA</span>
+      <strong>{{ prev_requirement_count }}</strong>
+      <span class="small" style="color: #f59e0b;">Atenção prioritária</span>
+    </div>
+    <div class="prev-badge-card pend">
+      <span class="muted small">EM ANÁLISE INSS</span>
+      <strong>{{ prev_pending_count }}</strong>
+      <span class="small muted">Aguardando parecer/perícia</span>
+    </div>
+    <div class="prev-badge-card conc">
+      <span class="muted small">BENEFÍCIOS DEFERIDOS</span>
+      <strong>{{ prev_concluded_count }}</strong>
+      <span class="small" style="color: #4ade80;">Concedidos / Vitória</span>
+    </div>
+    <div class="prev-badge-card rej">
+      <span class="muted small">INDEFERIDOS / RECURSO</span>
+      <strong>{{ prev_rejected_count }}</strong>
+      <span class="small muted">Recurso ou Judicial</span>
+    </div>
+  </div>
+
+  <!-- LISTA DE PROTOCOLOS PRIORITÁRIOS -->
+  {% if priority_demands %}
+  <div style="margin-top: 1rem;">
+    <h3 style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.75rem;">
+      Requerimentos Prioritários sob sua Atenção
+    </h3>
+    <div class="demand-card-list">
+      {% for demand in priority_demands %}
+      <div class="demand-card-item">
+        <div class="demand-info">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <strong>{{ demand.service_name }}</strong>
+            <span class="badge" style="font-size: 0.75rem;">Protocolo: {{ demand.protocol_number }}</span>
+            {% if demand.status == 'requirement' %}
+              <span class="badge-demand-req">⚠️ Em Exigência</span>
+            {% elif demand.status == 'pending' %}
+              <span class="badge-demand-pend">⏳ Em Análise</span>
+            {% elif demand.status == 'concluded' %}
+              <span class="badge-demand-conc">✅ Concedido</span>
+            {% else %}
+              <span class="badge">{{ demand.get_status_display }}</span>
+            {% endif %}
+          </div>
+          <div class="muted small" style="margin-top: 0.35rem;">
+            <span>Segurado: <strong>{{ demand.contact.name }}</strong></span>
+            · <span>Pasta: <a href="{% url 'legal:detail' demand.matter.pk %}">{{ demand.matter.title }}</a></span>
+            {% if demand.assigned_to %}· <span>Responsável: {{ demand.assigned_to.get_full_name|default:demand.assigned_to.email }}</span>{% endif %}
+          </div>
+          {% if demand.demands_summary %}
+          <div class="small" style="margin-top: 0.4rem; padding: 0.4rem 0.6rem; background: rgba(245, 158, 11, 0.05); border-left: 3px solid #f59e0b; border-radius: 2px;">
+            <strong>Exigência do INSS:</strong> {{ demand.demands_summary }}
+          </div>
+          {% endif %}
+          {% if demand.next_action %}
+          <div class="small muted" style="margin-top: 0.3rem;">
+            <strong>Próxima Ação:</strong> {{ demand.next_action }}
+          </div>
+          {% endif %}
+        </div>
+        <div>
+          {% if can_edit %}
+            <a href="{% url 'legal:edit' 'demands' demand.pk %}" class="button button-secondary button-small">Atualizar / Tratar</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state compact" style="margin-top: 1rem; border-color: rgba(16, 185, 129, 0.15);">
+    <p>Nenhuma exigência ou pendência previdenciária aberta no momento. Parabéns!</p>
+    {% if can_edit %}
+      <a href="{% url 'legal:create' 'demands' %}" class="button button-secondary button-small" style="margin-top: 0.5rem;">+ Cadastrar novo requerimento</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- PETIÇÕES PREVIDENCIÁRIAS E PEÇAS -->
+  {% if prev_tasks %}
+  <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+    <h3 style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.75rem;">
+      Petições e Atividades Previdenciárias Atribuídas ({{ prev_tasks|length }})
+    </h3>
+    <div class="task-list">
+      {% for task in prev_tasks %}
+      <div class="task-item" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="item-main">
+          <strong><a href="{% url 'worklog:task' task.pk %}">{{ task.title }}</a></strong>
+          <span class="muted small">
+            {{ task.matter|default:"Sem pasta" }} · Vencimento: {{ task.due_date|date:"d/m/Y" }} · Situação: {{ task.get_status_display }}
+          </span>
+        </div>
+        <span class="badge">{{ task.get_priority_display }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<!-- GRID DE ROTINA PADRÃO -->
 <div class="routine-grid">
   <!-- 1. TAREFAS E DELEGAÇÃO -->
   <section class="panel">

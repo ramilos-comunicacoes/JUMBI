@@ -9,17 +9,21 @@ Gives each collaborator a focused 'mini-system' within the office:
 - My individual goals
 """
 
+from decimal import Decimal
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
+from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from apps.core.models import Membership, User
+from apps.core.niches import practice_area_values
+from apps.performance.models import ScoreEvent
 from apps.performance.services import dashboard_goals
-from .models import Appointment, ClientContact, Deadline, Matter, Task
+from .models import AdministrativeDemand, Appointment, ClientContact, Deadline, Matter, Task
 from .services import audit, visible_matters
 from .views import can_edit, organization_required
 
@@ -43,7 +47,8 @@ def my_routine(request):
         status=ClientContact.Status.COMPLETED_MANUAL
     ).select_related("matter", "contact").order_by("-created_at")[:10]
 
-    matters = visible_matters(user, org).filter(
+    user_visible_matters = visible_matters(user, org)
+    matters = user_visible_matters.filter(
         models_q := (models_q_filter(user))
     ).distinct().select_related("client")[:8]
 
@@ -60,9 +65,80 @@ def my_routine(request):
         is_active=True,
     ).exclude(memberships__role="client").distinct().order_by("first_name", "email")
 
+    # --- COLLABORATOR PRODUCTIVITY & SCORING ---
+    score_events = ScoreEvent.objects.filter(organization=org, user=user)
+    earned_pts = score_events.filter(is_reversal=False).aggregate(total=Sum("points"))["total"] or Decimal("0.00")
+    reversed_pts = score_events.filter(is_reversal=True).aggregate(total=Sum("points"))["total"] or Decimal("0.00")
+    net_score = earned_pts - reversed_pts
+    scored_deliveries = score_events.filter(is_reversal=False).count()
+
+    # Tasks completed this month
+    start_of_month = today.replace(day=1)
+    completed_tasks_month = Task.objects.filter(
+        organization=org,
+        owner=user,
+        status=Task.Status.DONE,
+    ).filter(
+        Q(completed_at__date__gte=start_of_month) | Q(completed_at__isnull=True, updated_at__date__gte=start_of_month)
+    ).count()
+
+    # Deadlines punctuality rate
+    all_user_deadlines = Deadline.objects.filter(organization=org, owner=user)
+    fulfilled_deadlines = all_user_deadlines.filter(status=Deadline.Status.FULFILLED).count()
+    overdue_deadlines_count = sum(1 for d in deadlines if d.urgency_level == "overdue")
+    urgent_deadlines_count = sum(1 for d in deadlines if d.urgency_level == "urgent")
+    pending_deadlines_count = sum(1 for d in deadlines if d.urgency_level == "pending")
+
+    total_evaluated = fulfilled_deadlines + overdue_deadlines_count
+    punctuality_rate = (
+        round((fulfilled_deadlines / total_evaluated) * 100)
+        if total_evaluated > 0
+        else 100 if fulfilled_deadlines > 0 else None
+    )
+
+    # --- PREVIDENCIÁRIO HUB (INSS, PROTOCOLOS, BENEFÍCIOS, PETIÇÕES) ---
+    prev_area_values = practice_area_values("previdenciario")
+    prev_demands = AdministrativeDemand.objects.filter(
+        organization=org,
+        matter__in=user_visible_matters,
+    ).select_related("matter", "contact", "assigned_to")
+
+    my_prev_demands = prev_demands.filter(
+        Q(assigned_to=user) | Q(matter__owner=user) | Q(matter__members=user)
+    ).distinct()
+
+    # If collaborator has no specific demands assigned yet, fallback to visible demands so dashboard is informative
+    display_demands = my_prev_demands if my_prev_demands.exists() else prev_demands
+
+    prev_total_active = display_demands.filter(
+        status__in=[AdministrativeDemand.Status.PENDING, AdministrativeDemand.Status.REQUIREMENT, AdministrativeDemand.Status.SUSPENDED]
+    ).count()
+    prev_requirement_count = display_demands.filter(status=AdministrativeDemand.Status.REQUIREMENT).count()
+    prev_pending_count = display_demands.filter(status=AdministrativeDemand.Status.PENDING).count()
+    prev_concluded_count = display_demands.filter(status=AdministrativeDemand.Status.CONCLUDED).count()
+    prev_rejected_count = display_demands.filter(status=AdministrativeDemand.Status.REJECTED).count()
+
+    # High priority demands: Requirements and pending analysis
+    priority_demands = display_demands.filter(
+        status__in=[AdministrativeDemand.Status.REQUIREMENT, AdministrativeDemand.Status.PENDING]
+    ).order_by("-status", "-updated_at")[:6]
+
+    # Previdenciário Petitions & Specific Tasks
+    prev_tasks = tasks.filter(
+        Q(matter__area__in=prev_area_values) |
+        Q(title__icontains="petição") |
+        Q(title__icontains="inss") |
+        Q(title__icontains="exigência") |
+        Q(title__icontains="recurso") |
+        Q(title__icontains="benefício") |
+        Q(title__icontains="aposentadoria") |
+        Q(title__icontains="bpc") |
+        Q(title__icontains="laudo")
+    )[:8]
+
     return render(request, "legal/my_routine.html", {
-        "title": "Minha Rotina",
-        "page_title": "Minha Rotina",
+        "title": "Minha Rotina & Produtividade",
+        "page_title": "Minha Rotina & Produtividade",
         "active_nav": "my_routine",
         "today": today,
         "tasks": tasks,
@@ -73,8 +149,23 @@ def my_routine(request):
         "goals": goals,
         "colleagues": colleagues,
         "can_edit": can_edit(request),
-        "urgent_deadlines_count": sum(1 for d in deadlines if d.urgency_level == "urgent"),
-        "pending_deadlines_count": sum(1 for d in deadlines if d.urgency_level == "pending"),
+        "urgent_deadlines_count": urgent_deadlines_count,
+        "pending_deadlines_count": pending_deadlines_count,
+        "overdue_deadlines_count": overdue_deadlines_count,
+        # Productivity & Ranking
+        "net_score": net_score,
+        "scored_deliveries": scored_deliveries,
+        "completed_tasks_month": completed_tasks_month,
+        "fulfilled_deadlines": fulfilled_deadlines,
+        "punctuality_rate": punctuality_rate,
+        # Previdenciário Hub
+        "prev_total_active": prev_total_active,
+        "prev_requirement_count": prev_requirement_count,
+        "prev_pending_count": prev_pending_count,
+        "prev_concluded_count": prev_concluded_count,
+        "prev_rejected_count": prev_rejected_count,
+        "priority_demands": priority_demands,
+        "prev_tasks": prev_tasks,
     })
 
 

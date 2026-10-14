@@ -12,8 +12,8 @@ from apps.core.niches import practice_area_choices
 from apps.legal.services import can_write, visible_matters
 from apps.legal.views import organization_required
 from .catalog import EXAMPLES
-from .forms import ApplyForm, ChecklistForm, CheckStatusForm, CommentForm, TemplateForm
-from .models import MatterChecklist, RoutineTemplate
+from .forms import ApplyForm, ChecklistForm, CheckStatusForm, CommentForm, TemplateForm, SectorTutorialForm
+from .models import MatterChecklist, RoutineTemplate, SectorTutorial
 from .services import (add_checklist, add_comment, apply_template, can_manage_templates,
     import_example, matter_context, save_template, set_checklist_status, visible_templates)
 
@@ -33,6 +33,28 @@ def _matter(request, pk):
 @require_GET
 def template_list(request):
     require_access(request.organization)
+    can_manage = can_manage_templates(request.user, request.organization)
+
+    tab = request.GET.get("tab", "tutorials")
+    selected_sector = request.GET.get("sector", "")
+
+    # Tutorials query
+    tutorials_qs = SectorTutorial.objects.filter(organization=request.organization)
+    if not can_manage:
+        tutorials_qs = tutorials_qs.filter(is_published=True)
+    if selected_sector:
+        tutorials_qs = tutorials_qs.filter(sector=selected_sector)
+    tutorials = list(tutorials_qs)
+
+    sector_counts = {}
+    for code, label in SectorTutorial.Sector.choices:
+        sector_counts[code] = SectorTutorial.objects.filter(
+            organization=request.organization,
+            sector=code,
+            **({} if can_manage else {"is_published": True})
+        ).count()
+
+    # Checklist templates query
     niche = request.GET.get("niche", "")
     choices = practice_area_choices(request.organization)
     if niche and niche not in dict(choices):
@@ -40,16 +62,28 @@ def template_list(request):
     templates = visible_templates(request.user, request.organization)
     archived = request.GET.get("archived") == "1"
     templates = templates.filter(is_active=not archived)
-    # Portable filtering for SQLite tests and PostgreSQL production.
     if niche:
         ids = [item.pk for item in templates.only("pk", "niches") if not item.niches or niche in item.niches]
         templates = templates.filter(pk__in=ids)
     page = Paginator(templates, 12).get_page(request.GET.get("page"))
     examples = [{"key": key, **value} for key, value in EXAMPLES.items()
                 if not value["niches"] or set(value["niches"]) & set(request.organization.practice_areas)]
-    return render(request, "routines/list.html", {"page_title": "Rotinas por nicho", "active_nav": "routines",
-        "page": page, "examples": examples, "niche_choices": choices, "selected_niche": niche,
-        "archived": archived, "can_manage_templates": can_manage_templates(request.user, request.organization)})
+
+    return render(request, "routines/list.html", {
+        "page_title": "Tutoriais & Rotinas por Nicho",
+        "active_nav": "tutorials",
+        "tab": tab,
+        "tutorials": tutorials,
+        "sector_choices": SectorTutorial.Sector.choices,
+        "selected_sector": selected_sector,
+        "sector_counts": sector_counts,
+        "page": page,
+        "examples": examples,
+        "niche_choices": choices,
+        "selected_niche": niche,
+        "archived": archived,
+        "can_manage_templates": can_manage,
+    })
 
 
 @organization_required
@@ -171,3 +205,91 @@ def check_status(request, pk):
             return redirect("routines:matter", pk=item.matter_id)
     return render(request, "routines/form.html", {"form": form, "page_title": item.title, "active_nav": "routines",
         "back_url": reverse("routines:matter", args=[item.matter_id]), "submit_label": "Registrar conferência"})
+
+
+@organization_required
+@require_GET
+def tutorial_detail(request, pk):
+    require_access(request.organization)
+    can_manage = can_manage_templates(request.user, request.organization)
+    tutorial = get_object_or_404(SectorTutorial, pk=pk, organization=request.organization)
+    if not can_manage and not tutorial.is_published:
+        raise Http404("Tutorial indisponível.")
+
+    related_tutorials = SectorTutorial.objects.filter(
+        organization=request.organization,
+        sector=tutorial.sector,
+        **({} if can_manage else {"is_published": True})
+    ).exclude(pk=tutorial.pk)[:6]
+
+    return render(request, "routines/tutorial_detail.html", {
+        "page_title": tutorial.title,
+        "active_nav": "tutorials",
+        "tutorial": tutorial,
+        "related_tutorials": related_tutorials,
+        "can_manage": can_manage,
+    })
+
+
+@organization_required
+@require_http_methods(["GET", "POST"])
+def tutorial_create(request):
+    require_access(request.organization)
+    if not can_manage_templates(request.user, request.organization):
+        raise PermissionDenied("Apenas a gestão do escritório pode cadastrar novos tutoriais.")
+
+    form = SectorTutorialForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        tutorial = form.save(commit=False)
+        tutorial.organization = request.organization
+        tutorial.created_by = request.user
+        tutorial.save()
+        messages.success(request, f"Tutorial '{tutorial.title}' cadastrado com sucesso!")
+        return redirect("routines:tutorial_detail", pk=tutorial.pk)
+
+    return render(request, "routines/tutorial_form.html", {
+        "page_title": "Novo Tutorial / Treinamento",
+        "active_nav": "tutorials",
+        "form": form,
+        "is_create": True,
+        "back_url": reverse("routines:list"),
+    })
+
+
+@organization_required
+@require_http_methods(["GET", "POST"])
+def tutorial_edit(request, pk):
+    require_access(request.organization)
+    if not can_manage_templates(request.user, request.organization):
+        raise PermissionDenied("Apenas a gestão do escritório pode editar tutoriais.")
+
+    tutorial = get_object_or_404(SectorTutorial, pk=pk, organization=request.organization)
+    form = SectorTutorialForm(request.POST or None, instance=tutorial)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f"Tutorial '{tutorial.title}' atualizado com sucesso!")
+        return redirect("routines:tutorial_detail", pk=tutorial.pk)
+
+    return render(request, "routines/tutorial_form.html", {
+        "page_title": f"Editar: {tutorial.title}",
+        "active_nav": "tutorials",
+        "form": form,
+        "tutorial": tutorial,
+        "is_create": False,
+        "back_url": reverse("routines:tutorial_detail", args=[tutorial.pk]),
+    })
+
+
+@organization_required
+@require_POST
+def tutorial_delete(request, pk):
+    require_access(request.organization)
+    if not can_manage_templates(request.user, request.organization):
+        raise PermissionDenied("Apenas a gestão do escritório pode excluir tutoriais.")
+
+    tutorial = get_object_or_404(SectorTutorial, pk=pk, organization=request.organization)
+    title = tutorial.title
+    tutorial.delete()
+    messages.success(request, f"Tutorial '{title}' removido com sucesso.")
+    return redirect("routines:list")
+

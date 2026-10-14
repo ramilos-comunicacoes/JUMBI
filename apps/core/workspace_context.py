@@ -12,6 +12,7 @@ def workspace_context(request):
     advanced = has_advanced(organization)
     sections = [
         ("matters", "Pastas jurídicas", "folder"), ("contacts", "Pessoas", "users"),
+        ("demands", "INSS / Previdenciário", "demands"),
         ("cases", "Processos", "scale"), ("tasks", "Tarefas", "check"),
         ("deadlines", "Prazos", "clock"), ("appointments", "Agenda", "calendar"),
         ("documents", "Documentos", "file"),
@@ -20,8 +21,8 @@ def workspace_context(request):
         sections.append(("finance", "Financeiro", "wallet"))
     sections.append(("crm", "Relacionamento", "briefcase"))
     nav = [{"key": "dashboard", "label": "Visão geral", "url": reverse("legal:dashboard"), "icon": "grid"}]
-    nav.append({"key": "my_routine", "label": "Minha rotina", "url": reverse("legal:my_routine"), "icon": "check"})
-    nav.append({"key": "djen", "label": "Comunica PJe / DJEN", "url": reverse("legal:djen_dashboard"), "icon": "scale"})
+    nav.append({"key": "my_routine", "label": "Minha rotina", "url": reverse("legal:my_routine"), "icon": "my_routine"})
+    nav.append({"key": "djen", "label": "Comunica PJe / DJEN", "url": reverse("legal:djen_dashboard"), "icon": "djen"})
     nav.extend([
         {"key": "search", "label": "Busca unificada", "url": reverse("discovery:search"), "icon": "search"},
         {"key": "notifications", "label": "Notificações", "url": reverse("notifications:inbox"), "icon": "notifications"},
@@ -34,9 +35,9 @@ def workspace_context(request):
         elif item["key"] == "appointments":
             item.update(label="Calendário e agenda", url=reverse("legal:calendar"))
     nav.append({"key": "goals", "label": "Metas", "url": reverse("performance:list"), "icon": "target"})
-    nav.append({"key": "ranking", "label": "Ranking da equipe", "url": reverse("performance:ranking"), "icon": "target"})
-    nav.append({"key": "contact_messages", "label": "Contatos e WhatsApp", "url": reverse("legal:contact_messages_list"), "icon": "users"})
-    nav.append({"key": "routines", "label": "Rotinas por nicho", "url": reverse("routines:list"), "icon": "check"})
+    nav.append({"key": "ranking", "label": "Ranking da equipe", "url": reverse("performance:ranking"), "icon": "ranking"})
+    nav.append({"key": "contact_messages", "label": "Contatos e WhatsApp", "url": reverse("legal:contact_messages_list"), "icon": "contact_messages"})
+    nav.append({"key": "tutorials", "label": "Tutoriais e Treinamentos", "url": reverse("routines:list"), "icon": "tutorials"})
     if manager and advanced:
         nav.append({"key": "fees", "label": "Honorários", "url": reverse("fees:overview"), "icon": "wallet"})
         nav.append({"key": "inventory", "label": "Estoque e patrimônio", "url": reverse("inventory:overview"), "icon": "box"})
@@ -63,7 +64,7 @@ def workspace_context(request):
             {'key': 'security', 'label': 'Segurança da conta', 'url': reverse('security:account'), 'icon': 'shield'},
         ]
     navigation_groups = [
-        ("Dia a dia", ["my_routine", "dashboard", "djen", "ranking", "search", "notifications", "appointments", "tasks", "deadlines", "goals", "routines"]),
+        ("Dia a dia", ["my_routine", "dashboard", "demands", "djen", "ranking", "tutorials", "search", "notifications", "appointments", "tasks", "deadlines", "goals", "routines"]),
         ("Acervo jurídico", ["matters", "contacts", "contact_messages", "client_map", "cases", "documents", "portal", "contracts"]),
         ("Gestão do escritório", ["crm", "fees", "finance", "inventory"]),
         ("Administração", ["intake", "team", "audit", "subscription", "guide", "security", "platform"]),

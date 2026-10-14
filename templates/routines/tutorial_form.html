@@ -1,0 +1,98 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block title %}{{ page_title }} · JUMBI{% endblock %}
+{% block extra_css %}
+<style>
+.tutorial-form-layout { max-width: 820px; margin: 1.5rem auto; }
+.form-card { background: var(--surface, #1e293b); border: 1px solid var(--border-soft, rgba(255,255,255,0.08)); border-radius: 12px; padding: 2rem; }
+.form-group { margin-bottom: 1.5rem; }
+.form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem; }
+.form-group .help-text { font-size: 0.8rem; color: var(--muted, #94a3b8); margin-top: 0.35rem; }
+.form-actions { display: flex; gap: 1rem; align-items: center; justify-content: flex-end; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-soft, rgba(255,255,255,0.08)); }
+.notice-box { background: rgba(59, 130, 246, 0.08); border-left: 4px solid #3b82f6; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.85rem; line-height: 1.6; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="tutorial-form-layout">
+  <a href="{{ back_url }}" class="back-link">← Voltar para Tutoriais</a>
+  
+  <div class="page-heading" style="margin-top: 1rem;">
+    <div>
+      <div class="eyebrow">ACADEMIA & PROCEDIMENTOS DO ESCRITÓRIO</div>
+      <h1>{{ page_title }}</h1>
+      <p>Configure o vídeo orientativo e o passo a passo para a equipe.</p>
+    </div>
+  </div>
+
+  <div class="notice-box">
+    <strong>💡 Dica para vídeos do YouTube:</strong> Basta colar o link padrão do vídeo (ex: <code>https://www.youtube.com/watch?v=...</code> ou <code>https://youtu.be/...</code>). O JUMBI gera a capa e o player embutido automaticamente para que os funcionários assistam aqui mesmo.
+  </div>
+
+  <div class="form-card">
+    <form method="post">
+      {% csrf_token %}
+      
+      {% if form.errors %}
+      <div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+        Por favor, corrija os erros abaixo no formulário.
+      </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="id_sector">Setor / Área de Atuação *</label>
+        {{ form.sector }}
+        {% if form.sector.errors %}<div class="form-error">{{ form.sector.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_title">Título do Treinamento / Tutorial *</label>
+        {{ form.title }}
+        <div class="help-text">Seja objetivo e claro sobre o procedimento explicado.</div>
+        {% if form.title.errors %}<div class="form-error">{{ form.title.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_video_url">Link do Vídeo (YouTube, Loom ou Vimeo)</label>
+        {{ form.video_url }}
+        <div class="help-text">{{ form.video_url.help_text }}</div>
+        {% if form.video_url.errors %}<div class="form-error">{{ form.video_url.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_description">Instruções Passo a Passo (Como fazer) *</label>
+        {{ form.description }}
+        <div class="help-text">{{ form.description.help_text }}</div>
+        {% if form.description.errors %}<div class="form-error">{{ form.description.errors }}</div>{% endif %}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label for="id_attachment_name">Nome do Material / Modelo Anexo</label>
+          {{ form.attachment_name }}
+          <div class="help-text">Ex: Modelo Petição Inicial Previdenciária</div>
+        </div>
+        <div class="form-group">
+          <label for="id_attachment_url">Link para Download do Material</label>
+          {{ form.attachment_url }}
+          <div class="help-text">Link do arquivo no Drive, Dropbox ou nuvem</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 2rem; align-items: center; margin-top: 1rem;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="id_order">Ordem na lista</label>
+          {{ form.order }}
+        </div>
+        <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem;">
+          {{ form.is_published }}
+          <label for="id_is_published" style="margin-bottom: 0; cursor: pointer;">Publicar imediatamente para os colaboradores</label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a href="{{ back_url }}" class="button button-secondary">Cancelar</a>
+        <button type="submit" class="button button-primary">Salvar Tutorial</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

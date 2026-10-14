@@ -30,7 +30,7 @@ from .forms import (
     TaskCompletionForm,
 )
 from .models import (
-    Appointment, AuditEvent, Contact, CourtCase, Deadline, DeadlineRevision,
+    AdministrativeDemand, Appointment, AuditEvent, Contact, CourtCase, Deadline, DeadlineRevision,
     Document, DocumentVersion, FinanceEntry, Matter, Opportunity, Payment, Task,
 )
 from .services import (
@@ -50,6 +50,7 @@ MODULES = {
     "documents": {"model": Document, "title": "Documentos", "singular": "documento", "subtitle": "Arquivos privados, versões preservadas e acesso autorizado.", "columns": ["Documento", "Pasta", "Classificação", "Versão", "Incluído em"], "search": ["title", "kind", "matter__title"]},
     "finance": {"model": FinanceEntry, "title": "Financeiro", "singular": "lançamento", "subtitle": "Previsões, baixas e valores de clientes com saldos conferíveis.", "columns": ["Descrição", "Pasta", "Tipo", "Previsto", "Movimentado", "Saldo", "Vencimento"], "search": ["description", "matter__title"], "status": "kind"},
     "crm": {"model": Opportunity, "title": "Relacionamento", "singular": "oportunidade", "subtitle": "Pessoas, oportunidades e a próxima ação de cada atendimento.", "columns": ["Oportunidade", "Pessoa", "Etapa", "Estimativa", "Responsável", "Próxima ação"], "search": ["title", "contact__name", "next_action"], "status": "stage"},
+    "demands": {"model": AdministrativeDemand, "title": "Protocolos INSS / Previdenciário", "singular": "protocolo INSS", "subtitle": "Acompanhamento de requerimentos, exigências e decisões previdenciárias.", "columns": ["Protocolo", "Benefício", "Segurado", "Pasta", "Situação"], "search": ["protocol_number", "service_name", "contact__name", "matter__title"], "status": "status"},
 }
 
 

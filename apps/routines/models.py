@@ -117,3 +117,71 @@ class MatterComment(ImmutableTenantModel):
         super().clean()
         if not self.body.strip():
             raise ValidationError({"body": "Escreva o comentário."})
+
+
+class SectorTutorial(TenantModel):
+    class Sector(models.TextChoices):
+        PREVIDENCIARIO = "previdenciario", "Previdenciário (INSS e Benefícios)"
+        CIVIL = "civil", "Cível e Família"
+        TRABALHISTA = "trabalhista", "Trabalhista"
+        EMPRESARIAL = "empresarial", "Empresarial e Contratos"
+        CONTROLADORIA = "controladoria", "Controladoria e Prazos"
+        ATENDIMENTO = "atendimento", "Atendimento e Recepção"
+        FINANCEIRO = "financeiro", "Financeiro e Cobrança"
+        GERAL = "geral", "Geral e Operação do Sistema"
+
+    title = models.CharField("Título do Tutorial / Treinamento", max_length=200)
+    sector = models.CharField("Setor / Nicho", max_length=50, choices=Sector.choices, default=Sector.PREVIDENCIARIO)
+    description = models.TextField("Instruções e passo a passo (como fazer)")
+    video_url = models.URLField("Link do vídeo (YouTube, Vimeo, Loom ou Drive)", blank=True)
+    video_embed_url = models.URLField("URL do player embutido", blank=True, max_length=500)
+    thumbnail_url = models.URLField("URL da imagem de capa", blank=True, max_length=500)
+    attachment_name = models.CharField("Nome do material de apoio", max_length=150, blank=True)
+    attachment_url = models.URLField("Link do material de apoio / modelo (PDF/Doc)", blank=True)
+    order = models.PositiveIntegerField("Ordem de exibição", default=0)
+    is_published = models.BooleanField("Publicado para a equipe", default=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="created_tutorials")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["order", "-created_at", "pk"]
+
+    def __str__(self):
+        return f"[{self.get_sector_display()}] {self.title}"
+
+    def save(self, *args, **kwargs):
+        self._compute_media()
+        super().save(*args, **kwargs)
+
+    def _compute_media(self):
+        import re
+        url = (self.video_url or "").strip()
+        if not url:
+            self.video_embed_url = ""
+            self.thumbnail_url = ""
+            return
+
+        yt_match = re.search(r"(?:youtube\.com\/(?:watch\?.*v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})", url)
+        if yt_match:
+            yt_id = yt_match.group(1)
+            self.video_embed_url = f"https://www.youtube.com/embed/{yt_id}?rel=0"
+            self.thumbnail_url = f"https://img.youtube.com/vi/{yt_id}/hqdefault.jpg"
+            return
+
+        loom_match = re.search(r"loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)", url)
+        if loom_match:
+            loom_id = loom_match.group(1)
+            self.video_embed_url = f"https://www.loom.com/embed/{loom_id}"
+            self.thumbnail_url = f"https://cdn.loom.com/sessions/thumbnails/{loom_id}-with-play.gif"
+            return
+
+        vimeo_match = re.search(r"vimeo\.com\/(?:video\/)?(\d+)", url)
+        if vimeo_match:
+            vimeo_id = vimeo_match.group(1)
+            self.video_embed_url = f"https://player.vimeo.com/video/{vimeo_id}"
+            self.thumbnail_url = ""
+            return
+
+        self.video_embed_url = url
+

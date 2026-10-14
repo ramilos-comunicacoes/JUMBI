@@ -1,0 +1,185 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block title %}{{ tutorial.title }} · Tutoriais · JUMBI{% endblock %}
+{% block extra_css %}
+<style>
+.tutorial-layout { max-width: 1080px; margin: 1.5rem auto; }
+.video-container {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 Aspect Ratio */
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  margin-bottom: 2rem;
+}
+.video-container iframe,
+.video-container video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.no-video-placeholder {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(15, 23, 42, 0.85); color: #94a3b8;
+  gap: 1rem;
+}
+.tutorial-content-grid {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr;
+  gap: 2rem;
+}
+@media (max-width: 900px) {
+  .tutorial-content-grid { grid-template-columns: 1fr; }
+}
+.step-by-step-card {
+  background: var(--surface, #1e293b);
+  border: 1px solid var(--border-soft, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 2rem;
+}
+.step-by-step-card h2 { margin-bottom: 1rem; font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem; }
+.step-text {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text-primary, #f1f5f9);
+  white-space: pre-line;
+}
+.attachment-card {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.related-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.related-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.15s ease;
+}
+.related-item:hover {
+  background: rgba(255,255,255,0.08);
+  transform: translateX(4px);
+}
+.sector-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="tutorial-layout">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <a href="{% url 'routines:list' %}?sector={{ tutorial.sector }}" class="back-link">← Voltar para todos os tutoriais</a>
+    {% if can_manage %}
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="{% url 'routines:tutorial_edit' tutorial.pk %}" class="button button-secondary button-small">Editar</a>
+      <form method="post" action="{% url 'routines:tutorial_delete' tutorial.pk %}" onsubmit="return confirm('Deseja realmente excluir este tutorial?');">
+        {% csrf_token %}
+        <button type="submit" class="button button-danger button-small">Excluir</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="page-heading" style="margin-bottom: 1.5rem;">
+    <div>
+      <span class="sector-badge">{{ tutorial.get_sector_display }}</span>
+      <h1 style="font-size: 2rem;">{{ tutorial.title }}</h1>
+      <p class="muted">Publicado por {{ tutorial.created_by.get_full_name|default:tutorial.created_by.email }} em {{ tutorial.created_at|date:"d/m/Y" }}</p>
+    </div>
+  </div>
+
+  <!-- VIDEO PLAYER CONTAINER -->
+  <div class="video-container">
+    {% if tutorial.video_embed_url %}
+      <iframe
+        src="{{ tutorial.video_embed_url }}"
+        title="{{ tutorial.title }}"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen>
+      </iframe>
+    {% elif tutorial.video_url %}
+      <video controls poster="{{ tutorial.thumbnail_url }}">
+        <source src="{{ tutorial.video_url }}" type="video/mp4">
+        Seu navegador não suporta a reprodução deste vídeo.
+      </video>
+    {% else %}
+      <div class="no-video-placeholder">
+        <svg class="icon" style="width: 48px; height: 48px;"><use href="#i-tutorials"/></svg>
+        <span>Este treinamento possui instruções em texto abaixo.</span>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="tutorial-content-grid">
+    <!-- PASSO A PASSO -->
+    <div class="step-by-step-card">
+      <h2>
+        <svg class="icon" style="width: 22px; height: 22px; color: #3b82f6;"><use href="#i-check"/></svg>
+        Instruções e Passo a Passo
+      </h2>
+      <div class="step-text">{{ tutorial.description }}</div>
+    </div>
+
+    <!-- MATERIAIS DE APOIO E RELACIONADOS -->
+    <div>
+      {% if tutorial.attachment_url %}
+      <div class="attachment-card">
+        <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <svg class="icon" style="width: 18px; height: 18px;"><use href="#i-download"/></svg>
+          Material de Apoio
+        </h3>
+        <p class="small muted" style="margin-bottom: 1rem;">{{ tutorial.attachment_name|default:"Baixar modelo ou documento de apoio" }}</p>
+        <a href="{{ tutorial.attachment_url }}" target="_blank" rel="noopener noreferrer" class="button button-primary" style="width: 100%; text-align: center;">
+          Baixar Arquivo / Modelo →
+        </a>
+      </div>
+      {% endif %}
+
+      {% if related_tutorials %}
+      <div class="panel" style="padding: 1.5rem;">
+        <h3 style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.75rem;">
+          Outros tutoriais deste setor
+        </h3>
+        <div class="related-list">
+          {% for r in related_tutorials %}
+          <a href="{% url 'routines:tutorial_detail' r.pk %}" class="related-item">
+            <svg class="icon" style="width: 16px; height: 16px; color: #60a5fa;"><use href="#i-play"/></svg>
+            <div style="flex: 1; font-size: 0.88rem; font-weight: 500;">{{ r.title }}</div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

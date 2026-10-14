@@ -258,3 +258,92 @@ class RoutineTests(TestCase):
         self.assertRedirects(self.client.post(check_url, {"done": "1", "note": "Protocolo recebido", "expected_version": "1"}), url)
         item.refresh_from_db()
         self.assertTrue(item.done)
+
+
+@override_settings(**TEST_SETTINGS)
+class SectorTutorialTests(TestCase):
+    def setUp(self):
+        self.org = Organization.objects.create(name="Escritório Teste", slug="org-tutorial-test", business_type="office")
+        self.owner = User.objects.create_user("dona@tutorial.test", "TestPass123456!")
+        self.operator = User.objects.create_user("operador@tutorial.test", "TestPass123456!")
+        Membership.objects.create(organization=self.org, user=self.owner, role="owner")
+        Membership.objects.create(organization=self.org, user=self.operator, role="operator")
+        OrganizationSubscription.objects.create(organization=self.org, plan="max", status="active")
+
+    def test_youtube_video_embed_and_thumbnail_calculation(self):
+        from apps.routines.models import SectorTutorial
+        tut = SectorTutorial.objects.create(
+            organization=self.org,
+            title="Como dar entrada no INSS",
+            sector=SectorTutorial.Sector.PREVIDENCIARIO,
+            description="Passo 1, 2, 3...",
+            video_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            created_by=self.owner,
+        )
+        self.assertEqual(tut.video_embed_url, "https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0")
+        self.assertEqual(tut.thumbnail_url, "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg")
+
+        # Test short format youtu.be
+        tut2 = SectorTutorial.objects.create(
+            organization=self.org,
+            title="Exigência INSS",
+            sector=SectorTutorial.Sector.PREVIDENCIARIO,
+            description="Passo 1, 2, 3...",
+            video_url="https://youtu.be/dQw4w9WgXcQ",
+            created_by=self.owner,
+        )
+        self.assertEqual(tut2.video_embed_url, "https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0")
+
+    def test_employee_can_watch_tutorial_but_cannot_create_or_delete(self):
+        from apps.routines.models import SectorTutorial
+        tut = SectorTutorial.objects.create(
+            organization=self.org,
+            title="Tutorial Previdenciário",
+            sector=SectorTutorial.Sector.PREVIDENCIARIO,
+            description="Instruções completas do procedimento",
+            video_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            created_by=self.owner,
+        )
+
+        client = Client()
+        client.force_login(self.operator)
+
+        # Employee can view tutorial list and watch the video in iframe
+        res_list = client.get(reverse("routines:list"))
+        self.assertEqual(res_list.status_code, 200)
+        self.assertContains(res_list, "Tutorial Previdenciário")
+
+        res_detail = client.get(reverse("routines:tutorial_detail", args=[tut.pk]))
+        self.assertEqual(res_detail.status_code, 200)
+        self.assertContains(res_detail, "https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0")
+
+        # Employee CANNOT access create or delete (Forbidden 403)
+        res_create = client.get(reverse("routines:tutorial_create"))
+        self.assertEqual(res_create.status_code, 403)
+
+        res_delete = client.post(reverse("routines:tutorial_delete", args=[tut.pk]))
+        self.assertEqual(res_delete.status_code, 403)
+
+    def test_admin_can_create_edit_and_delete_tutorial(self):
+        from apps.routines.models import SectorTutorial
+        client = Client()
+        client.force_login(self.owner)
+
+        # Admin creates tutorial
+        data = {
+            "sector": SectorTutorial.Sector.PREVIDENCIARIO,
+            "title": "Tutorial Admin",
+            "description": "Orientações operacionais para os funcionários",
+            "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "order": 1,
+            "is_published": True,
+        }
+        res = client.post(reverse("routines:tutorial_create"), data)
+        tut = SectorTutorial.objects.get(title="Tutorial Admin")
+        self.assertRedirects(res, reverse("routines:tutorial_detail", args=[tut.pk]))
+
+        # Admin deletes tutorial
+        res_del = client.post(reverse("routines:tutorial_delete", args=[tut.pk]))
+        self.assertRedirects(res_del, reverse("routines:list"))
+        self.assertFalse(SectorTutorial.objects.filter(pk=tut.pk).exists())
+

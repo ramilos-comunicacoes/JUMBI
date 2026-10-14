@@ -272,8 +272,51 @@ class DocumentUploadForm(forms.Form):
     file = forms.FileField(label="Nova versão do arquivo", help_text="A versão anterior será preservada. Até 15 MB.")
 
 
+class AdministrativeDemandForm(OrganizationModelForm):
+    class Meta:
+        from .models import AdministrativeDemand
+        model = AdministrativeDemand
+        fields = (
+            "matter",
+            "contact",
+            "protocol_number",
+            "service_name",
+            "source_agency",
+            "status",
+            "demands_summary",
+            "next_action",
+            "assigned_to",
+        )
+        labels = {
+            "matter": "Pasta do Caso",
+            "contact": "Cliente / Segurado",
+            "protocol_number": "Número do Protocolo / Requerimento",
+            "service_name": "Espécie de Benefício / Serviço",
+            "source_agency": "Órgão (INSS / Previdia)",
+            "status": "Situação do Requerimento",
+            "demands_summary": "Exigências / Motivação da Decisão",
+            "next_action": "Próxima Ação do Colaborador",
+            "assigned_to": "Responsável pelo Acompanhamento",
+        }
+        widgets = {
+            "demands_summary": forms.Textarea(attrs={"rows": 3, "placeholder": "Descreva documentos solicitados pelo INSS ou motivo do deferimento/indeferimento..."}),
+            "next_action": forms.Textarea(attrs={"rows": 2, "placeholder": "Ex: Solicitar PPP da empresa via WhatsApp até sexta-feira..."}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        active_user_ids = Membership.objects.filter(
+            organization=self.organization, is_active=True
+        ).exclude(role='client').values_list("user_id", flat=True)
+        if "assigned_to" in self.fields:
+            self.fields["assigned_to"].queryset = get_user_model().objects.filter(
+                pk__in=active_user_ids, is_active=True
+            ).order_by("first_name", "email")
+
+
 MODULE_FORMS = {
     "contacts": ContactForm, "matters": MatterForm, "cases": CourtCaseForm,
     "tasks": TaskForm, "deadlines": DeadlineForm, "appointments": AppointmentForm,
     "documents": DocumentForm, "finance": FinanceEntryForm, "crm": OpportunityForm,
+    "demands": AdministrativeDemandForm,
 }
