@@ -48,7 +48,7 @@ def board(request):
     columns = []
     today = timezone.localdate()
     month_start = today.replace(day=1)
-    pending = ~Q(status=Task.Status.DONE)
+    pending = ~Q(status__in=[Task.Status.DONE, Task.Status.CANCELLED])
     completed_month = Q(status=Task.Status.DONE, completed_at__date__gte=month_start, completed_at__date__lte=today)
     totals = tasks.aggregate(pending=Count("pk", filter=pending), overdue=Count("pk", filter=pending & Q(due_date__lt=today)), completed_month=Count("pk", filter=completed_month))
     metrics = []
@@ -70,10 +70,10 @@ def board(request):
         tasks = tasks.filter(completed_month)
     for code, label in [("overdue", "Atrasadas"), *Task.Status.choices]:
         if code == "overdue":
-            rows = tasks.exclude(status=Task.Status.DONE).filter(due_date__lt=today)
+            rows = tasks.filter(pending, due_date__lt=today)
         else:
             rows = tasks.filter(status=code)
-            if code != Task.Status.DONE:
+            if code not in [Task.Status.DONE, Task.Status.CANCELLED]:
                 rows = rows.filter(due_date__gte=today)
         rows = rows.order_by("due_date", "pk")
         # Keep the board light without pretending a truncated count is a total.

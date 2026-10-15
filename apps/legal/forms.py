@@ -284,6 +284,7 @@ class AdministrativeDemandForm(OrganizationModelForm):
             "source_agency",
             "status",
             "demands_summary",
+            "requirement_due_date",
             "next_action",
             "assigned_to",
         )
@@ -300,6 +301,7 @@ class AdministrativeDemandForm(OrganizationModelForm):
         }
         widgets = {
             "demands_summary": forms.Textarea(attrs={"rows": 3, "placeholder": "Descreva documentos solicitados pelo INSS ou motivo do deferimento/indeferimento..."}),
+            "requirement_due_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "next_action": forms.Textarea(attrs={"rows": 2, "placeholder": "Ex: Solicitar PPP da empresa via WhatsApp até sexta-feira..."}),
         }
 

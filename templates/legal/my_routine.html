@@ -226,9 +226,9 @@
     </div>
 
     <div class="prod-kpi-card {% if punctuality_rate and punctuality_rate >= 80 %}success{% elif punctuality_rate and punctuality_rate < 50 %}alert{% endif %}">
-      <span>Pontualidade em Prazos</span>
+      <span>Prazos cumpridos</span>
       <strong style="color: {% if punctuality_rate and punctuality_rate >= 80 %}#4ade80{% elif punctuality_rate and punctuality_rate < 50 %}#f87171{% else %}#facc15{% endif %};">
-        {% if punctuality_rate is not None %}{{ punctuality_rate }}%{% else %}100%{% endif %}
+        {% if punctuality_rate is not None %}{{ punctuality_rate }}%{% else %}Sem dados{% endif %}
       </strong>
       <small>{{ fulfilled_deadlines }} prazo(s) cumprido(s)</small>
     </div>

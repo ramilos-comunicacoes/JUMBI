@@ -2,7 +2,7 @@
 
 Features:
 - Conservative rate limiting and pagination budget (1 concurrent request per host, min 2s interval)
-- 3 strictly independent searches for Geórgia de Andrade Almeida:
+- 3 independent searches for the name configured by the office:
   1. Communication content ('texto' / 'teor')
   2. Party name ('nomeParte')
   3. Lawyer name ('nomeAdvogado')
@@ -45,6 +45,11 @@ DJEN_PRODUCTION_BASE = "https://comunicaapi.pje.jus.br/api/v1"
 DJEN_SANDBOX_BASE = "https://hcomunicaapi.cnj.jus.br/api/v1"
 
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise urllib.error.HTTPError(req.full_url, code, "Redirecionamento bloqueado", headers, fp)
+
+
 class DJENClient:
     """Safe, rate-limited public read-only client for DJEN."""
 
@@ -73,7 +78,7 @@ class DJENClient:
             },
         )
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with urllib.request.build_opener(NoRedirect).open(req, timeout=timeout) as resp:
                 data = resp.read(2 * 1024 * 1024)
                 return json.loads(data)
         except Exception as exc:
@@ -95,7 +100,7 @@ class DJENClient:
             },
         )
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with urllib.request.build_opener(NoRedirect).open(req, timeout=timeout) as resp:
                 raw = resp.read(4 * 1024 * 1024)
                 return {
                     "success": True,
@@ -152,7 +157,7 @@ def extract_proposed_deadline(content_text: str, base_date: date) -> tuple[date 
         days = 30
 
     if days is not None:
-        return base_date + timedelta(days=days), f"{days} dias"
+        return None, f"{days} dias mencionados; conferir termo inicial"
     return None, "A conferir"
 
 
@@ -185,8 +190,10 @@ def resolve_search_target(organization, custom_name: str | None = None) -> str:
     """
     if custom_name and custom_name.strip():
         return custom_name.strip()
-    if is_georgia_office(organization):
-        return GEORGIA_NAME
+    from apps.core.preferences import office_preferences
+    configured = office_preferences(organization)["djen_name"]
+    if configured:
+        return configured
 
     # Look for an active monitoring rule
     rule = MonitoringRule.objects.filter(
@@ -235,7 +242,23 @@ def run_independent_searches(
     - Consolidates matches strictly by external_id, creating MonitoringHit records
       for all matched criteria with zero duplicate records.
     """
+    from django.core.exceptions import ValidationError
+    from .access import require_integration_manager
+    if operator:
+        require_integration_manager(operator, organization)
     search_name = resolve_search_target(organization, target_name)
+    if not 3 <= len(search_name) <= 200:
+        raise ValidationError("Informe um nome entre 3 e 200 caracteres.")
+    def parsed_date(value):
+        try:
+            return date.fromisoformat(value) if isinstance(value, str) else value
+        except ValueError as exc:
+            raise ValidationError("Informe uma data válida no formato AAAA-MM-DD.") from exc
+    date_from, date_to = parsed_date(date_from), parsed_date(date_to)
+    if date_from and date_to and (date_to < date_from or (date_to - date_from).days > 31):
+        raise ValidationError("Selecione um período de até 31 dias, com término após o início.")
+    if account and (account.organization_id != organization.pk or not account.enabled or account.revoked_at):
+        raise ValidationError("Conta externa indisponível para este escritório.")
     search_date = base_date or date_from or timezone.localdate()
     date_from_str = (date_from or search_date).isoformat()
     date_to_str = (date_to or search_date).isoformat()
@@ -338,7 +361,7 @@ def run_independent_searches(
         has_more = True
         criteria_items = []
 
-        while has_more and page_index <= 50:
+        while has_more and page_index <= 2:
             if mock_feed is not None:
                 matching_in_feed = []
                 for item in mock_feed:
@@ -364,7 +387,7 @@ def run_independent_searches(
             else:
                 # Actual DJEN live API call
                 fetch_params = dict(params, pagina=page_index, itensPorPagina=20)
-                call_res = client.search_communications(fetch_params)
+                call_res = client.search_communications(fetch_params, timeout=5.0)
                 if not call_res.get("success"):
                     errors.append({
                         "code": f"DJEN_FETCH_ERROR_{criterion_name.upper()}",
@@ -374,9 +397,15 @@ def run_independent_searches(
                     break
 
                 resp_data = call_res.get("data", {})
+                if not isinstance(resp_data, dict) or not any(key in resp_data for key in ("items", "comunicacoes")):
+                    errors.append({"code": "INVALID_RESPONSE", "message": "A API não retornou a estrutura de resultados esperada."})
+                    break
                 raw_bytes = call_res.get("raw_bytes", b"{}")
                 page_hash = call_res.get("sha256", "")
                 items = resp_data.get("items", []) or resp_data.get("comunicacoes", [])
+                if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
+                    errors.append({"code": "INVALID_RESPONSE", "message": "A API retornou registros em formato inválido."})
+                    break
                 if not items or len(items) < 20:
                     has_more = False
 
@@ -394,6 +423,8 @@ def run_independent_searches(
             )
             page_index += 1
 
+        if has_more and page_index > 2:
+            errors.append({"code": "PAGE_BUDGET", "message": "Há páginas pendentes. Restrinja o período ou tribunal e execute novamente."})
         total_raw_found += len(criteria_items)
         criteria_stats[criterion_name] = len(criteria_items)
 
@@ -456,7 +487,7 @@ def run_independent_searches(
 
         # Store SourceRecord
         raw_hash = hashlib.sha256(json.dumps(raw, sort_keys=True).encode("utf-8")).hexdigest()
-        source_rec, _ = SourceRecord.objects.update_or_create(
+        source_rec, _ = SourceRecord.objects.get_or_create(
             organization=organization,
             source_code="djen",
             external_id=ext_id,
@@ -466,7 +497,7 @@ def run_independent_searches(
             },
         )
 
-        comm, created = CourtCommunication.objects.update_or_create(
+        comm, created = CourtCommunication.objects.get_or_create(
             organization=organization,
             source_code="djen",
             external_id=str(ext_id)[:150],
@@ -513,7 +544,7 @@ def run_independent_searches(
     sync_run.errors = errors
     sync_run.finished_at = timezone.now()
     if errors:
-        sync_run.status = SyncRun.Status.PARTIAL
+        sync_run.status = SyncRun.Status.PARTIAL if sync_run.page_count else SyncRun.Status.FAILED
         sync_run.coverage_status = "PARCIAL_COM_OCORRENCIAS"
     else:
         sync_run.status = SyncRun.Status.COMPLETE

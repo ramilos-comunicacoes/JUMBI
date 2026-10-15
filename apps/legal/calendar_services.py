@@ -51,7 +51,8 @@ def birthday_link(contact, organization):
     phone = normalize_whatsapp_phone(contact.phone)
     if not phone:
         return None
-    message = f"Olá, {contact.name}! A equipe do {organization.name} deseja um feliz aniversário, com muita saúde, alegria e realizações. Parabéns pelo seu dia!"
+    from apps.core.preferences import office_preferences
+    message = office_preferences(organization)["birthday_message"].replace("{cliente}", contact.name).replace("{escritorio}", organization.name)
     return "https://wa.me/" + phone + "?" + urlencode({"text": message})
 
 

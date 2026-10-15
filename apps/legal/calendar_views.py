@@ -9,7 +9,10 @@ from .views import organization_required
 @organization_required
 @require_GET
 def calendar_view(request):
-    form = CalendarFilterForm(request.GET, request=request)
+    from apps.core.preferences import office_preferences
+    params = request.GET.copy()
+    params.setdefault("view", office_preferences(request.organization)["calendar_view"])
+    form = CalendarFilterForm(params, request=request)
     valid = form.is_valid()
     context = calendar_context(
         request,

@@ -24,7 +24,7 @@
   document.querySelectorAll('[data-theme-toggle]').forEach(button => {
     button.addEventListener('click', () => {
       root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
-      save('jumbi-theme', root.dataset.theme);
+      save(root.dataset.preferenceKey ? root.dataset.preferenceKey + ':theme' : 'jumbi-theme', root.dataset.theme);
       updateThemeButtons();
     });
   });
@@ -41,8 +41,8 @@
     if (!sidebar) return;
     const mainNav = sidebar.querySelector('.main-nav') || sidebar;
     const currentScroll = mainNav ? mainNav.scrollTop : 0;
-    root.classList.toggle('sidebar-auto', automaticSidebar.matches);
-    if (automaticSidebar.matches) {
+    root.classList.toggle('sidebar-auto', (automaticSidebar.matches && root.dataset.sidebarMode !== 'manual'));
+    if ((automaticSidebar.matches && root.dataset.sidebarMode !== 'manual')) {
       const keyboardFocus = keyboardNavigation && sidebar.contains(document.activeElement);
       root.classList.toggle('sidebar-collapsed', !pointerOverSidebar && !keyboardFocus);
     } else if (mobile.matches) {
@@ -64,7 +64,7 @@
     const mainNav = sidebar.querySelector('.main-nav') || sidebar;
     if (mainNav) {
       const restoreNavScroll = () => {
-        const saved = sessionStorage.getItem('jumbi_nav_scroll');
+        let saved; try { saved = sessionStorage.getItem((root.dataset.preferenceKey || 'jumbi') + ':nav-scroll'); } catch (_) {}
         if (saved !== null) {
           mainNav.scrollTop = parseInt(saved, 10) || 0;
         }
@@ -77,7 +77,7 @@
       mainNav.addEventListener('scroll', () => {
         clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
-          sessionStorage.setItem('jumbi_nav_scroll', String(mainNav.scrollTop));
+          try { sessionStorage.setItem((root.dataset.preferenceKey || 'jumbi') + ':nav-scroll', String(mainNav.scrollTop)); } catch (_) {}
         }, 50);
       }, { passive: true });
     }
@@ -95,13 +95,13 @@
     sidebar.addEventListener('focusout', () => queueMicrotask(syncSidebar));
   }
   automaticSidebar.addEventListener('change', () => {
-    pointerOverSidebar = automaticSidebar.matches && Boolean(sidebar?.matches(':hover'));
+    pointerOverSidebar = (automaticSidebar.matches && root.dataset.sidebarMode !== 'manual') && Boolean(sidebar?.matches(':hover'));
     syncSidebar();
   });
   if (compactButton) compactButton.addEventListener('click', () => {
-    if (automaticSidebar.matches) return;
+    if ((automaticSidebar.matches && root.dataset.sidebarMode !== 'manual')) return;
     root.classList.toggle('sidebar-collapsed');
-    save('jumbi-sidebar', root.classList.contains('sidebar-collapsed') ? 'collapsed' : 'expanded');
+    save(root.dataset.preferenceKey ? root.dataset.preferenceKey + ':sidebar' : 'jumbi-sidebar', root.classList.contains('sidebar-collapsed') ? 'collapsed' : 'expanded');
     updateCompactButton();
   });
   updateCompactButton();
@@ -127,7 +127,7 @@
   function syncViewport() {
     setDrawer(false);
     if (sidebar) sidebar.inert = mobile.matches;
-    pointerOverSidebar = automaticSidebar.matches && Boolean(sidebar?.matches(':hover'));
+    pointerOverSidebar = (automaticSidebar.matches && root.dataset.sidebarMode !== 'manual') && Boolean(sidebar?.matches(':hover'));
     syncSidebar();
   }
   mobile.addEventListener('change', syncViewport);
@@ -173,7 +173,7 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let motionPreference = 'auto';
   try { motionPreference = localStorage.getItem('jumbi-motion') || 'auto'; } catch (_) {}
-  const motionPaused = () => reducedMotion.matches || motionPreference === 'paused';
+  const motionPaused = () => reducedMotion.matches || motionPreference === 'paused' || root.dataset.officeMotion === 'paused';
   function updateMotion() {
     const paused = motionPaused();
     root.dataset.motion = paused ? 'paused' : 'auto';

@@ -34,7 +34,7 @@ def extract_proposed_deadline(content_text, base_date):
         days = 8
 
     if days is not None:
-        return base_date + timedelta(days=days), f"{days} dias"
+        return None, f"{days} dias mencionados; conferir termo inicial"
     return None, "A apurar na conferência"
 
 
@@ -44,7 +44,21 @@ def run_daily_djen_search(*, organization, operator, base_date=None, records_sou
     date = base_date or timezone.localdate()
     sim_failures = sim_failures or []
 
-    resolved_name = queried_name or GEORGIA_NAME
+    from apps.integrations.djen_client import resolve_search_target, run_independent_searches
+    from apps.integrations.models import CourtCommunication, SyncRun
+    from apps.integrations.access import require_integration_manager, visible_communications
+    require_integration_manager(operator, organization)
+    resolved_name = resolve_search_target(organization, queried_name)
+    if records_source is None:
+        result = run_independent_searches(organization=organization, operator=operator, target_name=resolved_name, base_date=date)
+        records_source = []
+        for item in visible_communications(operator, organization).filter(hits__monitor__value=resolved_name).filter(available_date=date).distinct():
+            criteria = set(item.hits.values_list("criteria_matched", flat=True))
+            records_source.append({"communication_id": item.external_id, "court": item.tribunal or "DJEN",
+                "court_unit": item.body_or_court, "case_number": item.case_number or "", "full_text": item.sanitized_text,
+                "found_in_teor": "teor" in criteria, "found_in_parte": "parte" in criteria, "found_in_advogado": "advogado" in criteria})
+        if result.status != SyncRun.Status.COMPLETE:
+            sim_failures = [*sim_failures, "Coleta parcial ou indisponível. Confira as ocorrências e páginas pendentes na central de integrações."]
 
     run = DJENSearchRun.objects.create(
         organization=organization,
@@ -53,11 +67,11 @@ def run_daily_djen_search(*, organization, operator, base_date=None, records_sou
         fields_searched=["teor", "parte", "advogado"],
         operator=operator,
         status=DJENSearchRun.Status.COMPLETE,
-        courts_searched=["TRF1", "TRT13", "TJBA", "TJRJ", "TJSP"],
+        courts_searched=sorted({item.get("court", "DJEN") for item in records_source}),
     )
 
     # Simulated/Injected feed of records (e.g. from Comunica PJe scraper, API or test payload)
-    raw_feed = records_source if records_source is not None else get_default_djen_sample(date, lawyer_name=resolved_name)
+    raw_feed = records_source
 
     # 1. Search in 'teor'
     # 2. Search in 'parte'

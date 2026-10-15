@@ -13,7 +13,7 @@ urlpatterns = [
     path("triagem/", views.triage, name="triage"),
     path("cobertura/", views.coverage, name="coverage"),
     path("relatorios/", views.reports, name="reports"),
-    path("relatorios/<int:pk>/download/", views.download_report, name="download_report"),
+    path("relatorios/<uuid:pk>/download/", views.download_report, name="download_report"),
 
     # REST API Endpoints (OpenAPI 3.1.0)
     path("api/v1/integrations/providers/", api_views.list_providers, name="api_providers"),

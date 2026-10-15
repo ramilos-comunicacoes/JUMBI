@@ -12,13 +12,16 @@ from django.views.decorators.http import require_GET, require_POST
 from .djen_report import generate_djen_word_report
 from .djen_services import run_daily_djen_search
 from .models import DJENCommunication, DJENSearchRun
-from .views import can_edit, organization_required
+from .views import can_edit, organization_required, scoped_queryset
+from apps.integrations.access import require_integration_manager
+from apps.integrations.djen_client import resolve_search_target
 
 
 @organization_required
 @require_GET
 def djen_dashboard(request):
     """Dashboard of daily Comunica PJe searches for Georgia de Andrade Almeida."""
+    require_integration_manager(request.user, request.organization)
     runs = DJENSearchRun.objects.filter(organization=request.organization).order_by("-base_date", "-started_at")
     selected_run = runs.first()
 
@@ -26,12 +29,12 @@ def djen_dashboard(request):
     if run_id:
         selected_run = get_object_or_404(DJENSearchRun, pk=run_id, organization=request.organization)
 
-    comms = DJENCommunication.objects.filter(search_run=selected_run).select_related("matter") if selected_run else []
+    comms = scoped_queryset(request.user, request.organization, DJENCommunication).filter(search_run=selected_run).select_related("matter") if selected_run else []
 
     org_slug = (getattr(request.organization, "slug", "") or "").lower()
     org_name = (getattr(request.organization, "name", "") or "").lower()
     is_georgia = "georgia" in org_slug or "geórgia" in org_name or "georgia" in org_name
-    office_lawyer = "Geórgia de Andrade Almeida" if is_georgia else (getattr(request.organization, "system_title", None) or request.organization.name)
+    office_lawyer = resolve_search_target(request.organization)
 
     return render(request, "legal/djen_dashboard.html", {
         "title": "DJEN · Rotina de Pesquisa Diária",
@@ -53,17 +56,11 @@ def djen_execute_search(request):
     if not can_edit(request):
         raise PermissionDenied("Permissão negada.")
 
-    org_slug = (getattr(request.organization, "slug", "") or "").lower()
-    org_name = (getattr(request.organization, "name", "") or "").lower()
-    is_georgia = "georgia" in org_slug or "geórgia" in org_name or "georgia" in org_name
-
-    lawyer_input = request.POST.get("lawyer_name", "").strip()
-    if is_georgia and not lawyer_input:
-        queried_name = "Geórgia de Andrade Almeida"
-    elif lawyer_input:
-        queried_name = lawyer_input
-    else:
-        queried_name = request.user.get_full_name() or request.organization.name
+    require_integration_manager(request.user, request.organization)
+    queried_name = resolve_search_target(request.organization, request.POST.get("lawyer_name", ""))
+    if not 3 <= len(queried_name) <= 200:
+        messages.error(request, "Informe o nome completo, de 3 a 200 caracteres.")
+        return redirect("legal:djen_dashboard")
 
     run, comms = run_daily_djen_search(
         organization=request.organization,
@@ -71,7 +68,10 @@ def djen_execute_search(request):
         base_date=timezone.localdate(),
         queried_name=queried_name,
     )
-    messages.success(request, f"Pesquisa diária concluída para {run.queried_name}. {run.total_deduplicated} comunicação/ões identificada(s).")
+    if run.status == "complete":
+        messages.success(request, f"Pesquisa concluída nos critérios consultados: {run.total_deduplicated} comunicação/ões.")
+    else:
+        messages.warning(request, "Pesquisa parcial ou indisponível. Confira as falhas; o resultado não confirma ausência de publicações.")
     return redirect(f"{reverse('legal:djen_dashboard')}?run={run.pk}")
 
 
@@ -79,8 +79,9 @@ def djen_execute_search(request):
 @require_GET
 def djen_download_word_report(request, pk):
     """Download the Word (.docx) daily report with urgency colors and full header."""
+    require_integration_manager(request.user, request.organization)
     run = get_object_or_404(DJENSearchRun, pk=pk, organization=request.organization)
-    docx_bytes = generate_djen_word_report(run)
+    docx_bytes = generate_djen_word_report(run, list(scoped_queryset(request.user, request.organization, DJENCommunication).filter(search_run=run)))
 
     stream = io.BytesIO(docx_bytes)
     filename = f"relatorio-djen-{run.base_date.isoformat()}.docx"

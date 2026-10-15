@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 from .niches import PRACTICE_AREA_LABELS, validate_practice_areas
+from .preferences import validate_preferences
 
 
 hex_color_validator = RegexValidator(
@@ -71,24 +72,25 @@ class Organization(models.Model):
     city = models.CharField("cidade", max_length=100, blank=True)
     state = models.CharField("UF", max_length=2, blank=True)
     system_title = models.CharField("nome do sistema", max_length=100, blank=True, default="JUMBI")
+    workspace_preferences = models.JSONField("preferências do escritório", default=dict, db_default={}, blank=True, validators=[validate_preferences])
     brand_logo = models.FileField(
         "logo da organização",
         upload_to="organization-logos/%Y/%m/",
         blank=True,
-        validators=[FileExtensionValidator(allowed_extensions=("png", "jpg", "jpeg", "webp", "svg"))],
+        validators=[FileExtensionValidator(allowed_extensions=("png", "jpg", "jpeg", "webp", "ico"))],
     )
     brand_favicon = models.FileField(
         "favicon e logo contraída",
         upload_to="organization-favicons/%Y/%m/",
         blank=True,
-        validators=[FileExtensionValidator(allowed_extensions=("png", "ico", "svg", "webp", "jpg", "jpeg"))],
+        validators=[FileExtensionValidator(allowed_extensions=("png", "ico", "webp", "jpg", "jpeg"))],
     )
     brand_collapsed_logo = models.FileField(
         "logo contraída alternativa",
         upload_to="organization-logos/%Y/%m/",
         blank=True,
         null=True,
-        validators=[FileExtensionValidator(allowed_extensions=("png", "ico", "svg", "webp", "jpg", "jpeg"))],
+        validators=[FileExtensionValidator(allowed_extensions=("png", "ico", "webp", "jpg", "jpeg"))],
     )
     glassmorphism_intensity = models.CharField(
         "intensidade glassmorphism",

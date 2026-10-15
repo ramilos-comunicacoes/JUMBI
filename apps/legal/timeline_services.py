@@ -19,6 +19,13 @@ from .models import (
 def get_matter_unified_timeline(matter, user, organization):
     """Return a unified, chronological list of all matter activities with explicit types."""
     events = []
+    from .services import visible_matters
+    from apps.core.models import Membership
+    from apps.billing.services import has_advanced
+    if not visible_matters(user, organization).filter(pk=matter.pk).exists():
+        return events
+    finance_allowed = has_advanced(organization) and Membership.objects.filter(user=user, organization=organization,
+        is_active=True, role__in=["owner", "manager"]).exists()
 
     # 1. Audit events for base actions
     audit_queryset = AuditEvent.objects.filter(
@@ -44,13 +51,13 @@ def get_matter_unified_timeline(matter, user, organization):
     for comm in djen_comms:
         events.append({
             "type": "official_movement",
-            "type_label": "Movimentação oficial",
+            "type_label": "Publicação importada · conferir origem",
             "badge_class": "badge-blue",
             "title": f"Publicação DJEN · {comm.court} ({comm.case_number})",
             "description": comm.content_summary or comm.full_text[:300],
             "actor": None,
             "created_at": comm.created_at,
-            "is_official": True,
+            "is_official": False,
         })
 
     # 3. Administrative Demands (INSS / Previdia)
@@ -60,13 +67,13 @@ def get_matter_unified_timeline(matter, user, organization):
     for dem in admin_demands:
         events.append({
             "type": "official_movement",
-            "type_label": f"Órgão / {dem.source_agency}",
+            "type_label": f"{'Cadastro manual' if dem.is_manual_entry else 'Registro importado'} / {dem.source_agency}",
             "badge_class": "badge-cyan",
             "title": f"Requerimento {dem.protocol_number} · {dem.service_name}",
             "description": f"Situação na fonte: {dem.original_status}. {dem.demands_summary}",
             "actor": dem.assigned_to,
             "created_at": dem.created_at,
-            "is_official": True,
+            "is_official": not dem.is_manual_entry,
         })
 
     # 4. Tasks (created, moved, completed)
@@ -111,6 +118,8 @@ def get_matter_unified_timeline(matter, user, organization):
 
     # 7. Financial Events & Receipts
     entries = FinanceEntry.objects.filter(organization=organization, matter=matter).prefetch_related("payments")
+    if not finance_allowed:
+        entries = entries.none()
     for f in entries:
         events.append({
             "type": "financial_event",
@@ -133,6 +142,8 @@ def get_matter_unified_timeline(matter, user, organization):
             })
 
     receipts = PaymentReceipt.objects.filter(organization=organization, matter=matter).select_related("issued_by")
+    if not finance_allowed:
+        receipts = receipts.none()
     for r in receipts:
         events.append({
             "type": "financial_event",

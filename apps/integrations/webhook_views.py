@@ -1,62 +1,45 @@
-"""PDPJ Webhook Receiver with HMAC-SHA256 Signature Verification.
-
-Accepts signed payloads from CNJ / PDPJ and stores them securely in WebhookInbox.
-"""
+"""Signed, tenant-bound inbox. Acceptance does not mean processing or official notice."""
 import hashlib
 import json
-import logging
-import uuid
-from django.conf import settings
 from django.http import JsonResponse
+from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-
-from .models import WebhookInbox
+from cryptography.fernet import InvalidToken
+from .credentials import decrypt_credentials
+from .models import IntegrationAccount, WebhookInbox
 from .security import verify_pdpj_signature
-
-logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
 @require_POST
 def receive_pdpj_webhook(request, subscription_id):
-    """Receive and securely verify PDPJ webhook notification."""
-    raw_body = request.body
-    signature = request.headers.get("X-PDPJ-Webhook-Signature", "")
-
-    # Retrieve subscription webhook secret
-    secret = getattr(settings, "PDPJ_WEBHOOK_SECRET", "jumbi_pdpj_secret_2026")
-
-    # Verify signature over raw bytes
-    is_valid = verify_pdpj_signature(raw_body=raw_body, signature=signature, secret=secret)
-    if not is_valid:
-        logger.warning("PDPJ Webhook signature verification failed for subscription %s", subscription_id)
-        return JsonResponse({
-            "code": "UNAUTHORIZED_SIGNATURE",
-            "message": "Assinatura do webhook inválida ou ausente.",
-            "correlation_id": str(uuid.uuid4())
-        }, status=401)
-
-    # Compute deduplication payload hash
-    payload_hash = hashlib.sha256(raw_body).hexdigest()
-
-    # Check duplicate
-    existing = WebhookInbox.objects.filter(payload_hash=payload_hash).first()
-    if existing:
-        return JsonResponse({"received": True, "duplicate": True}, status=202)
-
+    account = IntegrationAccount.objects.filter(pk=subscription_id, provider__code="pdpj-webhook", enabled=True,
+        revoked_at__isnull=True, organization__status="active").first()
+    if not account or not account.has_credentials:
+        return JsonResponse({"code": "NOT_CONFIGURED"}, status=503)
     try:
-        data = json.loads(raw_body.decode("utf-8")) if raw_body else {}
-    except Exception:
-        data = {"raw": raw_body.decode("utf-8", errors="replace")}
-
-    # Persist in WebhookInbox
-    WebhookInbox.objects.create(
-        subscription_id=subscription_id,
-        payload_hash=payload_hash,
-        headers=dict(request.headers),
-        body=data,
-        is_valid_signature=True,
-    )
-
-    return JsonResponse({"received": True, "duplicate": False}, status=202)
+        secret = decrypt_credentials(account.encrypted_credentials).get("webhook_secret", "")
+    except (ValueError, InvalidToken):
+        secret = ""
+    raw = request.body
+    if len(raw) > 1024 * 1024:
+        return JsonResponse({"code": "PAYLOAD_TOO_LARGE"}, status=413)
+    signature = request.headers.get("X-PDPJ-Webhook-Signature", "")
+    if not verify_pdpj_signature(raw_body=raw, signature=signature, secret=secret):
+        return JsonResponse({"code": "UNAUTHORIZED_SIGNATURE"}, status=401)
+    try:
+        body = json.loads(raw.decode())
+        event_id = body.get("id") or body.get("event_id") if isinstance(body, dict) else None
+        if not isinstance(event_id, (str, int)) or not 1 <= len(str(event_id)) <= 150:
+            raise ValueError()
+    except (ValueError, UnicodeError):
+        return JsonResponse({"code": "INVALID_EVENT"}, status=400)
+    digest = hashlib.sha256(raw).hexdigest()
+    with transaction.atomic():
+        item, created = WebhookInbox.objects.get_or_create(organization=account.organization,
+            subscription_id=subscription_id, external_event_id=str(event_id), defaults={
+                "payload_hash": digest, "signature_received": signature, "raw_bytes": raw, "parsed_payload": body})
+        if item.payload_hash != digest:
+            return JsonResponse({"code": "EVENT_CONFLICT"}, status=409)
+    return JsonResponse({"received": True, "duplicate": not created, "processed": False}, status=202)

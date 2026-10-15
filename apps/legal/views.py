@@ -161,7 +161,7 @@ def accessible_audit(user, organization, role=None, *, for_export=False):
     models.extend(EXTRA_EXPORT_FIELDS)
     if role in {"owner", "manager"}:
         models.extend([FinanceEntry, Payment])
-    global_events = Q(object_type="core.organization", object_id=str(organization.pk), action__in=["workspace.created", "team.invited", "team.revoked", "team.invitation_revoked", "team.accepted", "workspace.exported", "workspace.imported"])
+    global_events = Q(object_type="core.organization", object_id=str(organization.pk), action__in=["workspace.created", "team.invited", "team.revoked", "team.invitation_revoked", "team.accepted", "workspace.exported", "workspace.imported", "organization.customized"])
     permitted = global_events if role in {"owner", "manager"} else global_events & Q(actor=user)
     for model in models:
         ids = scoped_queryset(user, organization, model, for_export=for_export).annotate(

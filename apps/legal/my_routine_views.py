@@ -25,7 +25,7 @@ from apps.performance.models import ScoreEvent
 from apps.performance.services import dashboard_goals
 from .models import AdministrativeDemand, Appointment, ClientContact, Deadline, Matter, Task
 from .services import audit, visible_matters
-from .views import can_edit, organization_required
+from .views import can_edit, organization_required, scoped_queryset
 
 
 @organization_required
@@ -35,15 +35,15 @@ def my_routine(request):
     user = request.user
     org = request.organization
 
-    tasks = Task.objects.filter(organization=org, owner=user).exclude(
+    tasks = scoped_queryset(user, org, Task).filter(owner=user).exclude(
         status__in=[Task.Status.DONE, Task.Status.CANCELLED]
     ).select_related("matter", "delegated_by", "reviewer").order_by("due_date")
 
-    deadlines = Deadline.objects.filter(organization=org, owner=user).exclude(
+    deadlines = scoped_queryset(user, org, Deadline).filter(owner=user).exclude(
         status=Deadline.Status.FULFILLED
     ).select_related("matter").order_by("due_date")
 
-    contacts = ClientContact.objects.filter(organization=org, actor=user).exclude(
+    contacts = scoped_queryset(user, org, ClientContact).filter(actor=user).exclude(
         status=ClientContact.Status.COMPLETED_MANUAL
     ).select_related("matter", "contact").order_by("-created_at")[:10]
 
@@ -52,8 +52,8 @@ def my_routine(request):
         models_q := (models_q_filter(user))
     ).distinct().select_related("client")[:8]
 
-    appointments = Appointment.objects.filter(
-        organization=org, owner=user, ends_at__gte=timezone.now()
+    appointments = scoped_queryset(user, org, Appointment).filter(
+        owner=user, ends_at__gte=timezone.now()
     ).select_related("matter").order_by("starts_at")[:5]
 
     goals = dashboard_goals(user, org)
@@ -63,7 +63,8 @@ def my_routine(request):
         memberships__organization=org,
         memberships__is_active=True,
         is_active=True,
-    ).exclude(memberships__role="client").distinct().order_by("first_name", "email")
+        memberships__role__in=["owner", "manager", "operator"],
+    ).distinct().order_by("first_name", "email")
 
     # --- COLLABORATOR PRODUCTIVITY & SCORING ---
     score_events = ScoreEvent.objects.filter(organization=org, user=user)
@@ -74,8 +75,7 @@ def my_routine(request):
 
     # Tasks completed this month
     start_of_month = today.replace(day=1)
-    completed_tasks_month = Task.objects.filter(
-        organization=org,
+    completed_tasks_month = scoped_queryset(user, org, Task).filter(
         owner=user,
         status=Task.Status.DONE,
     ).filter(
@@ -83,17 +83,17 @@ def my_routine(request):
     ).count()
 
     # Deadlines punctuality rate
-    all_user_deadlines = Deadline.objects.filter(organization=org, owner=user)
+    all_user_deadlines = scoped_queryset(user, org, Deadline).filter(owner=user)
     fulfilled_deadlines = all_user_deadlines.filter(status=Deadline.Status.FULFILLED).count()
     overdue_deadlines_count = sum(1 for d in deadlines if d.urgency_level == "overdue")
     urgent_deadlines_count = sum(1 for d in deadlines if d.urgency_level == "urgent")
     pending_deadlines_count = sum(1 for d in deadlines if d.urgency_level == "pending")
 
-    total_evaluated = fulfilled_deadlines + overdue_deadlines_count
+    total_evaluated = all_user_deadlines.count()
     punctuality_rate = (
         round((fulfilled_deadlines / total_evaluated) * 100)
         if total_evaluated > 0
-        else 100 if fulfilled_deadlines > 0 else None
+        else None
     )
 
     # --- PREVIDENCIÁRIO HUB (INSS, PROTOCOLOS, BENEFÍCIOS, PETIÇÕES) ---
@@ -183,7 +183,12 @@ def bulk_reassign_tasks(request):
         raise PermissionDenied("Você não tem permissão para redistribuir atividades.")
 
     task_ids = request.POST.getlist("task_ids")
-    new_owner_id = request.POST.get("new_owner")
+    if len(task_ids) > 100 or any(not value.isdecimal() for value in task_ids):
+        messages.error(request, "Selecione até 100 tarefas válidas.")
+        return redirect("legal:my_routine")
+    new_owner_id = request.POST.get("new_owner", "")
+    if not new_owner_id.isdecimal():
+        new_owner_id = None
     reason = request.POST.get("reason", "").strip()
 
     if not task_ids:
@@ -202,15 +207,21 @@ def bulk_reassign_tasks(request):
         User,
         pk=new_owner_id,
         memberships__organization=request.organization,
+        memberships__role__in=["owner", "manager", "operator"],
         memberships__is_active=True,
         is_active=True,
     )
 
-    tasks = Task.objects.select_for_update().filter(
+    tasks = scoped_queryset(request.user, request.organization, Task).select_for_update().filter(
         pk__in=task_ids,
         organization=request.organization,
     ).exclude(status__in=[Task.Status.DONE, Task.Status.CANCELLED])
 
+    tasks = list(tasks)
+    for task in tasks:
+        if task.matter_id and not visible_matters(new_owner, request.organization).filter(pk=task.matter_id).exists():
+            messages.error(request, "O novo responsável não possui acesso a todas as pastas selecionadas.")
+            return redirect("legal:my_routine")
     count = 0
     for task in tasks:
         prev_owner = task.owner

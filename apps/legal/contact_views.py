@@ -15,9 +15,7 @@ from .views import can_edit, organization_required, scoped_queryset
 @require_GET
 def contact_messages_list(request):
     """List declared client contacts and pending drafts."""
-    contacts = ClientContact.objects.filter(
-        organization=request.organization
-    ).select_related("contact", "matter", "actor", "case_owner").order_by("-created_at")
+    contacts = scoped_queryset(request.user, request.organization, ClientContact).select_related("contact", "matter", "actor", "case_owner").order_by("-created_at")
 
     templates = MessageTemplate.objects.filter(
         organization=request.organization, is_active=True
@@ -26,7 +24,7 @@ def contact_messages_list(request):
     return render(request, "legal/contact_messages_list.html", {
         "title": "Central de Contatos e Mensagens",
         "page_title": "Contatos com Clientes",
-        "active_nav": "contacts",
+        "active_nav": "contact_messages",
         "contacts": contacts[:30],
         "templates": templates,
         "can_edit": can_edit(request),
@@ -38,7 +36,7 @@ def contact_messages_list(request):
 def contact_message_detail(request, pk):
     """View prepared message, click-to-chat link and declaration form."""
     msg = get_object_or_404(
-        ClientContact.objects.select_related("contact", "matter", "actor", "case_owner"),
+        scoped_queryset(request.user, request.organization, ClientContact).select_related("contact", "matter", "actor", "case_owner"),
         pk=pk,
         organization=request.organization,
     )
@@ -47,7 +45,7 @@ def contact_message_detail(request, pk):
     return render(request, "legal/contact_message_detail.html", {
         "title": f"Mensagem para {msg.contact.name}",
         "page_title": "Atendimento ao Cliente",
-        "active_nav": "contacts",
+        "active_nav": "contact_messages",
         "msg": msg,
         "wa_link": wa_link,
         "can_edit": can_edit(request),
@@ -58,7 +56,9 @@ def contact_message_detail(request, pk):
 @require_POST
 def contact_message_open_link(request, pk):
     """User clicked to open the WhatsApp chat link."""
-    msg = get_object_or_404(ClientContact, pk=pk, organization=request.organization)
+    if not can_edit(request):
+        raise PermissionDenied("Seu perfil permite somente consulta.")
+    msg = get_object_or_404(scoped_queryset(request.user, request.organization, ClientContact), pk=pk)
     mark_link_opened(msg, request.user)
     wa_link = get_whatsapp_link(msg.phone, msg.prepared_text)
     if wa_link:
@@ -74,7 +74,7 @@ def contact_message_complete(request, pk):
     if not can_edit(request):
         raise PermissionDenied("Permissão negada.")
 
-    msg = get_object_or_404(ClientContact, pk=pk, organization=request.organization)
+    msg = get_object_or_404(scoped_queryset(request.user, request.organization, ClientContact), pk=pk)
     sent_text = request.POST.get("sent_text", "").strip()
     result_note = request.POST.get("result_note", "").strip()
     client_reply = request.POST.get("client_reply", "").strip()

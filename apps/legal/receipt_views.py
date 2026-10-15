@@ -8,7 +8,7 @@ from django.views.decorators.http import require_GET
 
 from .models import PaymentReceipt
 from .receipt_services import generate_receipt_docx
-from .views import can_manage_finance, organization_required
+from .views import can_manage_finance, organization_required, scoped_queryset
 
 
 @organization_required
@@ -19,7 +19,7 @@ def download_receipt_docx(request, pk):
         raise PermissionDenied("Acesso restrito ao financeiro e direção.")
 
     receipt = get_object_or_404(
-        PaymentReceipt.objects.select_related("organization", "payment", "issued_by", "confirmed_by"),
+        scoped_queryset(request.user, request.organization, PaymentReceipt).select_related("organization", "payment", "issued_by", "confirmed_by"),
         pk=pk,
         organization=request.organization,
     )
@@ -44,7 +44,7 @@ def receipt_printable(request, pk):
         raise PermissionDenied("Acesso restrito ao financeiro e direção.")
 
     receipt = get_object_or_404(
-        PaymentReceipt.objects.select_related("organization", "payment", "issued_by", "confirmed_by"),
+        scoped_queryset(request.user, request.organization, PaymentReceipt).select_related("organization", "payment", "issued_by", "confirmed_by"),
         pk=pk,
         organization=request.organization,
     )

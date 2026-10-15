@@ -16,8 +16,8 @@
 <div class="section-workspace">
   <div class="page-heading" style="margin-bottom: 14px;">
     <div>
-      <h1 style="font-size: 22px; font-weight: 700; margin: 0;">Cobertura dos 33 Tribunais Mapeados</h1>
-      <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted);">Inventário de conexões, sistemas de processo eletrônico e capacidades de leitura e protocolo.</p>
+      <h1 style="font-size: 22px; font-weight: 700; margin: 0;">Catálogo de tribunais</h1>
+      <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted);">Referências documentais para planejar integrações. A presença no catálogo não confirma conexão ativa, cobertura do DJEN ou autorização para protocolar.</p>
     </div>
   </div>
 
@@ -29,9 +29,9 @@
     <a href="{% url 'integrations:reports' %}" class="subnav-pill">Relatórios Word (.docx)</a>
   </nav>
 
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+  <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;margin-bottom:16px;">
     <span class="muted small">Exibindo <strong>{{ total_courts }}</strong> tribunais e órgãos judiciais.</span>
-    <form method="get" style="display:flex;gap:8px;">
+    <form method="get" style="display:flex;flex-wrap:wrap;gap:8px;max-width:100%;">
       <input type="text" name="q" value="{{ search }}" placeholder="Filtrar por sigla (TJBA, TRF1...)" style="background:rgba(14,14,18,0.8);border:1px solid #3f3f46;border-radius:10px;padding:6px 12px;color:#fff;font-size:12px;min-height:36px;">
       <button type="submit" class="button button-secondary" style="min-height:36px;padding:4px 12px;font-size:12px;">Filtrar</button>
     </form>
@@ -59,7 +59,7 @@
               <td>
                 {% for cap in d.capabilities.all %}
                   <span class="cap-pill {% if 'djen' in cap.capability_type %}cap-djen{% elif 'mni' in cap.capability_type %}cap-mni{% else %}cap-dom{% endif %}">
-                    {{ cap.get_capability_type_display }}
+                    {{ cap.capability }} · {{ cap.health_status }}
                   </span>
                 {% empty %}
                   <span class="muted small">—</span>
@@ -68,7 +68,7 @@
               <td><code style="font-size:10px;color:var(--muted);">{{ d.base_url|truncatechars:40 }}</code></td>
               <td>
                 <span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-size:10px;">
-                  Mapeado
+                  Referência · requer homologação
                 </span>
               </td>
             </tr>

@@ -5,6 +5,7 @@ import urllib.parse
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.utils import timezone
 
 from .models import ClientContact, Deadline, FinanceEntry, Matter, MessageTemplate
@@ -52,7 +53,9 @@ def render_message_template(*, template, contact, matter=None, actor, case_owner
     # Financial balance if matter has finance entries
     balance_text = extra_vars.get("valor_em_aberto", "")
     due_finance_text = extra_vars.get("vencimento_financeiro", "")
-    if matter and not balance_text:
+    from .services import can_manage_finance
+    from apps.billing.services import has_advanced
+    if matter and not balance_text and can_manage_finance(actor, org) and has_advanced(org):
         pending_entry = matter.finance_entries.filter(kind=FinanceEntry.Kind.INCOME).order_by("due_date").first()
         if pending_entry and pending_entry.balance > Decimal("0.00"):
             balance_text = f"R$ {pending_entry.balance:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
@@ -94,8 +97,13 @@ def render_message_template(*, template, contact, matter=None, actor, case_owner
     return body
 
 
+@transaction.atomic
 def create_contact_draft(*, organization, contact, actor, template=None, matter=None, case_owner=None, extra_vars=None):
     """Prepare draft message and record initial client contact state."""
+    from .services import _authorize_write
+    _authorize_write(actor=actor, obj=matter or contact)
+    if contact.organization_id != organization.pk or (matter and matter.organization_id != organization.pk):
+        raise ValidationError("O atendimento deve pertencer ao mesmo escritório.")
     owner = case_owner or (matter.owner if matter else actor)
     phone = contact.phone or ""
     prepared = render_message_template(
@@ -123,14 +131,22 @@ def create_contact_draft(*, organization, contact, actor, template=None, matter=
 
 def mark_link_opened(contact_log, actor):
     """Mark that user clicked the link. Does NOT confirm sending or completion."""
+    from .services import _authorize_write
+    _authorize_write(actor=actor, obj=contact_log)
     if contact_log.status == ClientContact.Status.DRAFT:
         contact_log.status = ClientContact.Status.LINK_OPENED
         contact_log.save(update_fields=["status"])
     return contact_log
 
 
+@transaction.atomic
 def complete_client_contact(*, contact_log, actor, sent_text="", result_note="", client_reply=""):
     """Manually declare completion of contact with timestamp, effective text and declared result."""
+    from .services import _authorize_write
+    contact_log = ClientContact.objects.select_for_update().get(pk=contact_log.pk)
+    _authorize_write(actor=actor, obj=contact_log)
+    if contact_log.status == ClientContact.Status.COMPLETED_MANUAL:
+        return contact_log
     contact_log.status = ClientContact.Status.COMPLETED_MANUAL
     contact_log.completed_at = timezone.now()
     contact_log.sent_text = sent_text.strip() or contact_log.prepared_text

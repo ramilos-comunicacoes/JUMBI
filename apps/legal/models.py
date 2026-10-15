@@ -762,6 +762,7 @@ class AdministrativeDemand(TenantModel):
     original_status = models.CharField("Situação na fonte", max_length=200)
     status = models.CharField("Situação interna", max_length=20, choices=Status.choices, default=Status.PENDING)
     demands_summary = models.TextField("Exigências ou decisões", blank=True)
+    requirement_due_date = models.DateField("Vencimento da exigência conferido na fonte", null=True, blank=True)
     next_action = models.TextField("Próxima providência do escritório", blank=True)
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="assigned_admin_demands")
     sync_status = models.CharField("Status da sincronização", max_length=20, choices=SyncStatus.choices, default=SyncStatus.SUCCESS)

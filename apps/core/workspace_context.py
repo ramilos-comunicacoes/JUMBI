@@ -5,6 +5,8 @@ from django.utils import timezone
 def workspace_context(request):
     organization = getattr(request, "organization", None)
     membership = getattr(request, "membership", None)
+    from .preferences import office_preferences, brand_tokens
+    prefs = office_preferences(organization)
     manager = bool(membership and membership.role in {"owner", "manager"})
     from apps.billing.services import has_advanced, subscription_for
     from apps.billing.plans import PLANS
@@ -85,12 +87,19 @@ def workspace_context(request):
     indexed_nav = {item["key"]: item for item in nav}
     nav = [dict(indexed_nav[key], group=group) for group, keys in navigation_groups
            for key in keys if key in indexed_nav]
+    nav = [item for item in nav if item["key"] not in prefs["hidden_nav"] and (manager or item["key"] != "djen")]
+    if prefs["nav_order"]:
+        priorities = {key: pos for pos, key in enumerate(prefs["nav_order"])}
+        nav.sort(key=lambda item: priorities.get(item["key"], len(priorities)))
+        nav = [dict(item, group="Meu escritório" if item["key"] in priorities else item["group"]) for item in nav]
     notification_count = 0
     if organization and membership and membership.role != 'client' and subscription and subscription.is_available:
         from apps.notifications.services import unread_count
         notification_count = unread_count(request)
     return {
         "organization": organization, "membership": membership, "nav": nav,
+        "office_preferences": prefs, "brand_tokens": brand_tokens(organization),
+        "preference_key": f"jumbi:{getattr(organization, 'pk', 0)}:{getattr(request.user, 'pk', 0)}",
         "plan_catalog": PLANS,
         "can_edit": bool(membership and membership.role in {'owner', 'manager', 'operator'}),
         "can_manage": manager, "today": timezone.localdate(),

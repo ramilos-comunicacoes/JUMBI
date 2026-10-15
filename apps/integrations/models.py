@@ -114,6 +114,18 @@ class IntegrationCapability(models.Model):
         return self.capability
 
 
+class ApiRequest(TenantModel):
+    """Durable result of a tenant-scoped command, safe to retry."""
+    key_hash = models.CharField(max_length=64)
+    payload_hash = models.CharField(max_length=64)
+    status_code = models.PositiveSmallIntegerField(default=0)
+    response = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["organization", "key_hash"], name="integration_api_request_unique")]
+
+
 class IntegrationAccount(TenantModel):
     """Tenant-scoped external credentials and institutional connection settings."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

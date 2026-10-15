@@ -34,7 +34,11 @@ def generate_receipt_number(organization):
 @transaction.atomic
 def issue_payment_receipt(*, payment, actor, payer_name=None, payer_document=None, payment_method="PIX / Transferência", notes=""):
     """Issue an immutable receipt for a confirmed payment."""
-    if payment.reversal_of_id:
+    from .services import _authorize_write
+    from apps.core.models import Organization
+    _authorize_write(actor=actor, obj=payment)
+    Organization.objects.select_for_update().get(pk=payment.organization_id)
+    if payment.reversal_of_id or Payment.objects.filter(reversal_of=payment).exists():
         raise ValidationError("Não é permitido emitir recibo para estornos.")
 
     entry = payment.entry

@@ -1,0 +1,29 @@
+/* Office-wide brand tokens and explicit comfort rules, after module CSS. */
+html[data-preference-key] { --primary:var(--office-primary); --primary-ink:var(--office-primary-ink); --amber-soft:color-mix(in srgb,var(--office-primary) 10%,transparent); --amber-border:color-mix(in srgb,var(--office-primary) 28%,transparent); --accent:var(--office-accent); }
+.app-body.j-office-shell .sidebar { background:var(--office-sidebar); color:var(--office-sidebar-ink); }
+.app-body.j-office-shell .sidebar .nav-link { color:color-mix(in srgb,var(--office-sidebar-ink) 78%,transparent); }
+.app-body.j-office-shell .sidebar .nav-link.is-active { background:var(--office-primary); color:var(--office-primary-ink); }
+.app-body.j-office-shell .sidebar :is(.workspace-copy strong,.nav-group-label,.sidebar-collapse,.sidebar-auto-hint,.workspace-switch label) { color:var(--office-sidebar-ink); }
+.app-body.j-office-shell .button-primary { background:var(--office-primary); color:var(--office-primary-ink); }
+.app-body.j-office-shell .topbar { background:var(--bg); }
+.app-body.j-office-shell .sidebar .nav-link:hover { background:color-mix(in srgb,var(--office-sidebar-ink) 12%,var(--office-sidebar)); color:var(--office-sidebar-ink); }
+.app-body.j-office-shell .sidebar .nav-link.is-active:hover { background:var(--office-primary); color:var(--office-primary-ink); }
+.app-body.j-office-shell .sidebar .nav-active-dot { background:currentColor; }
+html[data-theme=light] .app-body.j-office-shell :is(.panel,.stat-card) { box-shadow:0 4px 18px rgba(15,23,42,.06); }
+html[data-glass=standard] .app-body :is(.panel,.stat-card,.record-form) { backdrop-filter:none; background:var(--surface); }
+html[data-glass=high] .app-body :is(.panel,.stat-card,.record-form) { backdrop-filter:blur(12px); background:color-mix(in srgb,var(--surface) 94%,transparent); }
+html[data-glass=ultra] .app-body :is(.panel,.stat-card,.record-form) { backdrop-filter:blur(20px) saturate(120%); background:color-mix(in srgb,var(--surface) 85%,transparent); }
+html[data-text-size=large] .app-body :is(p,td,.item-main strong,.nav-link,.table-primary,.field-help) { font-size:15px; line-height:1.65; }
+html[data-text-size=large] .app-body :is(input,textarea,select) { font-size:16px; }
+html[data-motion=paused] *, html[data-motion=paused] *::before, html[data-motion=paused] *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+@media(min-width:981px) {
+  html[data-density=compact] .page-content { padding-top:20px; }
+  html[data-density=compact] :is(.records-table td,.records-table th) { padding-top:9px; padding-bottom:9px; }
+  html[data-density=compact] :is(.panel-heading,.stat-card) { padding:16px; }
+  html[data-density=compact] .main-nav .nav-link { min-height:38px; padding-top:8px; padding-bottom:8px; }
+}
+@media(max-width:720px) {
+  html[data-preference-key] .app-body :is(.panel,.stat-card,.record-form) { backdrop-filter:none; background:var(--surface); }
+  html[data-preference-key] :is(button,.button,select,input:not([type=hidden]):not([type=checkbox])) { min-height:44px; }
+  html[data-preference-key] .nav-link { min-height:48px; }
+}

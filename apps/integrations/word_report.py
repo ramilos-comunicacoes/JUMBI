@@ -93,6 +93,10 @@ def generate_daily_docx_report(organization, base_date=None, sync_run=None, oper
     else:
         comms_qs = comms_qs.filter(Q(available_date=base_date) | Q(publication_date=base_date))
 
+    if operator:
+        from .access import require_integration_manager, visible_communications
+        require_integration_manager(operator, organization)
+        comms_qs = comms_qs.filter(pk__in=visible_communications(operator, organization).values("pk"))
     comms = list(comms_qs.order_by("tribunal", "case_number"))
 
     total_comms = len(comms)
@@ -219,6 +223,7 @@ def generate_daily_docx_report(organization, base_date=None, sync_run=None, oper
         format="docx",
         summary_counts={
             "office": office_name,
+            "communication_ids": [str(c.pk) for c in comms],
             "total": total_comms,
             "pending": pending_count,
             "confirmed": confirmed_count,

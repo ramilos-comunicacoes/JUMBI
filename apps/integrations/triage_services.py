@@ -12,6 +12,8 @@ from django.utils import timezone
 from apps.legal.models import CourtCase as Case, Deadline, Matter, Task
 from apps.legal.services import audit
 from .models import CommunicationReview, CourtCommunication
+from .access import require_integration_manager, visible_communications
+from apps.legal.services import visible_matters
 
 
 def list_triage_queue(organization, status="PENDING_REVIEW", court=None, search=None):
@@ -50,6 +52,7 @@ def confirm_communication(
     court_case: Case = None,
     create_deadline: bool = True,
     deadline_days: int = 15,
+    due_date=None,
     task_title: str = None,
     assigned_to=None,
     notes: str = ""
@@ -57,6 +60,11 @@ def confirm_communication(
     """Confirm a judicial communication, link to case/matter, and generate deadline & task."""
     comm = CourtCommunication.objects.select_for_update().get(pk=communication.pk)
     org = comm.organization
+    require_integration_manager(actor, org)
+    if not visible_communications(actor, org).filter(pk=comm.pk).exists():
+        raise PermissionDenied("Comunicação indisponível para este perfil.")
+    if comm.review_status != CourtCommunication.ReviewStatus.PENDING_REVIEW:
+        raise ValidationError("Esta comunicação já foi revisada. Nenhum prazo ou tarefa adicional foi criado.")
 
     # Link matter or attempt auto-resolution
     if not matter and comm.matter:
@@ -72,10 +80,17 @@ def confirm_communication(
     elif matter and not court_case and comm.case_number:
         court_case = Case.objects.filter(organization=org, matter=matter, number=comm.case_number).first()
 
+    if not matter or not visible_matters(actor, org).filter(pk=matter.pk).exists():
+        raise ValidationError("Selecione uma pasta autorizada para vincular a comunicação.")
+    if court_case and (court_case.organization_id != org.pk or court_case.matter_id != matter.pk):
+        raise ValidationError("O processo deve pertencer à pasta selecionada.")
+    if create_deadline and (due_date is None or not notes.strip()):
+        raise ValidationError("Informe a data de vencimento conferida na fonte e as observações da conferência.")
+
     comm.matter = matter
     comm.court_case = court_case
     comm.review_status = CourtCommunication.ReviewStatus.MATCH_CONFIRMED
-    comm.deadline_status = "CONFIRMADO"
+    comm.deadline_status = "A CONFERIR" if create_deadline else "SEM PRAZO CADASTRADO"
     comm.reviewed_by = actor
     comm.reviewed_at = timezone.now()
 
@@ -83,10 +98,13 @@ def confirm_communication(
     task_obj = None
 
     today = timezone.localdate()
-    due_date = today + timedelta(days=max(1, deadline_days))
+    if due_date is not None:
+        deadline_days = (due_date - today).days
 
     # Determine responsible user
     owner = assigned_to or (matter.owner if matter else actor)
+    if not visible_matters(owner, org).filter(pk=matter.pk).exists():
+        raise ValidationError("O responsável precisa ter acesso à pasta.")
 
     if create_deadline:
         deadline_title = f"Prazo judicial · Comunicação {comm.external_id}"
@@ -105,7 +123,6 @@ def confirm_communication(
             matter=matter,
             title=deadline_title,
             due_date=due_date,
-            kind=Deadline.Kind.COURT,
             status=Deadline.Status.PENDING,
             owner=owner,
             source=description,
@@ -118,9 +135,9 @@ def confirm_communication(
             organization=org,
             matter=matter,
             title=t_title,
-            description=f"Providência gerada a partir da triagem de comunicação judicial ({comm.court_name}).\nPrazo fatal estimado: {due_date.strftime('%d/%m/%Y')}",
+            description=f"Providência de triagem ({comm.court_name}). Conferência registrada: {notes}",
             owner=owner,
-            due_date=due_date - timedelta(days=2) if deadline_days > 3 else due_date,
+            due_date=due_date or today,
             status=Task.Status.TODO,
             priority=Task.Priority.URGENT if deadline_days <= 5 else Task.Priority.HIGH,
             deadline=deadline_obj,
@@ -157,6 +174,11 @@ def dismiss_communication(*, communication: CourtCommunication, actor, reason: s
         raise ValidationError("Informe o motivo do descarte da publicação.")
 
     comm = CourtCommunication.objects.select_for_update().get(pk=communication.pk)
+    require_integration_manager(actor, comm.organization)
+    if not visible_communications(actor, comm.organization).filter(pk=comm.pk).exists():
+        raise PermissionDenied("Comunicação indisponível para este perfil.")
+    if comm.review_status != CourtCommunication.ReviewStatus.PENDING_REVIEW:
+        raise ValidationError("Esta comunicação já foi revisada.")
     comm.review_status = CourtCommunication.ReviewStatus.NOT_RELEVANT
     comm.deadline_status = "DESCARTADO"
     comm.reviewed_by = actor

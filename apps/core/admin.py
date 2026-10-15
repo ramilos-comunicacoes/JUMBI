@@ -127,8 +127,26 @@ class JumbiGroupAdmin(GroupAdmin):
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 
+class PlatformOrganizationForm(forms.ModelForm):
+    class Meta:
+        model = Organization
+        fields = "__all__"
+
+    def clean(self):
+        from .image_validation import validated_brand_image
+        data = super().clean()
+        for field in ("brand_logo", "brand_favicon", "brand_collapsed_logo"):
+            if field in data:
+                try:
+                    data[field] = validated_brand_image(data[field])
+                except ValidationError as exc:
+                    self.add_error(field, exc)
+        return data
+
+
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
+    form = PlatformOrganizationForm
     list_display = ("name", "business_type", "status", "city", "state", "created_at")
     list_filter = ("status", "state")
     search_fields = ("name", "legal_name", "document", "contact_email")

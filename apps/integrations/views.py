@@ -4,6 +4,7 @@ Provides dashboard, connectors center, monitoring rules, triage queue,
 coverage directory, and Word report generator.
 """
 from datetime import date, datetime
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -34,13 +35,15 @@ from .models import (
 )
 from .triage_services import confirm_communication, dismiss_communication, list_triage_queue
 from .word_report import generate_daily_docx_report
+from .access import require_integration_manager, visible_communications
+from .credentials import encrypt_credentials
+from apps.legal.services import visible_matters
 
 
 def _require_manager(request):
-    if not request.organization or not request.membership or request.membership.role not in {"owner", "manager", "operator"}:
-        messages.error(request, "Acesso restrito à equipe operacional e gestão do escritório.")
-        return False
+    require_integration_manager(request.user, getattr(request, "organization", None))
     return True
+
 
 
 @login_required
@@ -67,12 +70,9 @@ def connectors(request):
 
                 provider = IntegrationProvider.objects.filter(code=provider_code).first()
                 if not provider:
-                    provider = IntegrationProvider.objects.create(
-                        code=provider_code.lower().replace(" ", "-"),
-                        name=label or provider_code,
-                        documentation_status="CUSTOM",
-                        authorization_status="AUTHORIZED",
-                    )
+                    raise ValidationError("Selecione um provedor cadastrado.")
+                if environment not in {"sandbox", "production"} or len(label) > 150 or len(client_id) > 120 or len(api_key) > 4000:
+                    raise ValidationError("Confira os campos da conexão.")
 
                 account = IntegrationAccount.objects.create(
                     organization=org,
@@ -80,9 +80,9 @@ def connectors(request):
                     label=label or provider.name,
                     environment=environment,
                     external_principal_id=client_id,
-                    encrypted_credentials=api_key,
+                    encrypted_credentials=encrypt_credentials({"api_key": api_key}) if api_key else "",
                     has_credentials=bool(api_key),
-                    status="ACTIVE" if api_key else "PENDING_CREDENTIALS",
+                    status="NOT_HOMOLOGATED",
                 )
                 messages.success(request, f"Conexão '{account.label}' configurada com sucesso!")
                 return redirect("integrations:connectors")
@@ -96,25 +96,11 @@ def connectors(request):
                     client = DJENClient()
                     tribunals = client.fetch_tribunals(timeout=8.0)
                     if tribunals:
-                        messages.success(request, f"✅ Conexão com o DJEN (Diário da Justiça Eletrônico Nacional) 100% OPERACIONAL! A API oficial do CNJ respondeu normalmente com {len(tribunals)} tribunais disponíveis.")
+                        messages.success(request, "O endpoint público do DJEN respondeu à consulta de tribunais. Isso não confirma cobertura completa de publicações.")
                     else:
-                        messages.success(request, "✅ Conexão com o DJEN (Comunica PJe) 100% OPERACIONAL via API pública oficial do CNJ.")
-                elif provider_code == "pdpj-webhook":
-                    messages.success(request, "✅ Receptor PDPJ Webhook ATIVO! Endpoint seguro em escuta no JUMBI com autenticação HMAC-SHA256 e isolamento multi-escritório.")
-                elif provider_code == "inss-prevjud":
-                    messages.success(request, "✅ Módulo INSS / PrevJud OPERACIONAL! Pronto para monitoramento de concessões, recursos e exigências administrativas.")
-                elif account and account.has_credentials:
-                    messages.success(request, f"✅ Teste de conectividade com '{account.label}' bem-sucedido. Protocolo e credenciais validados.")
+                        messages.error(request, "Não foi possível comprovar a resposta do DJEN agora. Tente novamente mais tarde.")
                 else:
-                    names_map = {
-                        "mni-tjba": "MNI 2.2.2 TJBA (Bahia)",
-                        "mni-tjrj": "MNI 2.2.2 TJRJ (Rio de Janeiro)",
-                        "domicilio-judicial": "Domicílio Judicial Eletrônico (CNJ)",
-                        "pje": "PJe Nacional",
-                        "esaj": "e-SAJ Softplan",
-                    }
-                    p_name = names_map.get(provider_code, provider_code.upper() if provider_code else "TRIBUNAL")
-                    messages.info(request, f"ℹ️ Conector {p_name} pronto no JUMBI. Para ativar o canal com o tribunal, siga o passo a passo no 'Manual de Integração' acima.")
+                    messages.info(request, "Este conector aguarda homologação. Credenciais cadastradas não comprovam conexão nem habilitam atos oficiais.")
 
                 return redirect("integrations:connectors")
 
@@ -133,16 +119,10 @@ def connectors(request):
                     court_sigla=court_sigla or None,
                     operator=request.user,
                 )
-                messages.success(
-                    request,
-                    f"✅ Sincronização concluída com sucesso para '{resolved}'! "
-                    f"{results.item_count} ocorrência(s) encontrada(s) no DJEN e enviada(s) para a Fila de Triagem."
-                )
+                _search_message(request, results)
                 return redirect("integrations:triage")
-        except Exception as e:
-            import logging
-            logging.getLogger("django.request").exception("Erro na ação de conectores: %s", e)
-            messages.error(request, f"Não foi possível processar a operação: {e}")
+        except (ValidationError, ValueError, TypeError):
+            messages.error(request, "Não foi possível processar a operação. Confira o preenchimento e a disponibilidade do provedor.")
             return redirect("integrations:connectors")
 
     accounts = IntegrationAccount.objects.filter(organization=org).select_related("provider")
@@ -151,95 +131,11 @@ def connectors(request):
     active_monitors = MonitoringRule.objects.filter(organization=org, enabled=True).count()
     pending_triage = CourtCommunication.objects.filter(organization=org, review_status=CourtCommunication.ReviewStatus.PENDING_REVIEW).count()
 
-    # Pre-configured connector templates
-    djen_desc = (
-        "Leitura pública autorizada de intimações, despachos e sentenças em 3 buscas independentes para Geórgia de Andrade Almeida."
-        if is_georgia
-        else f"Leitura pública autorizada de intimações, despachos e sentenças em 3 buscas independentes para {default_target} (ou qualquer advogado/parte)."
-    )
-
-    catalog_connectors = [
-        {
-            "code": "djen",
-            "name": "Diário de Justiça Eletrônico Nacional (DJEN)",
-            "category": "Comunicações & Publicações",
-            "status": "100% OPERACIONAL",
-            "protocol": "REST / JSON CNJ",
-            "description": djen_desc,
-            "has_account": accounts.filter(provider__code="djen").exists(),
-            "badge_class": "badge-status-connected",
-        },
-        {
-            "code": "mni-tjba",
-            "name": "MNI 2.2.2 — TJBA (Tribunal de Justiça da Bahia)",
-            "category": "Intercomunicação Eletrônica",
-            "status": "PRONTO P/ VINCULAR",
-            "protocol": "SOAP WSDL 2.2.2",
-            "description": "Consulta de avisos pendentes e teor de comunicação com travas de segurança contra peticionamento acidental.",
-            "has_account": accounts.filter(provider__code="mni-tjba").exists(),
-            "badge_class": "badge-status-available",
-        },
-        {
-            "code": "mni-tjrj",
-            "name": "MNI 2.2.2 — TJRJ (Tribunal de Justiça do Rio de Janeiro)",
-            "category": "Intercomunicação Eletrônica",
-            "status": "PRONTO P/ VINCULAR",
-            "protocol": "SOAP WSDL 2.2.2",
-            "description": "Consulta direta de citações e mandados eletrônicos na comarca do Rio de Janeiro.",
-            "has_account": accounts.filter(provider__code="mni-tjrj").exists(),
-            "badge_class": "badge-status-available",
-        },
-        {
-            "code": "domicilio-judicial",
-            "name": "Domicílio Judicial Eletrônico (CNJ)",
-            "category": "Citações & Avisos",
-            "status": "MODO SEGURO",
-            "protocol": "REST CNJ / PDPJ",
-            "description": "Listagem segura de intimações sem disparo de ciência processual tácita (requer outorga para abertura).",
-            "has_account": accounts.filter(provider__code="domicilio-judicial").exists(),
-            "badge_class": "badge-status-secure",
-        },
-        {
-            "code": "pdpj-webhook",
-            "name": "PDPJ Webhook / Plataforma Digital do Poder Judiciário",
-            "category": "Notificações em Tempo Real",
-            "status": "ATIVO / ESCUTA",
-            "protocol": "HTTPS HMAC-SHA256",
-            "description": "Ingestão imediata de intimações eletrônicas enviadas pelos tribunais com verificação de integridade.",
-            "has_account": accounts.filter(provider__code="pdpj-webhook").exists(),
-            "badge_class": "badge-status-connected",
-        },
-        {
-            "code": "inss-prevjud",
-            "name": "INSS / PrevJud Previdenciário",
-            "category": "Direito Previdenciário",
-            "status": "OPERACIONAL",
-            "protocol": "API Previdenciária & Gestão",
-            "description": "Acompanhamento em tempo real de requerimentos, exigências e decisões administrativas do INSS.",
-            "has_account": accounts.filter(provider__code="inss-prevjud").exists(),
-            "badge_class": "badge-status-connected",
-        },
-        {
-            "code": "pje",
-            "name": "PJe — Processo Judicial Eletrônico",
-            "category": "Tribunais Federais & Estaduais",
-            "status": "DISPONÍVEL",
-            "protocol": "REST / MNI",
-            "description": "Integração para leitura de autos em tribunais com PJe (TRF1, TRF3, TRF5, TJs).",
-            "has_account": accounts.filter(provider__code="pje").exists(),
-            "badge_class": "badge-status-available",
-        },
-        {
-            "code": "esaj",
-            "name": "e-SAJ Softplan",
-            "category": "Justiça Estadual",
-            "status": "DISPONÍVEL",
-            "protocol": "Web Services",
-            "description": "Consulta processual para tribunais estaduais (TJSP, TJSC, TJMS, etc.).",
-            "has_account": accounts.filter(provider__code="esaj").exists(),
-            "badge_class": "badge-status-available",
-        },
-    ]
+    catalog_connectors = []
+    for code, name in [("djen", "Diário de Justiça Eletrônico Nacional"), ("mni-tjba", "MNI · TJBA"), ("mni-tjrj", "MNI · TJRJ"), ("domicilio-judicial", "Domicílio Judicial"), ("pdpj-webhook", "PDPJ Webhook"), ("inss-prevjud", "INSS / PrevJud"), ("pje", "PJe"), ("esaj", "e-SAJ")]:
+        catalog_connectors.append({"code": code, "name": name,
+            "status": "CONSULTA MANUAL" if code == "djen" else "NÃO HOMOLOGADO",
+            "description": "Pesquisa pública por nome, período e tribunal, com indicação de falhas e páginas pendentes." if code == "djen" else "Recurso em preparação. O cadastro não ativa consulta, monitoramento automático nem atos oficiais."})
 
     return render(request, "integrations/connectors.html", {
         "page_title": "Conectores e APIs Judiciais",
@@ -274,7 +170,7 @@ def monitors(request):
             value = request.POST.get("value", "").strip()
             oab_uf = request.POST.get("oab_uf", "").strip()
 
-            if not value:
+            if not value or len(value) > 200 or len(label) > 150 or kind not in dict(MonitoringRule.Kind.choices):
                 messages.error(request, "Informe o termo ou nome para monitorar.")
             else:
                 # Ensure default DJEN account exists for rule
@@ -283,7 +179,10 @@ def monitors(request):
                 if not account:
                     account = IntegrationAccount.objects.filter(organization=org).first()
                 if not account and provider:
-                    account = IntegrationAccount.objects.create(organization=org, provider=provider, label="DJEN Padrão", environment="sandbox")
+                    account = IntegrationAccount.objects.create(organization=org, provider=provider, label="DJEN Padrão", environment="production")
+                if not account:
+                    messages.error(request, "Cadastre uma conta DJEN antes de criar o critério.")
+                    return redirect("integrations:monitors")
 
                 rule = MonitoringRule.objects.create(
                     organization=org,
@@ -306,21 +205,13 @@ def monitors(request):
             date_to = request.POST.get("date_to", "").strip() or None
 
             resolved = resolve_search_target(org, custom_name=custom_name or None)
-            results = run_independent_searches(
-                organization=org,
-                target_name=resolved,
-                oab_number=oab_number,
-                oab_uf=oab_uf,
-                court_sigla=court_sigla,
-                date_from=date_from,
-                date_to=date_to,
-                operator=request.user,
-            )
-            messages.success(
-                request,
-                f"Sincronização executada com sucesso para '{resolved}'! 3 pesquisas concluídas (Advogado, Parte e Teor). "
-                f"{results.item_count} ocorrência(s) registrada(s) na fila de triagem."
-            )
+            try:
+                results = run_independent_searches(organization=org, target_name=resolved, oab_number=oab_number,
+                    oab_uf=oab_uf, court_sigla=court_sigla, date_from=date_from, date_to=date_to, operator=request.user)
+            except (ValidationError, ValueError, TypeError):
+                messages.error(request, "Confira os critérios e o período da pesquisa (até 31 dias).")
+                return redirect("integrations:monitors")
+            _search_message(request, results)
             return redirect("integrations:triage")
 
     rules = MonitoringRule.objects.filter(organization=org).order_by("-enabled", "label")
@@ -349,15 +240,12 @@ def triage(request):
         action = request.POST.get("action")
         comm_id = request.POST.get("communication_id")
         try:
-            comm = get_object_or_404(CourtCommunication, pk=comm_id, organization=org)
+            comm = get_object_or_404(visible_communications(request.user, org), pk=comm_id)
 
             if action == "confirm":
                 matter_id = request.POST.get("matter_id")
-                matter = Matter.objects.filter(pk=matter_id, organization=org).first() if matter_id else None
-                try:
-                    deadline_days = int(request.POST.get("deadline_days") or 15)
-                except (ValueError, TypeError):
-                    deadline_days = 15
+                matter = visible_matters(request.user, org).filter(pk=matter_id).first() if matter_id else None
+                due_date = date.fromisoformat(request.POST.get("due_date", ""))
                 notes = request.POST.get("notes", "")
 
                 confirm_communication(
@@ -365,7 +253,7 @@ def triage(request):
                     actor=request.user,
                     matter=matter,
                     create_deadline=True,
-                    deadline_days=deadline_days,
+                    due_date=due_date,
                     notes=notes,
                 )
                 messages.success(request, f"Comunicação {comm.external_id} confirmada. Prazo e tarefa gerados com sucesso!")
@@ -374,10 +262,9 @@ def triage(request):
                 reason = request.POST.get("reason", "Publicação não relevante")
                 dismiss_communication(communication=comm, actor=request.user, reason=reason)
                 messages.success(request, f"Comunicação {comm.external_id} descartada.")
-        except Exception as e:
-            import logging
-            logging.getLogger("django.request").exception("Erro na ação de triagem: %s", e)
-            messages.error(request, f"Não foi possível processar a ação: {e}")
+        except (ValidationError, ValueError, TypeError) as exc:
+            text = " ".join(exc.messages) if isinstance(exc, ValidationError) else "Confira a pasta e a data de vencimento na fonte oficial."
+            messages.error(request, text)
 
         return redirect("integrations:triage")
 
@@ -385,8 +272,9 @@ def triage(request):
     search = request.GET.get("q", "")
     queue = list_triage_queue(org, status=status_filter if status_filter != "all" else None, search=search)
 
+    queue = queue.filter(pk__in=visible_communications(request.user, org).values("pk"))
     page = Paginator(queue, 20).get_page(request.GET.get("page"))
-    matters = Matter.objects.filter(organization=org).order_by("title")[:100]
+    matters = visible_matters(request.user, org).order_by("title")[:100]
 
     return render(request, "integrations/triage.html", {
         "page_title": "Triagem de Publicações & Prazos",
@@ -413,7 +301,7 @@ def coverage(request):
         deployments = deployments.filter(tribunal__icontains=search)
 
     return render(request, "integrations/coverage.html", {
-        "page_title": "Cobertura dos 33 Tribunais",
+        "page_title": "Catálogo de tribunais",
         "active_nav": "connectors",
         "deployments": deployments.order_by("tribunal"),
         "search": search,
@@ -435,7 +323,7 @@ def reports(request):
         messages.success(request, f"Relatório diário gerado com sucesso! Arquivo: {report.filename}")
         return redirect("integrations:reports")
 
-    reports_list = DailyReport.objects.filter(organization=org).order_by("-created_at")
+    reports_list = DailyReport.objects.filter(organization=org, operator=request.user).order_by("-created_at")
     return render(request, "integrations/reports.html", {
         "page_title": "Relatórios Diários Word (.docx)",
         "active_nav": "connectors",
@@ -447,10 +335,22 @@ def reports(request):
 def download_report(request, pk):
     """Download docx report file."""
     org = request.organization
-    report = get_object_or_404(DailyReport, pk=pk, organization=org)
+    require_integration_manager(request.user, org)
+    report = get_object_or_404(DailyReport, pk=pk, organization=org, operator=request.user)
+    ids = report.summary_counts.get("communication_ids")
+    if ids is None or visible_communications(request.user, org).filter(pk__in=ids).count() != len(ids):
+        raise PermissionDenied("O escopo mudou ou o relatório é legado. Gere um novo relatório para seu acesso atual.")
     if not report.file_bytes:
         raise Http404("Arquivo do relatório não encontrado.")
 
     response = HttpResponse(bytes(report.file_bytes), content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
     response["Content-Disposition"] = f'attachment; filename="{report.filename}"'
+    response["Cache-Control"] = "private, no-store"
     return response
+
+
+def _search_message(request, results):
+    if results.status == SyncRun.Status.COMPLETE:
+        messages.success(request, f"Pesquisa concluída nos critérios consultados: {results.item_count} ocorrência(s). Confira a fila de triagem.")
+    else:
+        messages.warning(request, "Pesquisa parcial ou indisponível. Confira as falhas e páginas pendentes; não é possível afirmar ausência de publicações.")

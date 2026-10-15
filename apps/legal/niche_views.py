@@ -46,9 +46,9 @@ def previdenciario_hub(request):
     # INSS requirements typically have a strict 30-day fulfillment window (IN 128/2022)
     demands_with_deadlines = []
     for d in requirement_demands:
-        fulfillment_deadline = d.updated_at.date() + timedelta(days=30)
-        days_left = (fulfillment_deadline - today).days
-        urgency = "overdue" if days_left < 0 else "urgent" if days_left <= 7 else "attention" if days_left <= 15 else "normal"
+        fulfillment_deadline = d.requirement_due_date
+        days_left = (fulfillment_deadline - today).days if fulfillment_deadline else None
+        urgency = "unverified" if days_left is None else "overdue" if days_left < 0 else "urgent" if days_left <= 7 else "attention" if days_left <= 15 else "normal"
         demands_with_deadlines.append({
             "demand": d,
             "deadline_date": fulfillment_deadline,

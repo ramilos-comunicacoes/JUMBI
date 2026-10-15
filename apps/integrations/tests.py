@@ -136,7 +136,7 @@ class IntegrationsHubTestCase(TestCase):
             actor=self.user1,
             matter=matter,
             create_deadline=True,
-            deadline_days=15,
+            due_date=date(2026, 10, 29),
             notes="Réplica a contestação do INSS",
         )
 

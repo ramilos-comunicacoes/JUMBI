@@ -33,7 +33,7 @@ def overview(request):
         return filter_niche(queryset, niche, choices, relation="matter__")
 
     tasks = scoped(Task)
-    pending = tasks.exclude(status=Task.Status.DONE)
+    pending = tasks.exclude(status__in=[Task.Status.DONE, Task.Status.CANCELLED])
     deadlines = scoped(Deadline).exclude(status=Deadline.Status.FULFILLED)
     appointments = scoped(Appointment).filter(ends_at__gte=timezone.now()).order_by("starts_at")
     finance_allowed = can_manage_finance(request)
@@ -82,11 +82,12 @@ def overview(request):
     from apps.contracts.models import Contract
     from .models import ClientContact
     first_day_month = today.replace(day=1)
-    contracts_count = Contract.objects.filter(organization=request.organization, created_at__date__gte=first_day_month).count()
+    contracts_count = scoped_queryset(request.user, request.organization, Contract).filter(created_at__date__gte=first_day_month).count() if has_advanced(request.organization) else 0
     protocols_count = scoped(CourtCase).filter(created_at__date__gte=first_day_month).count()
-    pending_messages_count = ClientContact.objects.filter(organization=request.organization).exclude(status=ClientContact.Status.COMPLETED_MANUAL).count()
+    pending_messages_count = scoped_queryset(request.user, request.organization, ClientContact).exclude(status=ClientContact.Status.COMPLETED_MANUAL).count()
 
-    compact_mode = request.GET.get("view") == "compact"
+    from apps.core.preferences import office_preferences
+    compact_mode = request.GET.get("view", office_preferences(request.organization)["dashboard_view"]) == "compact"
     context.update({
         "title": "Dashboard", "page_title": "Dashboard", "active_nav": "dashboard", "today": today,
         "niche": niche, "niche_choices": choices, "niche_distribution": distribution,

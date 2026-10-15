@@ -481,6 +481,7 @@ class FunctionalSpecAcceptanceTests(TestCase):
         run, comms = run_daily_djen_search(
             organization=self.org, operator=self.dona, records_source=feed,
             sim_failures=["Falha ao acessar aba do TJSP"],
+            queried_name="Geórgia de Andrade Almeida",
         )
         docx_bytes = generate_djen_word_report(run, comms)
         self.assertTrue(len(docx_bytes) > 0)
@@ -518,13 +519,13 @@ class FunctionalSpecAcceptanceTests(TestCase):
         resp_prev = self.client.get(reverse("legal:previdenciario_hub"))
         self.assertEqual(resp_prev.status_code, 200)
         self.assertContains(resp_prev, "Direito Previdenciário & INSS")
-        self.assertContains(resp_prev, "Calculadora EC 103/2019")
+        self.assertContains(resp_prev, "Conferência técnica")
 
         # 3. Test Trabalhista Hub view
         resp_trab = self.client.get(reverse("legal:trabalhista_hub"))
         self.assertEqual(resp_trab.status_code, 200)
         self.assertContains(resp_trab, "Direito Trabalhista & Audiências")
-        self.assertContains(resp_trab, "Calculadora de Rescisão CLT")
+        self.assertContains(resp_trab, "Conferência técnica")
 
         # 4. Test Dynamic DJEN search with custom lawyer name
         custom_name = "Carlos Eduardo Siqueira"
@@ -532,6 +533,7 @@ class FunctionalSpecAcceptanceTests(TestCase):
             organization=self.org,
             operator=self.dona,
             queried_name=custom_name,
+            records_source=[{"communication_id":"fixture", "court":"TJCE", "case_number":"fixture", "full_text":custom_name, "found_in_advogado":True}],
         )
         self.assertEqual(run.queried_name, custom_name)
         self.assertTrue(run.total_deduplicated > 0)

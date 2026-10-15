@@ -2,6 +2,10 @@
 
 Evolução do código existente no servidor, orientada pelo estudo de 07/10/2026. Monólito Django 5.2 LTS com interface responsiva em português, temas claro/escuro e identidade visual enviada pelo usuário.
 
+## Atualização v16 — 15/10/2026
+
+Personalização por escritório de marca, tema, menu, dashboard, agenda e mensagens, com prévia e seções recolhíveis no celular. Correções de isolamento, credenciais, triagem e prazos nas atualizações v9–v15. Consulte o [relatório de auditoria v16](docs/auditoria-producao-v16.md) para o escopo verificado e as limitações reais dos conectores. A pesquisa manual no DJEN consulta a fonte; os demais conectores não anunciam operação antes da homologação.
+
 ## Executar localmente
 
 ```powershell

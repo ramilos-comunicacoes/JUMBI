@@ -44,7 +44,13 @@ class WorkspaceLoginView(LoginView):
             return reverse('portal:home')
         if Membership.objects.filter(user=self.request.user, organization_id=self.request.session.get('active_organization_id'), role='client', is_active=True).exists():
             return reverse('portal:home')
-        return self.get_redirect_url() or reverse("core:platform" if self.request.user.is_superuser else "legal:dashboard")
+        if self.get_redirect_url():
+            return self.get_redirect_url()
+        if self.request.user.is_superuser:
+            return reverse("core:platform")
+        from .preferences import office_preferences
+        member = Membership.objects.filter(user=self.request.user, organization_id=self.request.session.get("active_organization_id"), is_active=True).select_related("organization").first()
+        return reverse("legal:" + office_preferences(member.organization if member else None)["landing_page"])
 
     def form_valid(self, form):
         user = form.get_user()
@@ -246,35 +252,31 @@ def audit_trail(request):
 @require_http_methods(["GET", "POST"])
 def customization(request):
     _manager(request)
-    from .forms import OrganizationBrandingForm
+    from .customization_forms import WorkspaceCustomizationForm
+    from .preferences import NAV_CHOICES, office_preferences
+    from apps.legal.services import audit
     org = request.organization
-    form = OrganizationBrandingForm(request.POST or None, request.FILES or None, instance=org)
-    if request.method == "POST":
-        if form.is_valid():
-            try:
+    form = WorkspaceCustomizationForm(request.POST if request.method == "POST" else None, request.FILES or None, instance=org)
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            locked = Organization.objects.select_for_update().get(pk=org.pk)
+            if request.POST.get("revision") != locked.updated_at.isoformat():
+                form.add_error(None, "Outra pessoa atualizou as preferências. Recarregue esta página para conferir as alterações antes de salvar.")
+            else:
+                changed = [name for name in form.changed_data if name != "revision"]
                 org = form.save()
-                from apps.legal.services import audit
-                audit(
-                    organization=org,
-                    actor=request.user,
-                    action="organization.customized",
-                    description="Identidade visual e personalização do sistema atualizadas.",
-                )
-                messages.success(request, "Personalização do sistema salva com sucesso!")
+                audit(organization=org, actor=request.user, action="organization.customized", obj=org,
+                      description="Personalização atualizada: " + ", ".join(str(form.fields[name].label or name) for name in changed))
+                messages.success(request, "Preferências salvas para este escritório.")
                 return redirect("core:customization")
-            except Exception as e:
-                import logging
-                logging.getLogger("django.request").exception("Erro ao salvar personalização: %s", e)
-                messages.error(request, f"Ocorreu um erro ao gravar as alterações: {e}")
-        else:
-            messages.error(request, "Por favor, revise os campos destacados antes de salvar.")
-
+    prefs = office_preferences(org)
+    order = form.cleaned_data.get("nav_order", prefs["nav_order"]) if form.is_bound and hasattr(form, "cleaned_data") else prefs["nav_order"]
+    keys = list(dict.fromkeys([*order, *dict(NAV_CHOICES)]))
     return render(request, "core/customization.html", {
-        "page_title": "Personalização & Identidade Visual",
-        "active_nav": "customization",
-        "form": form,
-        "organization": org,
+        "page_title": "Personalização do escritório", "active_nav": "customization",
+        "form": form, "field_groups": form.field_groups(), "navigation_order": [(key, dict(NAV_CHOICES)[key]) for key in keys],
     })
+
 
 
 def error403(request, exception=None):

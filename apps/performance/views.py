@@ -84,12 +84,14 @@ def ranking_view(request):
         period = int(request.GET.get("days", "30"))
     except ValueError:
         period = 30
+    if period not in {7, 30, 90, 365}:
+        period = 30
     from .scoring_services import team_ranking
     leaderboard = team_ranking(request.organization, period_days=period)
     return render(request, "performance/ranking.html", {
         "title": "Ranking e Pontuação da Equipe",
         "page_title": "Ranking da Equipe",
-        "active_nav": "goals",
+        "active_nav": "ranking",
         "leaderboard": leaderboard,
         "period": period,
     })

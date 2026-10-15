@@ -103,7 +103,7 @@ class OrganizationBrandingForm(forms.ModelForm):
         }
         help_texts = {
             "system_title": "Exibido no topo da barra, nos títulos das páginas e nas notificações.",
-            "brand_logo": "Logo principal com barra lateral expandida. PNG, JPG, SVG ou WebP (máx. 2 MB).",
+            "brand_logo": "Logo principal com barra lateral expandida. PNG, JPG ou WebP (máx. 2 MB).",
             "brand_favicon": "Favicon da aba do navegador E logo da barra lateral contraída (padrão). Máx. 2 MB.",
             "brand_collapsed_logo": "Opcional: ícone alternativo para o menu recolhido (se não preenchido, usa o favicon).",
             "glassmorphism_intensity": "Estilo visual de transparência e desfoque moderno dos cartões e painéis.",
@@ -130,20 +130,8 @@ class OrganizationBrandingForm(forms.ModelForm):
         return org
 
     def _validate_image_file(self, field_name, max_mb=2, allow_ico=False):
-        f = self.cleaned_data.get(field_name)
-        if not isinstance(f, UploadedFile):
-            return f
-        if f.size > max_mb * 1024 * 1024:
-            raise forms.ValidationError(f"O arquivo deve ter no máximo {max_mb} MB.")
-        allowed_types = {"image/png", "image/jpeg", "image/webp", "image/svg+xml"}
-        if allow_ico:
-            allowed_types.update({"image/x-icon", "image/vnd.microsoft.icon"})
-        content_type = getattr(f, "content_type", "")
-        # Also check file extension as fallback for ICO/SVG
-        ext = f.name.split(".")[-1].lower() if "." in f.name else ""
-        if content_type not in allowed_types and ext not in {"png", "jpg", "jpeg", "webp", "svg", "ico"}:
-            raise forms.ValidationError("Envie uma imagem válida (PNG, JPG, WebP, SVG ou ICO).")
-        return f
+        from .image_validation import validated_brand_image
+        return validated_brand_image(self.cleaned_data.get(field_name))
 
     def clean_brand_logo(self):
         return self._validate_image_file("brand_logo", allow_ico=True)

@@ -39,8 +39,8 @@ def import_or_update_administrative_demand(
 
     status_val = internal_status or (
         AdministrativeDemand.Status.REQUIREMENT if "exigência" in original_status.lower()
-        else AdministrativeDemand.Status.CONCLUDED if ("concluído" in original_status.lower() or "deferido" in original_status.lower())
         else AdministrativeDemand.Status.REJECTED if "indeferido" in original_status.lower()
+        else AdministrativeDemand.Status.CONCLUDED if ("concluído" in original_status.lower() or "deferido" in original_status.lower())
         else AdministrativeDemand.Status.PENDING
     )
 
