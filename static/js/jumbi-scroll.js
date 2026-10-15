@@ -1,7 +1,7 @@
 /* Keep overflow inside the relevant table/board; support touch and keyboard. */
 (() => {
   let sequence = 0;
-  document.querySelectorAll('.table-scroll,.kanban-board,.calendar-week-scroll').forEach(scroller => {
+  document.querySelectorAll('.table-scroll:not([data-scroll-managed]),.kanban-board:not([data-scroll-managed]),.calendar-week-scroll:not([data-scroll-managed])').forEach(scroller => {
     const tools = document.createElement('div'); tools.className = 'scroll-assist'; tools.hidden = true;
     const help = document.createElement('span');
     help.textContent = scroller.classList.contains('kanban-board') ? 'Deslize para ver as outras colunas.' : 'Deslize para ver todas as informações.';

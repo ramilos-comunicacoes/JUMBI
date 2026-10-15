@@ -71,6 +71,139 @@ class KanbanDashboardTests(TestCase):
         self.assertEqual(response.status_code,400)
         self.task.refresh_from_db();self.assertEqual(self.task.status,"doing")
 
+    def test_all_working_stages_cancel_and_reactivate_are_audited(self):
+        current = "todo"
+        for destination in ["doing", "in_review", "blocked"]:
+            self.assertEqual(self.post_move(destination, current).status_code, 200)
+            current = destination
+        self.assertEqual(self.post_move("cancelled", current, "  ").status_code, 400)
+        self.assertEqual(self.post_move("cancelled", current, "Demanda encerrada pelo cliente.").status_code, 200)
+        cancellation = AuditEvent.objects.get(action="task.cancelled", object_id=str(self.task.pk))
+        self.assertIn("Demanda encerrada", cancellation.description)
+        self.task.refresh_from_db()
+        self.assertIsNone(self.task.completed_at)
+        self.assertEqual(self.post_move("todo", "cancelled").status_code, 400)
+        self.assertEqual(self.post_move("todo", "cancelled", "Cliente retomou a solicitação.").status_code, 200)
+        self.assertTrue(AuditEvent.objects.filter(action="task.reopen", object_id=str(self.task.pk), description__contains="retomou").exists())
+        count = AuditEvent.objects.filter(object_type="legal.task", object_id=str(self.task.pk)).count()
+        self.assertEqual(self.post_move("todo", "todo").status_code, 200)
+        self.assertEqual(AuditEvent.objects.filter(object_type="legal.task", object_id=str(self.task.pk)).count(), count)
+
+    def test_four_display_groups_preserve_all_six_real_stages_without_duplicates(self):
+        expected_ids = {self.task.pk, self.private_task.pk}
+        for status in Task.Status.values:
+            for offset in [-1, 1]:
+                item = Task.objects.create(organization=self.org, matter=self.matter, title=f"Etapa {status} {offset}",
+                    owner=self.owner, due_date=timezone.localdate() + timedelta(days=offset), status=status,
+                    completion_note="Entrega conferida." if status == "done" else "")
+                expected_ids.add(item.pk)
+        response = self.client.get(reverse("legal:kanban"))
+        columns = {column["code"]: column for column in response.context["columns"]}
+        self.assertEqual(list(columns), ["overdue", "todo", "doing", "done"])
+        displayed = [task.pk for column in columns.values() for task in column["tasks"]]
+        self.assertCountEqual(displayed, expected_ids)
+        self.assertEqual({task.status for task in columns["doing"]["tasks"]}, {"doing", "in_review", "blocked"})
+        self.assertEqual({task.status for task in columns["done"]["tasks"]}, {"done", "cancelled"})
+        self.assertEqual(columns["overdue"]["count"], 4)
+
+    def test_truncated_column_links_to_all_matching_tasks_with_filters_and_pagination(self):
+        Task.objects.bulk_create([Task(organization=self.org, matter=self.matter, title=f"Fila extensa {index}",
+            owner=self.owner, priority="urgent", due_date=timezone.localdate()) for index in range(105)])
+        filters = {"q": "Fila extensa", "owner": str(self.owner.pk), "priority": "urgent", "niche": "civil", "period": "week"}
+        response = self.client.get(reverse("legal:kanban"), filters)
+        column = next(column for column in response.context["columns"] if column["code"] == "todo")
+        self.assertEqual(column["count"], 105)
+        self.assertEqual(len(column["tasks"]), 100)
+        self.assertTrue(column["truncated"])
+        self.assertTrue(response.context["has_active_filters"])
+        listing = self.client.get(column["list_url"])
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(listing.context["page_obj"].paginator.count, 105)
+        self.assertTrue(listing.context["task_filter_form"].is_valid())
+        self.assertIn("board_group=todo", listing.context["pagination_query"])
+        last_page = self.client.get(column["list_url"] + "&page=5")
+        self.assertEqual(len(last_page.context["page_obj"]), 5)
+        self.assertNotContains(last_page, self.foreign_task.title)
+        for key in filters:
+            self.assertIn(key + "=", last_page.context["pagination_query"])
+
+    def test_task_filters_validate_owner_stage_and_group_without_leaking_results(self):
+        for url, filters in [
+            (reverse("legal:kanban"), {"owner": str(self.outsider.pk)}),
+            (reverse("legal:list", args=["tasks"]), {"owner": str(self.outsider.pk)}),
+            (reverse("legal:list", args=["tasks"]), {"board_group": "foreign"}),
+            (reverse("legal:list", args=["tasks"]), {"status": "foreign"}),
+        ]:
+            with self.subTest(url=url, filters=filters):
+                response = self.client.get(url, filters)
+                self.assertEqual(response.status_code, 400)
+                self.assertNotContains(response, self.task.title, status_code=400)
+                self.assertNotContains(response, self.foreign_task.title, status_code=400)
+        response = self.client.get(reverse("legal:kanban"), {"period": "week"})
+        self.assertTrue(response.context["has_active_filters"])
+        self.assertFalse(self.client.get(reverse("legal:kanban")).context["has_active_filters"])
+
+    def test_search_by_matter_title_matches_board_and_complete_column_listing(self):
+        Task.objects.bulk_create([Task(organization=self.org, matter=self.matter, title=f"Entrega vinculada {index}",
+            owner=self.owner, due_date=timezone.localdate()) for index in range(100)])
+        filters = {"q": self.matter.title, "niche": "civil", "owner": str(self.owner.pk)}
+        board = self.client.get(reverse("legal:kanban"), filters)
+        column = next(column for column in board.context["columns"] if column["code"] == "todo")
+        self.assertTrue(column["truncated"])
+        self.assertEqual(column["count"], 101)
+        self.assertEqual(len(column["tasks"]), 100)
+        listing = self.client.get(column["list_url"])
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(listing.context["page_obj"].paginator.count, column["count"])
+        self.assertIn(self.task, listing.context["page_obj"])
+        final_page = self.client.get(column["list_url"] + "&page=5")
+        self.assertEqual(len(final_page.context["page_obj"]), 1)
+        self.assertNotContains(final_page, self.private_task.title)
+        self.assertNotContains(final_page, self.foreign_task.title)
+
+    def test_task_modal_save_returns_json_and_invalid_fields_keep_html_errors(self):
+        url = reverse("legal:create", args=["tasks"])
+        data = {"title": "Cadastro por modal", "owner": self.owner.pk, "matter": self.matter.pk,
+                "due_date": timezone.localdate(), "priority": "high", "initial_status": "in_review"}
+        created = self.client.post(url, data, HTTP_ACCEPT="application/json")
+        self.assertEqual(created.status_code, 200)
+        task = Task.objects.get(pk=created.json()["id"])
+        self.assertEqual(created.json(), {"ok": True, "id": task.pk})
+        self.assertEqual(task.organization, self.org)
+        self.assertEqual(task.status, "in_review")
+        edited = self.client.post(reverse("legal:edit", args=["tasks", task.pk]), dict(data, title="Edição por modal"), HTTP_ACCEPT="application/json")
+        self.assertEqual(edited.json(), {"ok": True, "id": task.pk})
+        task.refresh_from_db()
+        self.assertEqual(task.title, "Edição por modal")
+        self.assertEqual(task.status, "in_review")
+        invalid = self.client.post(url, dict(data, title="", owner=self.outsider.pk), HTTP_ACCEPT="application/json")
+        self.assertEqual(invalid.status_code, 200)
+        self.assertIn("text/html", invalid.headers["Content-Type"])
+        self.assertIn("owner", invalid.context["form"].errors)
+        self.assertIn("title", invalid.context["form"].errors)
+        self.assertEqual(Task.objects.filter(title="Cadastro por modal").count(), 0)
+        self.assertEqual(self.client.post(reverse("legal:edit", args=["tasks", self.foreign_task.pk]), data, HTTP_ACCEPT="application/json").status_code, 404)
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.owner)
+        self.assertEqual(csrf_client.post(url, data, HTTP_ACCEPT="application/json").status_code, 403)
+        self.assertEqual(csrf_client.post(reverse("legal:edit", args=["tasks", task.pk]), data, HTTP_ACCEPT="application/json").status_code, 403)
+        self.client.force_login(self.viewer)
+        self.assertEqual(self.client.post(url, data, HTTP_ACCEPT="application/json").status_code, 403)
+        self.assertEqual(self.client.post(reverse("legal:edit", args=["tasks", task.pk]), data, HTTP_ACCEPT="application/json").status_code, 403)
+        task.refresh_from_db()
+        self.assertEqual(task.title, "Edição por modal")
+
+    def test_list_reactivation_uses_the_same_audited_service(self):
+        self.assertEqual(self.post_move("cancelled", "todo", "Solicitação suspensa pelo cliente.").status_code, 200)
+        url = reverse("legal:action", args=["tasks", self.task.pk, "reopen"])
+        self.assertEqual(self.client.post(url, {"reason": ""}).status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "cancelled")
+        self.assertEqual(self.client.post(url, {"reason": "Cliente confirmou a retomada."}).status_code, 302)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "todo")
+        self.assertTrue(AuditEvent.objects.filter(action="task.reopen", object_id=str(self.task.pk), description__contains="retomada").exists())
+
     def test_get_does_not_mutate_and_fallback_form_works(self):
         self.assertEqual(self.client.get(reverse("legal:kanban_move",args=[self.task.pk])).status_code,200)
         self.task.refresh_from_db();self.assertEqual(self.task.status,"todo")

@@ -17,7 +17,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import CharField, Q
 from django.db.models.functions import Cast
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -203,10 +203,10 @@ def record_actions(request, module, obj):
     if module == "tasks":
         if obj.status == Task.Status.TODO:
             names.append(("start", "Iniciar"))
-        if obj.status != Task.Status.DONE:
+        if obj.status not in {Task.Status.DONE, Task.Status.CANCELLED}:
             names.append(("complete", "Concluir"))
         else:
-            names.append(("reopen", "Reabrir"))
+            names.append(("reopen", "Reativar" if obj.status == Task.Status.CANCELLED else "Reabrir"))
     elif module == "deadlines":
         if obj.status == Deadline.Status.PENDING:
             names.append(("confirm", "Conferir"))
@@ -276,6 +276,13 @@ def record_list(request, module):
         from .case_directory import directory
         return directory(request)
     queryset = scoped_queryset(request.user, request.organization, config["model"])
+    task_filter_form = None
+    task_filters_valid = True
+    if module == "tasks":
+        from .task_filters import TaskListFilterForm, filter_tasks
+        task_filter_form = TaskListFilterForm(request.GET, request=request)
+        task_filters_valid = task_filter_form.is_valid()
+        queryset = filter_tasks(queryset, task_filter_form)
     relationship_form = None
     relationship_valid = True
     if module == "crm":
@@ -291,15 +298,16 @@ def record_list(request, module):
             queryset = queryset.order_by(*{"": ("-created_at", "-pk"), "oldest": ("created_at", "pk"), "amount": ("-amount", "pk"), "name": ("title", "pk")}[data["sort"]])
     from .niches import filter_niche, niche_selection
     niche, niche_choices = niche_selection(request)
-    if config["model"] is Matter:
-        queryset = filter_niche(queryset, niche, niche_choices)
-    elif "matter" in {field.name for field in config["model"]._meta.fields}:
-        queryset = filter_niche(queryset, niche, niche_choices, relation="matter__")
-    elif niche and module in {"contacts", "crm"}:
-        clients = filter_niche(visible_matters(request.user, request.organization), niche, niche_choices).values("client_id")
-        queryset = queryset.filter(**{"pk__in" if module == "contacts" else "contact_id__in": clients})
+    if module != "tasks":
+        if config["model"] is Matter:
+            queryset = filter_niche(queryset, niche, niche_choices)
+        elif "matter" in {field.name for field in config["model"]._meta.fields}:
+            queryset = filter_niche(queryset, niche, niche_choices, relation="matter__")
+        elif niche and module in {"contacts", "crm"}:
+            clients = filter_niche(visible_matters(request.user, request.organization), niche, niche_choices).values("client_id")
+            queryset = queryset.filter(**{"pk__in" if module == "contacts" else "contact_id__in": clients})
     q = request.GET.get("q", "").strip()[:200]
-    if q:
+    if q and module != "tasks":
         search = Q()
         for field in config["search"]:
             search |= Q(**{f"{field}__icontains": q})
@@ -317,7 +325,8 @@ def record_list(request, module):
     status_choices = list(config["model"]._meta.get_field(status_field).choices) if status_field else []
     status = request.GET.get("status", "")
     if status and status in dict(status_choices):
-        queryset = queryset.filter(**{status_field: status})
+        if module != "tasks":
+            queryset = queryset.filter(**{status_field: status})
     else:
         status = ""
     from .list_presenters import MODULE_PAGES, prepare_queryset, present_list
@@ -336,7 +345,14 @@ def record_list(request, module):
     query_params = request.GET.copy()
     query_params.pop("page", None)
     context.update(relationship_form=relationship_form, relationship_view=request.GET.get("view", ""), pagination_query=query_params.urlencode(), has_relationship_filters=module == "crm" and any(request.GET.get(key) for key in ["q", "status", "niche", "owner", "focus"]), invalid_relationship=not relationship_valid)
-    return render(request, "legal/list.html" if module in MODULE_PAGES else "legal/modules-generic.html", context, status=200 if relationship_valid else 400)
+    board_params = request.GET.copy()
+    for name in ["page", "status", "board_group"]:
+        board_params.pop(name, None)
+    context.update(task_filter_form=task_filter_form,
+                   has_task_filters=module == "tasks" and any(request.GET.get(key, "").strip() for key in task_filter_form.fields),
+                   invalid_task_filters=not task_filters_valid,
+                   board_return_url=reverse("legal:kanban") + ("?" + board_params.urlencode() if board_params else ""))
+    return render(request, "legal/list.html" if module in MODULE_PAGES else "legal/modules-generic.html", context, status=200 if relationship_valid and task_filters_valid else 400)
 
 
 def add_validation_errors(form, error):
@@ -432,6 +448,8 @@ def record_form(request, module, pk=None):
                     audit(organization=request.organization, actor=request.user, action="record.reassigned", obj=obj, description=f"Responsável alterado do usuário #{previous_owner_id} para o usuário #{obj.owner_id}.")
                 if isinstance(obj, Document) and not pk:
                     add_document_version(document=obj, actor=request.user, file=form.cleaned_data["file"])
+            if module == "tasks" and request.headers.get("Accept") == "application/json":
+                return JsonResponse({"ok": True, "id": obj.pk})
             messages.success(request, "Alterações salvas." if pk else "Registro criado.")
             if isinstance(obj, Matter):
                 return redirect("legal:detail", pk=obj.pk)
@@ -501,13 +519,11 @@ def record_action(request, module, pk, action):
                         obj = Task.objects.select_for_update().get(pk=obj.pk, organization=request.organization)
                         if action == "start" and obj.status != Task.Status.TODO:
                             raise ValidationError("Somente uma tarefa a fazer pode ser iniciada.")
-                        if action == "reopen" and obj.status != Task.Status.DONE:
-                            raise ValidationError("Somente uma tarefa concluída pode ser reaberta.")
-                        obj.status = Task.Status.DOING if action == "start" else Task.Status.TODO
-                        obj.completed_at = None
-                        obj.completion_note = ""
-                        obj.save()
-                        audit(organization=request.organization, actor=request.user, action=f"task.{action}", obj=obj, description=data["reason"])
+                        if action == "reopen" and obj.status not in {Task.Status.DONE, Task.Status.CANCELLED}:
+                            raise ValidationError("Somente uma tarefa finalizada pode ser reaberta.")
+                        from .services import move_task
+                        move_task(task=obj, actor=request.user, destination=Task.Status.DOING if action == "start" else Task.Status.TODO,
+                                  expected_status=obj.status, note=data["reason"])
                 elif module == "deadlines":
                     if action == "confirm":
                         confirm_deadline(deadline=obj, actor=request.user)

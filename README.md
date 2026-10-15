@@ -2,6 +2,10 @@
 
 Evolução do código existente no servidor, orientada pelo estudo de 07/10/2026. Monólito Django 5.2 LTS com interface responsiva em português, temas claro/escuro e identidade visual enviada pelo usuário.
 
+## Quadro de tarefas v18 — 15/10/2026
+
+Quadro adaptado diretamente do Navie Hospedagens: quatro colunas, cards com prioridade/responsável/data, arraste por mouse ou toque, cadastro e edição em janela e regras próprias para celular. As seis etapas reais da tarefa, as permissões e o histórico são preservados. A coluna Atrasadas é calculada pela data e não altera prazos ao mover cards. Consulte a [referência e regras do quadro](docs/quadro-navie.md) e as [evidências da v18](docs/implantacao-v18.md).
+
 ## Atualização v17 — 15/10/2026
 
 Cabeçalhos, cards, campos e rolagem adaptados das referências do Navie Hospedagens, com regras próprias para celular. Logos com remoção de fundos uniformes, prévia e contraste duotone. O superusuário pode conceder acesso gratuito e ilimitado por empresa em **Administração JUMBI → Plano e acesso**. Consulte a [auditoria v17](docs/auditoria-producao-v17.md) e as [evidências de implantação](docs/implantacao-v17.md).

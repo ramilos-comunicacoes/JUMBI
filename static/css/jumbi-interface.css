@@ -26,14 +26,6 @@
 .app-body.j-office-shell .board-filters-compact{background:var(--surface);border-color:var(--border-soft)}
 .app-body.j-office-shell .page-content :is(.directory-search-control,.search-field) input{padding-left:40px}
 .app-body.j-office-shell .sidebar .nav-link.is-active .icon{color:inherit}
-.app-body.j-office-shell .kanban-board{display:flex;flex-direction:row;max-width:100%;overflow-x:auto;gap:16px;padding-bottom:16px;overscroll-behavior-x:contain;align-items:flex-start}
-.app-body.j-office-shell .kanban-column{flex:0 0 300px;max-width:300px;background:var(--surface);border-color:var(--border-soft);box-shadow:0 4px 18px #0000000d}
-.app-body.j-office-shell .column-overdue{background:color-mix(in srgb,var(--danger) 7%,var(--surface))}
-.app-body.j-office-shell .kanban-cards{max-height:65dvh;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) transparent}
-.app-body.j-office-shell .kanban-card{background:var(--surface-soft);border-color:var(--border);box-shadow:0 2px 8px #0000000d}
-.app-body.j-office-shell .kanban-column-heading{border-color:var(--border-soft)}
-.app-body.j-office-shell .kanban-column-heading h2,.app-body.j-office-shell .kanban-card h3,.app-body.j-office-shell .kanban-card h3 a{color:var(--strong)}
-.app-body.j-office-shell .kanban-card h3 a:hover{color:var(--primary)}
 .app-body.j-office-shell .button{border-radius:11px;gap:8px;min-height:42px;line-height:1.4;white-space:normal;text-align:center}
 .app-body.j-office-shell .table-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;border-radius:12px}
 .app-body.j-office-shell .table-scroll thead{background:var(--surface-soft)}
@@ -54,10 +46,6 @@
  .app-body.j-office-shell .page-content :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=color]),select,textarea){min-height:48px;font-size:16px;border-radius:11px;padding-top:11px;padding-bottom:11px;box-shadow:none}
  .app-body.j-office-shell .page-content :is(input[type=checkbox],input[type=radio]){width:20px;height:20px;min-width:20px}
  .app-body.j-office-shell .button{min-height:46px;padding-top:11px;padding-bottom:11px}
- .app-body.j-office-shell .kanban-board{display:flex;flex-direction:row;max-width:100%;overflow-x:auto;scroll-snap-type:x proximity;overscroll-behavior-x:contain;padding-bottom:14px;gap:14px}
- .app-body.j-office-shell .kanban-column{scroll-snap-align:start;flex:0 0 min(82vw,320px);max-width:min(82vw,320px)}
- .app-body.j-office-shell .board-mobile-tabs{display:flex;overflow-x:auto;max-width:100%;gap:8px;padding-bottom:8px;scrollbar-width:thin}
- .app-body.j-office-shell .board-mobile-tabs a{flex:0 0 auto;gap:14px;white-space:nowrap;min-height:44px}
  .scroll-assist{margin:8px 0 12px;gap:6px}.scroll-assist button{height:44px;width:44px;flex-shrink:0}.scroll-assist span{font-size:11px;max-width:190px}
 }
 @media(prefers-reduced-motion:reduce){.app-body.j-office-shell *{scroll-behavior:auto!important;transition:none!important}}

@@ -119,17 +119,22 @@ def move_task(*, task, actor, destination, expected_status, note=""):
         raise ValidationError("Esta tarefa foi alterada por outra pessoa. Atualize o quadro antes de movê-la.")
     if task.status == destination:
         return task
+    previous = task.status
+    if destination == Task.Status.CANCELLED:
+        note = _required_text(note, "o motivo do cancelamento")
+    elif previous == Task.Status.CANCELLED:
+        note = _required_text(note, "o motivo da reativação")
+    elif previous == Task.Status.DONE:
+        note = _required_text(note, "o motivo da reabertura")
     if destination == Task.Status.DONE:
         return complete_task(task=task, actor=actor, evidence=note)
-    previous = task.status
-    if previous == Task.Status.DONE:
-        note = _required_text(note, "o motivo da reabertura")
     task.status = destination
     task.completed_at = None
     # Evidence of earlier completions remains in the immutable audit trail.
     task.completion_note = ""
     task.save(update_fields=["status", "completed_at", "completion_note"])
-    audit(organization=task.organization, actor=actor, action="task.reopen" if previous == Task.Status.DONE else "task.moved", obj=task,
+    action = "task.cancelled" if destination == Task.Status.CANCELLED else "task.reopen" if previous in {Task.Status.DONE, Task.Status.CANCELLED} else "task.moved"
+    audit(organization=task.organization, actor=actor, action=action, obj=task,
           description=f"{dict(Task.Status.choices)[previous]} → {task.get_status_display()}. {note.strip()}")
     return task
 
