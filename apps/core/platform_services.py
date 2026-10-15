@@ -35,15 +35,47 @@ def create_office(*, actor, data):
     Membership.objects.create(organization=organization, user=user, role="owner")
     subscription = OrganizationSubscription(
         organization=organization, plan=data["plan"], status=data["subscription_status"],
+        is_partner=data.get("is_partner") is True,
     )
+    if subscription.is_partner:
+        subscription.status = "active"
     subscription.full_clean()
     subscription.save()
-    SubscriptionEvent.objects.create(subscription=subscription, actor=actor, description="Escritório criado pela administração da plataforma. Situação de acesso definida manualmente; não representa baixa de pagamento.")
+    SubscriptionEvent.objects.create(subscription=subscription, actor=actor, description="Escritório criado pela administração da plataforma. " + ("Parceiro gratuito e ilimitado, com recursos do Max e sem vencimento." if subscription.is_partner else "Situação de acesso definida manualmente; não representa baixa de pagamento."))
     AuditLog.objects.create(organization=organization, actor=actor, action="platform.office_created", metadata={
         "owner_id": user.pk, "practice_areas": organization.practice_areas,
-        "plan": subscription.plan, "subscription_status": subscription.status,
+        "plan": subscription.plan, "subscription_status": subscription.status, "is_partner": subscription.is_partner,
     })
     return organization
+
+
+@transaction.atomic
+def configure_office_access(*, actor, office_id, data):
+    require_platform_admin(actor)
+    from apps.billing.services import validate_plan_change
+    office = Organization.objects.select_for_update().get(pk=office_id, business_type="office")
+    subscription = OrganizationSubscription.objects.filter(organization=office).first()
+    revision = subscription.updated_at.isoformat() if subscription else "new"
+    if data.get("revision") != revision:
+        raise ValidationError("O acesso foi alterado em outra sessão. Reabra esta página antes de salvar.")
+    subscription = subscription or OrganizationSubscription(organization=office)
+    before = {key: getattr(subscription, key) for key in ("plan", "status", "is_partner")}
+    subscription.is_partner = data.get("is_partner") is True
+    subscription.plan = data["plan"]
+    subscription.status = data["status"]
+    subscription.expires_at = data.get("expires_at")
+    if subscription.is_partner and subscription.status in {"pending", "demo"}:
+        subscription.status = "active"
+    subscription.requested_plan = ""
+    subscription.full_clean()
+    validate_plan_change(office, subscription.plan, is_partner=subscription.is_partner)
+    subscription.save()
+    condition = "Parceiro gratuito e ilimitado" if subscription.is_partner else f"Plano {subscription.limits['name']} — R$ {subscription.limits['price_label']}/mês"
+    SubscriptionEvent.objects.create(subscription=subscription, actor=actor, description=f"{condition}. Acesso: {subscription.get_status_display()}. Validade: {subscription.expires_at or 'sem vencimento'}. {data.get('note', '').strip()} Não registra cobrança nem pagamento.")
+    AuditLog.objects.create(organization=office, actor=actor, action="platform.office_access_changed", metadata={
+        "before": before, "after": {key: getattr(subscription, key) for key in before},
+    })
+    return subscription
 
 
 @transaction.atomic

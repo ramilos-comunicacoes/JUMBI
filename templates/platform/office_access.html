@@ -1,0 +1,19 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}"><link rel="stylesheet" href="{% static 'css/jumbi-partners.css' %}">{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'core:platform' %}">← Voltar à plataforma</a>
+<div class="page-heading"><div><span class="eyebrow">CONTROLE DO SUPERUSUÁRIO</span><h1>Plano e acesso</h1><p>{{ office.name }} · As alterações valem somente para esta empresa.</p></div><a class="button button-secondary" href="{% url 'platform:office_configure' office.pk %}">Dados e nichos</a></div>
+<div class="partner-layout">
+<section class="panel partner-editor"><h2>Condições da empresa</h2>
+<form method="post" class="record-form">{% csrf_token %}{{ form.revision }}
+{% if form.errors %}<div class="alert alert-error" role="alert">{{ form.non_field_errors }}{% for field in form %}{% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}{% endfor %}</div>{% endif %}
+<label class="partner-toggle" for="{{ form.is_partner.id_for_label }}">{{ form.is_partner }}<span><strong>Parceiro — gratuito e ilimitado</strong><small>Recursos do Max, R$ 0,00 e sem vencimento. Sem limite comercial de usuários, pastas ou versões de documentos.</small></span></label>
+<div class="form-grid">{% for field in form %}{% if not field.is_hidden and field.name != 'is_partner' %}<div class="form-field {% if field.name == 'note' %}field-full{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}</div>{% endif %}{% endfor %}</div>
+<p class="field-help">Ao marcar parceiro, o plano será Max e a validade ficará sem vencimento. Escolher “Suspenso” bloqueia a operação mesmo para parceiros. Ao retirar a gratuidade, o sistema verifica os limites do plano escolhido e preserva os registros existentes.</p>
+<div class="form-actions"><button type="submit" class="button button-primary">Salvar condições de acesso</button></div>
+</form></section>
+<aside><section class="panel partner-summary"><span class="section-kicker">CONDIÇÃO ATUAL</span><h2>{% if subscription.is_partner %}Parceiro ilimitado{% elif subscription %}{{ subscription.limits.name }}{% else %}Sem assinatura{% endif %}</h2><strong class="partner-price">{% if subscription.is_partner %}Gratuito{% elif subscription %}R$ {{ subscription.limits.price_label }}<small>/mês</small>{% else %}A definir{% endif %}</strong><p>{% if subscription %}{{ subscription.get_status_display }}{% else %}Aguardando configuração{% endif %}</p><dl><div><dt>Usuários ativos</dt><dd>{{ usage.members }}</dd></div><div><dt>Pastas ativas</dt><dd>{{ usage.matters }}</dd></div><div><dt>Versões de documentos</dt><dd>{{ usage.versions }}</dd></div></dl><p class="field-help">A gratuidade não muda permissões, acesso a pastas sigilosas nem limites técnicos por arquivo. Integrações externas continuam dependendo de disponibilidade e habilitação.</p>{% if office.status != 'active' %}<div class="alert">Esta empresa está {{ office.get_status_display|lower }}. Reative seu cadastro na administração para permitir o acesso.</div>{% endif %}</section></aside>
+</div>
+<section class="panel partner-history"><h2>Histórico das condições</h2><p>Últimas dez alterações, com responsável e data.</p><ol>{% for event in events %}<li><div><strong>{{ event.actor.get_full_name|default:event.actor.email|default:'Administração' }}</strong><time>{{ event.created_at|date:'d/m/Y H:i' }}</time></div><p>{{ event.description }}</p></li>{% empty %}<li>Nenhuma alteração registrada.</li>{% endfor %}</ol></section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/jumbi-partners.js' %}" defer></script>{% endblock %}

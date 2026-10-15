@@ -46,6 +46,9 @@ def endpoint(methods):
                 with transaction.atomic():
                     from apps.core.models import Organization
                     Organization.objects.select_for_update().get(pk=request.organization.pk)
+                    # Recheck after waiting for the office lock: a platform
+                    # administrator may have suspended access in the meantime.
+                    require_integration_manager(request.user, request.organization)
                     command, _ = ApiRequest.objects.get_or_create(organization=request.organization, key_hash=digest, defaults={"payload_hash": payload})
                     command = ApiRequest.objects.select_for_update().get(pk=command.pk)
                     if command.payload_hash != payload:

@@ -20,6 +20,18 @@ from .triage_services import confirm_communication
 
 
 class ProductionAuditTests(TestCase):
+    def test_suspended_or_expired_subscription_cannot_use_integration_ui_or_api(self):
+        subscription = OrganizationSubscription.objects.get(organization=self.org)
+        for changes in [{"status": "suspended"}, {"status": "active", "expires_at": timezone.now() - timedelta(days=1)}]:
+            OrganizationSubscription.objects.filter(pk=subscription.pk).update(**changes)
+            for route in ["integrations:connectors", "integrations:triage", "integrations:api_accounts", "integrations:api_communications"]:
+                with self.subTest(changes=changes, route=route):
+                    response = self.client.get(reverse(route))
+                    self.assertEqual(response.status_code, 403)
+            response = self.command("integrations:api_accounts", {"provider_code": "djen", "label": "Acesso suspenso"}, key="suspended")
+            self.assertEqual(response.status_code, 403)
+            self.assertFalse(IntegrationAccount.objects.filter(label="Acesso suspenso").exists())
+
     def setUp(self):
         self.org = Organization.objects.create(name="Audit", slug="audit", business_type="office")
         self.user = User.objects.create_user(email="manager@example.test", password="ExampleTest123!")

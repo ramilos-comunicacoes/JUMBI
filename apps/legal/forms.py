@@ -144,6 +144,10 @@ class TaskForm(OrganizationModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["owner"].required = True
+        if not self.instance.pk:
+            self.fields["initial_status"] = forms.ChoiceField(label="Etapa inicial", required=False,
+                choices=[(code, label) for code, label in Task.Status.choices if code not in {"done", "cancelled"}],
+                initial="todo", help_text="Conclusões e cancelamentos são registrados depois, no quadro de tarefas.")
 
 
 class DeadlineForm(OrganizationModelForm):

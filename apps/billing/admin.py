@@ -14,15 +14,15 @@ class SubscriptionForm(forms.ModelForm):
     def clean(self):
         data = super().clean()
         if data.get("organization") and data.get("plan"):
-            validate_plan_change(data["organization"], data["plan"])
+            validate_plan_change(data["organization"], data["plan"], is_partner=data.get("is_partner", False))
         return data
 
 
 @admin.register(OrganizationSubscription)
 class SubscriptionAdmin(admin.ModelAdmin):
     form = SubscriptionForm
-    list_display = ("organization", "plan", "status", "requested_plan", "expires_at")
-    list_filter = ("plan", "status", "requested_plan")
+    list_display = ("organization", "plan", "is_partner", "status", "requested_plan", "expires_at")
+    list_filter = ("is_partner", "plan", "status", "requested_plan")
     search_fields = ("organization__name", "organization__contact_email")
     readonly_fields = ("created_at", "updated_at")
 
@@ -52,9 +52,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         with transaction.atomic():
             Organization.objects.select_for_update().get(pk=obj.organization_id)
-            validate_plan_change(obj.organization, obj.plan)
+            validate_plan_change(obj.organization, obj.plan, is_partner=obj.is_partner)
             super().save_model(request, obj, form, change)
-            SubscriptionEvent.objects.create(subscription=obj, actor=request.user, description=f"Administração definiu plano={obj.plan}, situação={obj.status}, validade={obj.expires_at or 'manual'}. Alterações: {', '.join(form.changed_data)}. Não é comprovante de pagamento.")
+            SubscriptionEvent.objects.create(subscription=obj, actor=request.user, description=f"Administração definiu plano={obj.plan}, parceiro gratuito e ilimitado={obj.is_partner}, situação={obj.status}, validade={obj.expires_at or 'manual'}. Alterações: {', '.join(form.changed_data)}. Não é comprovante de pagamento.")
 
 
 @admin.register(SubscriptionEvent)

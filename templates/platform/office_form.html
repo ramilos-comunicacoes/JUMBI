@@ -14,3 +14,4 @@
 </form></section></div>
 </div>
 {% endblock %}
+{% block extra_js %}{% if creating %}<script src="{% static 'js/jumbi-partners.js' %}" defer></script>{% endif %}{% endblock %}

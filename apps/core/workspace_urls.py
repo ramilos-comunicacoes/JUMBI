@@ -2,6 +2,7 @@ from django.urls import path
 from django.views.generic import RedirectView
 from . import workspace_views as views
 from .platform_views import platform_dashboard
+from .brand_views import preview as brand_preview
 
 app_name = "core"
 urlpatterns = [
@@ -20,4 +21,5 @@ urlpatterns = [
     path("organizacao/selecionar/", views.switch_organization, name="switch_organization"),
     path("auditoria/", views.audit_trail, name="audit"),
     path("personalizacao/", views.customization, name="customization"),
+    path("personalizacao/previa-logo/", brand_preview, name="brand_preview"),
 ]

@@ -11,3 +11,9 @@ PLANS = {
     },
 }
 PLAN_CHOICES = [(key, f'{value["name"]} — R$ {value["price_label"]}/mês') for key, value in PLANS.items()]
+
+# Administrative concession, deliberately absent from the public plan catalog.
+PARTNER_LIMITS = {
+    "name": "Parceiro", "price": Decimal("0.00"), "price_label": "0,00",
+    "members": None, "matters": None, "versions": None, "advanced": True,
+}

@@ -103,7 +103,7 @@ class OrganizationBrandingForm(forms.ModelForm):
         }
         help_texts = {
             "system_title": "Exibido no topo da barra, nos títulos das páginas e nas notificações.",
-            "brand_logo": "Logo principal com barra lateral expandida. PNG, JPG ou WebP (máx. 2 MB).",
+            "brand_logo": "PNG, JPG ou WebP, até 2 MB. Fundos uniformes são removidos automaticamente; imagens transparentes são preservadas. O duotone ajusta as cores quando faltar contraste.",
             "brand_favicon": "Favicon da aba do navegador E logo da barra lateral contraída (padrão). Máx. 2 MB.",
             "brand_collapsed_logo": "Opcional: ícone alternativo para o menu recolhido (se não preenchido, usa o favicon).",
             "glassmorphism_intensity": "Estilo visual de transparência e desfoque moderno dos cartões e painéis.",

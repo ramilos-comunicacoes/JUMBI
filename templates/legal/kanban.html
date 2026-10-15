@@ -77,6 +77,7 @@
           {% elif column.code == 'in_review' %}Em conferência e revisão
           {% elif column.code == 'blocked' %}Aguardando resposta externa
           {% elif column.code == 'done' %}Concluídas com evidência
+          {% elif column.code == 'cancelled' %}Encerradas sem execução · histórico preservado
           {% else %}Vencimento passado · prioridade{% endif %}
         </p>
 
@@ -117,7 +118,7 @@
           {% endfor %}
         </div>
 
-        {% if can_edit and column.code != 'overdue' %}
+        {% if can_edit and column.code != 'overdue' and column.code != 'done' and column.code != 'cancelled' %}
           <div class="kanban-column-footer">
             <a class="button-add-card" href="{% url 'legal:create' 'tasks' %}?status={{ column.code }}">
               <svg class="icon"><use href="#i-plus"/></svg> Adicionar tarefa

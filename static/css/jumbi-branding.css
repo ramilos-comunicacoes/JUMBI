@@ -1,0 +1,5 @@
+/* The artwork, rather than a fixed dark tile, determines the visible shape. */
+.app-body .sidebar-brand>a,.sidebar-collapsed .sidebar-brand>a,.portal-client .portal-header>a,.brand-preview .preview-icon{background:transparent!important;box-shadow:none!important;border-color:transparent!important}
+[data-adaptive-logo],.brand-preview .preview-menu>img{background:transparent!important}
+[data-adaptive-logo][data-brand-treatment=duotone]{filter:none!important}
+.brand-preview-feedback{font-size:12px;line-height:1.6;color:var(--muted);overflow-wrap:anywhere}.brand-preview-feedback[data-error=true]{color:var(--danger,#e87777)}

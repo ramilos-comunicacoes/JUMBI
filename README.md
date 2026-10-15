@@ -2,7 +2,11 @@
 
 Evolução do código existente no servidor, orientada pelo estudo de 07/10/2026. Monólito Django 5.2 LTS com interface responsiva em português, temas claro/escuro e identidade visual enviada pelo usuário.
 
-## Atualização v16 — 15/10/2026
+## Atualização v17 — 15/10/2026
+
+Cabeçalhos, cards, campos e rolagem adaptados das referências do Navie Hospedagens, com regras próprias para celular. Logos com remoção de fundos uniformes, prévia e contraste duotone. O superusuário pode conceder acesso gratuito e ilimitado por empresa em **Administração JUMBI → Plano e acesso**. Consulte a [auditoria v17](docs/auditoria-producao-v17.md) e as [evidências de implantação](docs/implantacao-v17.md).
+
+## Personalização e auditoria v16
 
 Personalização por escritório de marca, tema, menu, dashboard, agenda e mensagens, com prévia e seções recolhíveis no celular. Correções de isolamento, credenciais, triagem e prazos nas atualizações v9–v15. Consulte o [relatório de auditoria v16](docs/auditoria-producao-v16.md) para o escopo verificado e as limitações reais dos conectores. A pesquisa manual no DJEN consulta a fonte; os demais conectores não anunciam operação antes da homologação.
 

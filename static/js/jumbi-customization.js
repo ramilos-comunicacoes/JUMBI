@@ -14,9 +14,35 @@
     control?.addEventListener('input',()=> {preview.style.setProperty('--office-'+variable,control.value); if(variable!=='accent') preview.style.setProperty('--office-'+variable+'-ink',ink(control.value));});
   }
   form.elements.system_title?.addEventListener('input',e=>{document.querySelector('[data-preview-title]').textContent=e.target.value||'JUMBI';});
+  const previewRequests = new Map();
   for (const [name,selector] of [['brand_logo','[data-preview-logo]'],['brand_collapsed_logo','[data-preview-icon]'],['brand_favicon','[data-preview-icon]']]) {
     let previous;
-    form.elements[name]?.addEventListener('change',e=>{const file=e.target.files?.[0]; if(!file || file.size>2*1024*1024 || !/^image\/(png|jpeg|webp|x-icon|vnd.microsoft.icon)$/.test(file.type)) return; if(previous) URL.revokeObjectURL(previous);previous=URL.createObjectURL(file);document.querySelector(selector).src=previous;});
+    const control = form.elements[name];
+    const feedback = document.createElement('p');
+    feedback.className = 'brand-preview-feedback'; feedback.setAttribute('role', 'status');
+    control?.after(feedback);
+    control?.addEventListener('change', async e => {
+      const file = e.target.files?.[0];
+      previewRequests.get(selector)?.abort();
+      if (!file) {feedback.textContent = ''; return;}
+      if (file.size > 2*1024*1024) {feedback.textContent='Use uma imagem de até 2 MB.'; feedback.dataset.error='true'; return;}
+      const controller = new AbortController(); previewRequests.set(selector, controller);
+      feedback.textContent='Preparando a logo sem fundo…'; feedback.dataset.error='false';
+      const data = new FormData(); data.append('image', file);
+      data.append('csrfmiddlewaretoken', form.elements.csrfmiddlewaretoken.value);
+      try {
+        const response = await fetch(form.dataset.brandPreviewUrl, {method:'POST', body:data, credentials:'same-origin', signal:controller.signal});
+        if (!response.ok) {const error = await response.json(); throw new Error(error.error || 'Não foi possível preparar a prévia.');}
+        const blob = await response.blob();
+        if (blob.type !== 'image/png') throw new Error('Sua sessão expirou. Entre novamente para preparar a logo.');
+        if (previous) URL.revokeObjectURL(previous);
+        previous = URL.createObjectURL(blob); document.querySelector(selector).src=previous;
+        feedback.textContent='Logo preparada sem fundo. O contraste se adapta à cor do menu. Salve para aplicar.';
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        feedback.textContent=error.message || 'Não foi possível preparar a prévia.'; feedback.dataset.error='true';
+      }
+    });
   }
   document.querySelectorAll('[data-order]').forEach(button=>button.addEventListener('click',()=>{
     const row=button.closest('li'), neighbor=button.dataset.order==='up'?row.previousElementSibling:row.nextElementSibling;

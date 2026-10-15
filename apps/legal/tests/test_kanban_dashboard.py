@@ -36,6 +36,20 @@ class KanbanDashboardTests(TestCase):
     def post_move(self, target, current, note=""):
         return self.client.post(reverse("legal:kanban_move",args=[self.task.pk]),{"destination":target,"expected_status":current,"note":note},HTTP_ACCEPT="application/json")
 
+    def test_create_from_column_uses_initial_stage_without_bypassing_completion(self):
+        url = reverse("legal:create", args=["tasks"])
+        response = self.client.get(url + "?status=doing")
+        self.assertEqual(response.context["form"]["initial_status"].value(), "doing")
+        data = {"title": "Cadastro na etapa", "owner": self.owner.pk, "due_date": timezone.localdate(), "priority": "normal", "initial_status": "doing"}
+        self.assertEqual(self.client.post(url, data).status_code, 302)
+        task = Task.objects.get(title="Cadastro na etapa")
+        self.assertEqual(task.status, "doing")
+        self.assertTrue(AuditEvent.objects.filter(action="task.moved", object_id=str(task.pk)).exists())
+        response = self.client.post(url, dict(data, title="Conclusão indevida", initial_status="done"))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Task.objects.filter(title="Conclusão indevida").exists())
+        self.assertNotIn("initial_status", self.client.get(reverse("legal:edit", args=["tasks", task.pk])).context["form"].fields)
+
     def test_move_completion_reopening_and_deadline_independence(self):
         self.assertEqual(self.post_move("doing","todo").status_code,200)
         self.assertEqual(self.post_move("done","doing").status_code,400)

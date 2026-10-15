@@ -2,6 +2,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from apps.core.models import Membership
 from apps.legal.services import visible_matters
+from apps.billing.services import require_access
 from .models import CourtCommunication
 
 
@@ -9,6 +10,7 @@ def require_integration_manager(user, organization):
     if not organization or not Membership.objects.filter(user=user, user__is_active=True, organization=organization,
             organization__status="active", organization__business_type="office", is_active=True, role__in=["owner", "manager"]).exists():
         raise PermissionDenied("Integrações são administradas pela direção e gestão do escritório.")
+    require_access(organization)
 
 
 def visible_communications(user, organization):

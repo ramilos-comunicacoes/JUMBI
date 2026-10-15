@@ -57,6 +57,9 @@ def subscription(request):
             with transaction.atomic():
                 Organization.objects.select_for_update().get(pk=org.pk)
                 current, _ = OrganizationSubscription.objects.get_or_create(organization=org)
+                if current.is_partner:
+                    messages.info(request, "Seu escritório já tem acesso de parceiro gratuito e ilimitado. Alterações nessa condição são feitas pelo superusuário.")
+                    return redirect("billing:subscription")
                 current.requested_plan = form.cleaned_data["plan"]
                 current.save(update_fields=["requested_plan", "updated_at"])
                 SubscriptionEvent.objects.create(subscription=current, actor=request.user, description=f"Solicitada contratação/alteração para {current.requested_plan}. Não representa pagamento nem liberação automática.")

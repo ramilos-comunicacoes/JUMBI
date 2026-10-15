@@ -374,6 +374,8 @@ def record_form(request, module, pk=None):
             raise Http404("Registro não encontrado.")
     previous_due_date = instance.due_date if isinstance(instance, Deadline) else None
     initial = {"owner": request.user.pk}
+    if module == "tasks" and not pk and request.GET.get("status") in {"todo", "doing", "in_review", "blocked"}:
+        initial["initial_status"] = request.GET["status"]
     if request.GET.get("matter"):
         try:
             matter_id = int(request.GET["matter"])
@@ -421,6 +423,10 @@ def record_form(request, module, pk=None):
                 else:
                     obj.save()
                 form.save_m2m()
+                if isinstance(obj, Task) and not pk and form.cleaned_data.get("initial_status") not in {None, "", "todo"}:
+                    from .services import move_task
+                    obj = move_task(task=obj, actor=request.user, destination=form.cleaned_data["initial_status"],
+                        expected_status="todo", note="Etapa escolhida no cadastro da tarefa.")
                 audit(organization=request.organization, actor=request.user, action="record.updated" if pk else "record.created", obj=obj, description=f"{'Atualização' if pk else 'Cadastro'} de {config['singular']}.")
                 if pk and previous_owner_id is not None and previous_owner_id != getattr(obj, "owner_id", None):
                     audit(organization=request.organization, actor=request.user, action="record.reassigned", obj=obj, description=f"Responsável alterado do usuário #{previous_owner_id} para o usuário #{obj.owner_id}.")

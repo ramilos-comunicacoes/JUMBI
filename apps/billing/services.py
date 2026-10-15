@@ -45,6 +45,9 @@ def check_capacity(organization, resource, *, instance=None, user=None):
         return
     Organization.objects.select_for_update().get(pk=organization.pk)
     subscription = require_access(organization)
+    limit = subscription.limits[resource]
+    if limit is None:
+        return
     from apps.legal.models import Matter, DocumentVersion
     if resource == "members":
         if user and Membership.objects.filter(organization=organization, user=user, is_active=True, user__is_active=True).exists():
@@ -58,12 +61,16 @@ def check_capacity(organization, resource, *, instance=None, user=None):
         count = Matter.objects.filter(organization=organization).exclude(status="closed").count()
     else:
         count = DocumentVersion.objects.filter(organization=organization).count()
-    if count >= subscription.limits[resource]:
+    if count >= limit:
         labels = {"members": "usuários ativos", "matters": "pastas ativas", "versions": "versões de documentos"}
         raise ValidationError(f"Limite do plano {subscription.limits['name']}: {subscription.limits[resource]} {labels[resource]}. Consulte sua assinatura.")
 
 
-def validate_plan_change(organization, plan):
+def validate_plan_change(organization, plan, *, is_partner=False):
+    if plan not in PLANS:
+        raise ValidationError("Escolha um plano válido.")
+    if is_partner:
+        return
     current = usage(organization)
     for resource, count in current.items():
         if count > PLANS[plan][resource]:

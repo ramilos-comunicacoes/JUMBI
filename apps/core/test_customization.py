@@ -1,7 +1,7 @@
 import io
 import tempfile
 from copy import deepcopy
-from PIL import Image
+from PIL import Image, ImageDraw
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -72,7 +72,8 @@ class CustomizationTests(TestCase):
             self.assertIn("brand_logo", form.errors)
 
     def test_valid_image_normalized(self):
-        out = io.BytesIO(); Image.new("RGB", (20,20), "red").save(out, "JPEG")
+        out = io.BytesIO(); logo = Image.new("RGB", (40,40), "white")
+        ImageDraw.Draw(logo).rectangle((10,10,30,30), fill="red"); logo.save(out, "JPEG")
         with tempfile.TemporaryDirectory() as media, override_settings(MEDIA_ROOT=media):
             form = WorkspaceCustomizationForm(self.data(), {"brand_logo": SimpleUploadedFile("logo.jpg", out.getvalue(), content_type="image/jpeg")}, instance=self.org)
             self.assertTrue(form.is_valid(), form.errors)
