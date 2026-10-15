@@ -1,0 +1,433 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block title %}Direito Previdenciário & INSS · {{ organization.system_title|default:"JUMBI" }}{% endblock %}
+{% block extra_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}">
+<style>
+.niche-grid-hero { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+@media (max-width: 980px) { .niche-grid-hero { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 540px) { .niche-grid-hero { grid-template-columns: 1fr; } }
+.niche-stat-box { background: rgba(24, 24, 28, 0.72); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 18px 20px; display: grid; gap: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+.niche-stat-box .stat-val { font-size: 28px; font-weight: 700; color: #fff; line-height: 1.1; }
+.niche-stat-box .stat-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.niche-two-col { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(340px, 1fr); gap: 24px; align-items: start; margin-bottom: 24px; }
+@media (max-width: 1080px) { .niche-two-col { grid-template-columns: 1fr; } }
+.calc-card { background: rgba(20, 20, 26, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(245, 160, 0, 0.25); border-radius: 18px; padding: 22px; box-shadow: 0 12px 36px rgba(0,0,0,0.35); }
+.calc-card h2 { font-size: 16px; font-weight: 700; margin: 0 0 6px; display: flex; align-items: center; gap: 10px; color: #fff; }
+.calc-card p.calc-desc { font-size: 12px; color: var(--muted); margin: 0 0 16px; }
+.calc-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+@media (max-width: 500px) { .calc-field-row { grid-template-columns: 1fr; } }
+.calc-input-group label { display: grid; gap: 4px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.calc-input-group input, .calc-input-group select { width: 100%; min-height: 38px; background: rgba(14, 14, 18, 0.85); border: 1px solid var(--border-soft); border-radius: 10px; padding: 6px 12px; color: #fff; font-size: 12px; }
+.calc-results-panel { background: rgba(10, 10, 14, 0.8); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 16px; margin-top: 16px; display: grid; gap: 10px; }
+.rule-card { padding: 10px 14px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rule-card.rule-eligible { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); }
+.rule-card.rule-pending { background: rgba(245, 160, 0, 0.08); border-color: rgba(245, 160, 0, 0.25); }
+.rule-title { font-size: 12px; font-weight: 600; color: #fff; }
+.rule-status { font-size: 11px; font-weight: 700; }
+.status-eligible { color: #10b981; }
+.status-pending { color: #f5a000; }
+.template-piece-card { background: rgba(24, 24, 28, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 14px; transition: border-color 150ms ease; }
+.template-piece-card:hover { border-color: rgba(245, 160, 0, 0.35); }
+.piece-info h3 { font-size: 13px; font-weight: 600; margin: 0 0 3px; color: #fff; }
+.piece-info p { font-size: 11px; color: var(--muted); margin: 0; }
+.copy-pill-btn { min-height: 32px; padding: 4px 12px; font-size: 11px; font-weight: 600; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 150ms ease; }
+.copy-pill-btn:hover { background: var(--amber-soft); color: var(--primary); border-color: var(--amber-border); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-workspace">
+  <!-- Clean Header with Direct Action -->
+  <div class="page-heading" style="margin-bottom: 20px;">
+    <div>
+      <h1 style="font-size: 22px; font-weight: 700; margin: 0; display:flex; align-items:center; gap:10px;">
+        <svg class="icon" style="width:24px;height:24px;color:var(--primary);"><use href="#i-demands"/></svg>
+        Direito Previdenciário & INSS
+      </h1>
+      <p style="margin: 4px 0 0; font-size: 12px; color: var(--muted);">Gestão avançada de requerimentos administrativos, monitoramento de 30 dias para cumprimento de exigências e calculadora de transição da EC 103/2019.</p>
+    </div>
+    <div class="heading-actions">
+      {% if can_edit %}
+        <a class="button button-primary" href="{% url 'legal:create' 'demands' %}" style="min-height:38px;padding:6px 14px;font-size:12px;">
+          <svg class="icon"><use href="#i-plus"/></svg> Novo Requerimento INSS
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Metric Badges -->
+  <div class="niche-grid-hero">
+    <div class="niche-stat-box">
+      <span class="stat-lbl">Requerimentos Ativos</span>
+      <span class="stat-val" style="color:var(--primary);">{{ active_count }}</span>
+      <span class="small muted">Em análise ou trâmite</span>
+    </div>
+    <div class="niche-stat-box" style="border-color: rgba(239, 68, 68, 0.3);">
+      <span class="stat-lbl">Em Exigência (30 Dias)</span>
+      <span class="stat-val" style="color:#ef4444;">{{ requirement_count }}</span>
+      <span class="small muted">Atenção com risco de cancelamento</span>
+    </div>
+    <div class="niche-stat-box">
+      <span class="stat-lbl">Concluídos / Concedidos</span>
+      <span class="stat-val" style="color:#10b981;">{{ concluded_count }}</span>
+      <span class="small muted">Benefícios deferidos</span>
+    </div>
+    <div class="niche-stat-box">
+      <span class="stat-lbl">Indeferidos / Judicializáveis</span>
+      <span class="stat-val" style="color:#a1a1aa;">{{ rejected_count }}</span>
+      <span class="small muted">Prontos para ação judicial</span>
+    </div>
+  </div>
+
+  <div class="niche-two-col">
+    <!-- Left Column: Requerimentos & Exigências Críticas -->
+    <div>
+      <!-- 30-Day Exigência Monitoring Box -->
+      {% if demands_with_deadlines %}
+        <section class="form-section-card" style="border-color: rgba(239,68,68,0.35); background: rgba(35, 18, 22, 0.7); margin-bottom: 20px;">
+          <h2 style="color:#ef4444;"><svg class="icon" style="width:18px;height:18px;"><use href="#i-clock"/></svg> Contagem Regressiva de Exigências INSS</h2>
+          <p class="section-sub">O INSS concede 30 dias para apresentação de documentação complementar. Não cumprir gera encerramento e perda da DER.</p>
+          <div style="display:grid;gap:10px;">
+            {% for item in demands_with_deadlines %}
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(20,20,26,0.8);border:1px solid rgba(255,255,255,0.08);">
+                <div>
+                  <strong style="font-size:13px;color:#fff;display:block;">{{ item.demand.service_name }} · Prot: {{ item.demand.protocol_number }}</strong>
+                  <span class="small muted">Segurado(a): {{ item.demand.contact.name }} · Pasta: {{ item.demand.matter.title }}</span>
+                </div>
+                <div style="text-align:right;">
+                  <span class="badge {% if item.days_left < 0 %}badge-danger{% elif item.days_left <= 7 %}badge-urgent{% else %}badge-attention{% endif %}" style="font-size:11px;font-weight:700;">
+                    {% if item.days_left < 0 %}Venceu há {{ item.days_left|stringformat:"d"|slice:"1:" }} dias{% elif item.days_left == 0 %}Vence HOJE!{% else %}Faltam {{ item.days_left }} dias{% endif %}
+                  </span>
+                  <span class="small muted" style="display:block;margin-top:2px;">Limite: {{ item.deadline_date|date:"d/m/Y" }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+
+      <!-- Tabela de Requerimentos Recentes -->
+      <section class="form-section-card">
+        <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-folder"/></svg> Protocolos e Requerimentos Recentes</h2>
+        <p class="section-sub">Acompanhamento contínuo dos protocolos Meu INSS / SAG Gestão.</p>
+        <div class="table-scroll">
+          <table class="table-records">
+            <thead>
+              <tr>
+                <th>Protocolo / Benefício</th>
+                <th>Segurado</th>
+                <th>Situação</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in demands %}
+                <tr>
+                  <td>
+                    <strong>{{ d.protocol_number }}</strong>
+                    <span class="small muted" style="display:block;">{{ d.service_name }}</span>
+                  </td>
+                  <td>{{ d.contact.name }}</td>
+                  <td>
+                    <span class="badge badge-{{ d.status }}">{{ d.get_status_display }}</span>
+                  </td>
+                  <td>
+                    <a href="{% url 'legal:detail' d.matter_id %}" class="text-link" style="font-size:12px;">Ver Pasta</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center muted" style="padding:24px;">Nenhum requerimento administrativo cadastrado ainda.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Modelos Prontos de Peças Previdenciárias -->
+      <section class="form-section-card">
+        <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-documents"/></svg> Modelos Rápidos de Petições Previdenciárias</h2>
+        <p class="section-sub">Peças completas com fundamentação atualizada para uso imediato pelo escritório.</p>
+
+        <div class="template-piece-card">
+          <div class="piece-info">
+            <h3>Mandado de Segurança por Excesso de Prazo do INSS</h3>
+            <p>Demora injustificada na análise (+45 dias da Lei 9.784/99 ou Acordo STF RE 1.171.152).</p>
+          </div>
+          <button type="button" class="copy-pill-btn" onclick="copyTemplate('ms_inss')">
+            <svg class="icon" style="width:14px;height:14px;"><use href="#i-file"/></svg> Copiar Minuta
+          </button>
+        </div>
+
+        <div class="template-piece-card">
+          <div class="piece-info">
+            <h3>Petição Inicial: BPC/LOAS (Deficiente ou Idoso)</h3>
+            <p>Requisito etário/médico c/c critério de vulnerabilidade socioeconômica e laudo pericial.</p>
+          </div>
+          <button type="button" class="copy-pill-btn" onclick="copyTemplate('bpc_loas')">
+            <svg class="icon" style="width:14px;height:14px;"><use href="#i-file"/></svg> Copiar Minuta
+          </button>
+        </div>
+
+        <div class="template-piece-card">
+          <div class="piece-info">
+            <h3>Restabelecimento de Auxílio-Incapacidade c/c Aposentadoria</h3>
+            <p>Cessação indevida de benefício por incapacidade temporária (alta programada pelo INSS).</p>
+          </div>
+          <button type="button" class="copy-pill-btn" onclick="copyTemplate('incapacidade')">
+            <svg class="icon" style="width:14px;height:14px;"><use href="#i-file"/></svg> Copiar Minuta
+          </button>
+        </div>
+
+        <div class="template-piece-card">
+          <div class="piece-info">
+            <h3>Recurso Ordinário à Junta de Recursos (CRPS)</h3>
+            <p>Impugnação administrativa de indeferimento de aposentadoria ou pensão por morte.</p>
+          </div>
+          <button type="button" class="copy-pill-btn" onclick="copyTemplate('crps')">
+            <svg class="icon" style="width:14px;height:14px;"><use href="#i-file"/></svg> Copiar Minuta
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Column: Calculadora Interativa EC 103/2019 -->
+    <aside>
+      <div class="calc-card">
+        <h2>
+          <svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-target"/></svg>
+          Calculadora EC 103/2019
+        </h2>
+        <p class="calc-desc">Simulação instantânea das 5 Regras de Transição da Reforma da Previdência em 2026.</p>
+
+        <div class="calc-input-group" style="margin-bottom:12px;">
+          <label>Sexo do Segurado
+            <select id="calc-sex" onchange="runEc103Simulation()">
+              <option value="F">Mulher</option>
+              <option value="M">Homem</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="calc-field-row">
+          <div class="calc-input-group">
+            <label>Idade Atual (Anos)
+              <input type="number" id="calc-age" value="58" min="30" max="90" oninput="runEc103Simulation()">
+            </label>
+          </div>
+          <div class="calc-input-group">
+            <label>Tempo Contribuição (Anos)
+              <input type="number" id="calc-contrib" value="31" min="5" max="50" oninput="runEc103Simulation()">
+            </label>
+          </div>
+        </div>
+
+        <div class="calc-input-group" style="margin-bottom:14px;">
+          <label>Tempo em 13/11/2019 (Data da Reforma)
+            <input type="number" id="calc-contrib-2019" value="28" min="0" max="45" oninput="runEc103Simulation()">
+          </label>
+        </div>
+
+        <div class="calc-results-panel">
+          <strong style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Enquadramento em 2026:</strong>
+
+          <div class="rule-card" id="card-rule-points">
+            <div>
+              <div class="rule-title">1. Regra dos Pontos</div>
+              <span class="small muted" id="desc-rule-points">Exige 93 pts (M) / 103 pts (H)</span>
+            </div>
+            <span class="rule-status" id="status-rule-points">Analisando</span>
+          </div>
+
+          <div class="rule-card" id="card-rule-age-prog">
+            <div>
+              <div class="rule-title">2. Idade Mínima Progressiva</div>
+              <span class="small muted" id="desc-rule-age-prog">59a 6m (M) / 64a 6m (H)</span>
+            </div>
+            <span class="rule-status" id="status-rule-age-prog">Analisando</span>
+          </div>
+
+          <div class="rule-card" id="card-rule-toll50">
+            <div>
+              <div class="rule-title">3. Pedágio 50%</div>
+              <span class="small muted" id="desc-rule-toll50">Faltava ≤ 2 anos na EC 103</span>
+            </div>
+            <span class="rule-status" id="status-rule-toll50">Analisando</span>
+          </div>
+
+          <div class="rule-card" id="card-rule-toll100">
+            <div>
+              <div class="rule-title">4. Pedágio 100%</div>
+              <span class="small muted" id="desc-rule-toll100">57a (M) / 60a (H) + dobro faltante</span>
+            </div>
+            <span class="rule-status" id="status-rule-toll100">Analisando</span>
+          </div>
+
+          <div class="rule-card" id="card-rule-general-age">
+            <div>
+              <div class="rule-title">5. Regra Geral da Nova Idade</div>
+              <span class="small muted">62a (M) / 65a (H) + 15 anos</span>
+            </div>
+            <span class="rule-status" id="status-rule-general-age">Analisando</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+function runEc103Simulation() {
+  const sex = document.getElementById('calc-sex').value;
+  const age = parseFloat(document.getElementById('calc-age').value) || 0;
+  const contrib = parseFloat(document.getElementById('calc-contrib').value) || 0;
+  const contrib2019 = parseFloat(document.getElementById('calc-contrib-2019').value) || 0;
+
+  const minContrib = sex === 'F' ? 30 : 35;
+  const pointsReq2026 = sex === 'F' ? 93 : 103;
+  const ageProg2026 = sex === 'F' ? 59.5 : 64.5;
+  const currentPoints = age + contrib;
+
+  // Rule 1: Pontos
+  const ok1 = contrib >= minContrib && currentPoints >= pointsReq2026;
+  setRuleResult('rule-points', ok1, `${currentPoints.toFixed(1)} / ${pointsReq2026} pts (${contrib}/${minContrib}a)`);
+
+  // Rule 2: Idade Minima Progressiva
+  const ok2 = contrib >= minContrib && age >= ageProg2026;
+  setRuleResult('rule-age-prog', ok2, `Idade: ${age}a / Req: ${ageProg2026}a`);
+
+  // Rule 3: Pedagio 50%
+  const req2019 = sex === 'F' ? 30 : 35;
+  const faltava2019 = req2019 - contrib2019;
+  let ok3 = false;
+  let msg3 = "Não elegível (faltava > 2 anos na Reforma)";
+  if (faltava2019 > 0 && faltava2019 <= 2) {
+    const totalComPedagio = req2019 + (faltava2019 * 0.5);
+    ok3 = contrib >= totalComPedagio;
+    msg3 = ok3 ? `Cumprido (${contrib}a ≥ ${totalComPedagio.toFixed(1)}a)` : `Falta tempo (${contrib}a < ${totalComPedagio.toFixed(1)}a)`;
+  }
+  setRuleResult('rule-toll50', ok3, msg3);
+
+  // Rule 4: Pedagio 100%
+  const ageReq100 = sex === 'F' ? 57 : 60;
+  const faltavaTotal100 = Math.max(0, req2019 - contrib2019);
+  const totalComPedagio100 = req2019 + (faltavaTotal100 * 1.0);
+  const ok4 = age >= ageReq100 && contrib >= totalComPedagio100;
+  setRuleResult('rule-toll100', ok4, `Req: ${ageReq100}a idade e ${totalComPedagio100.toFixed(1)}a contrib.`);
+
+  // Rule 5: Regra Geral Idade
+  const ageGeneral = sex === 'F' ? 62 : 65;
+  const ok5 = age >= ageGeneral && contrib >= 15;
+  setRuleResult('rule-general-age', ok5, `Idade: ${age}/${ageGeneral}a (Contrib: ${contrib}/15a)`);
+}
+
+function setRuleResult(id, isEligible, detail) {
+  const card = document.getElementById(`card-${id}`);
+  const status = document.getElementById(`status-${id}`);
+  const desc = document.getElementById(`desc-${id}`);
+  if (!card || !status) return;
+
+  if (isEligible) {
+    card.className = 'rule-card rule-eligible';
+    status.className = 'rule-status status-eligible';
+    status.textContent = '✓ Apto(a)';
+  } else {
+    card.className = 'rule-card rule-pending';
+    status.className = 'rule-status status-pending';
+    status.textContent = 'Faltam requisitos';
+  }
+  if (desc && detail) desc.textContent = detail;
+}
+
+const TEMPLATES = {
+  ms_inss: `EXCELENTÍSSIMO SENHOR DOUTOR JUIZ FEDERAL DA VARA FEDERAL DA SUBSEÇÃO JUDICIÁRIA DE ...
+
+IMPETRANTE: [NOME DO SEGURADO], brasileiro(a), portador(a) do CPF nº ..., residente em ...
+IMPETRADO: GERENTE EXECUTIVO DO INSTITUTO NACIONAL DO SEGURO SOCIAL - INSS (APS ...)
+
+MANDADO DE SEGURANÇA COM PEDIDO DE LIMINAR
+(Excesso injustificado de prazo na análise de benefício previdenciário - Art. 5º, LXIX da CF/88 e Art. 49 da Lei 9.784/99)
+
+I - DOS FATOS
+Em [DATA DO REQUERIMENTO], o(a) Impetrante protocolou perante a Autarquia Previdenciária o requerimento do benefício sob Protocolo nº [NÚMERO].
+Ocorre que, transcorridos mais de [NÚMERO DE DIAS] dias, o processo administrativo permanece paralisado sem qualquer decisão ou justificativa plausível, violando frontalmente a razoável duração do processo e os limites do Tema STF 1.054.
+
+II - DO DIREITO E DA LIMINAR
+A administração pública está adstrita aos princípios da legalidade e da razoável duração do processo (Art. 5º, LXXVIII da CF/88 c/c Art. 49 da Lei 9.784/99).
+
+III - DOS PEDIDOS
+1. A concessão de medida liminar inaudita altera parte para determinar à Autoridade Coatora que profira decisão final no prazo improrrogável de 10 (dez) dias;
+2. No mérito, a confirmação definitiva da segurança.
+
+Dá-se à causa o valor de R$ 1.518,00.
+Nestes termos, pede deferimento.
+[Advogado/OAB]`,
+  bpc_loas: `EXCELENTÍSSIMO JUÍZO DA VARA FEDERAL COMPETENTE DA COMARCA DE ...
+
+AUTOR(A): [NOME DO REQUERENTE], CPF nº ..., representado(a) por ...
+RÉU: INSTITUTO NACIONAL DO SEGURO SOCIAL - INSS
+
+AÇÃO DE CONCESSÃO DE BENEFÍCIO DE PRESTAÇÃO CONTINUADA (BPC/LOAS)
+(Art. 203, V da CF/88 c/c Lei nº 8.742/93)
+
+I - DOS FATOS
+O(A) Autor(a) pleiteou administrativamente o benefício assistencial (Protocolo nº ...), o qual restou indeferido sob a alegação de superação da renda per capita ou ausência de impedimento de longo prazo.
+
+II - DA MISERABILIDADE E VULNERABILIDADE SOCIAL
+A renda do grupo familiar é comprovadamente inferior ao limite legal, não dispondo de meios para prover a própria subsistência. Conforme jurisprudência pacífica do STJ (Tema 185) e STF, o critério econômico deve ser aferido pelas condições reais de vida.
+
+III - DOS PEDIDOS
+1. A concessão do benefício da Gratuidade da Justiça;
+2. A designação de perícia médica e estudo social socioeconômico;
+3. A procedência com o pagamento desde a DER [DATA].
+
+Dá-se à causa o valor de R$ ...
+Nestes termos, pede deferimento.
+[Advogado/OAB]`,
+  incapacidade: `EXCELENTÍSSIMO JUÍZO DO JUIZADO ESPECIAL FEDERAL DA SUBSEÇÃO DE ...
+
+AÇÃO DE RESTABELECIMENTO DE BENEFÍCIO POR INCAPACIDADE TEMPORÁRIA C/C CONVERSÃO EM APOSENTADORIA POR INCAPACIDADE PERMANENTE
+
+AUTOR(A): [NOME DO SEGURADO], CPF nº ...
+RÉU: INSTITUTO NACIONAL DO SEGURO SOCIAL - INSS
+
+I - DA INCAPACIDADE LABORATIVA
+O(A) autor(a) estava em gozo de Auxílio por Incapacidade Temporária (NB ...), cessado indevidamente pela perícia administrativa ("alta programada"), sem que houvesse recuperação da sua capacidade funcional para suas atividades habituais.
+
+II - DOS PEDIDOS
+1. O restabelecimento do benefício desde a data da cessação indevida (DCB);
+2. A realização de perícia com especialista em [ÁREA MÉDICA];
+3. Subsidiariamente, caso constatada a incapacidade total e omniprofissional, a conversão em Aposentadoria por Incapacidade Permanente.
+Nestes termos, pede deferimento.`,
+  crps: `ILUSTRÍSSIMO(A) SENHOR(A) PRESIDENTE DA JUNTA DE RECURSOS DA PREVIDÊNCIA SOCIAL (CRPS)
+
+RECORRENTE: [NOME DO SEGURADO], CPF ...
+REQUERIMENTO/NB: [NÚMERO DO PROTOCOLO]
+
+RECURSO ORDINÁRIO ADMINISTRATIVO
+
+Inconformado(a) com a decisão denegatória proferida pela Agência da Previdência Social, vem o(a) Recorrente interpor o presente Recurso Ordinário, aduzindo que toda a documentação comprobatória da carência e da qualidade de segurado foi tempestivamente acostada aos autos digitais, fazendo jus ao benefício pretendido.
+Nestes termos, requer a reforma da decisão administrativa.
+[Data e Assinatura]`
+};
+
+function copyTemplate(key) {
+  const text = TEMPLATES[key];
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Minuta de petição copiada com sucesso para a área de transferência!');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('Minuta de petição copiada com sucesso!');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', runEc103Simulation);
+</script>
+{% endblock %}

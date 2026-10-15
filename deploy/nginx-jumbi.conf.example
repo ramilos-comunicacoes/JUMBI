@@ -16,7 +16,11 @@ server {
         alias /srv/jumbi/current/staticfiles/;
         add_header X-Content-Type-Options nosniff always;
     }
-    location /media/ { return 404; }
+    location /media/ {
+        alias /srv/jumbi/shared/media/;
+        expires 30d;
+        add_header X-Content-Type-Options nosniff always;
+    }
     location /private_media/ { return 404; }
     location / {
         proxy_pass http://127.0.0.1:8041;

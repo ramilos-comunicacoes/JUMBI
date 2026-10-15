@@ -1,0 +1,83 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}">
+<style>
+.integrations-subnav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; }
+.subnav-pill { padding: 8px 16px; border-radius: 99px; font-size: 12px; font-weight: 600; color: var(--muted); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); text-decoration: none; transition: all 150ms ease; display: inline-flex; align-items: center; gap: 6px; }
+.subnav-pill:hover, .subnav-pill.is-active { background: var(--amber-soft, rgba(245,160,0,0.12)); color: var(--primary, #F5A000); border-color: var(--amber-border, rgba(245,160,0,0.3)); }
+.coverage-table-card { background: rgba(24, 24, 28, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px; padding: 20px; }
+.cap-pill { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; margin: 2px; }
+.cap-djen { background: rgba(245,160,0,0.15); color: #F5A000; border: 1px solid rgba(245,160,0,0.25); }
+.cap-mni { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.25); }
+.cap-dom { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-workspace">
+  <div class="page-heading" style="margin-bottom: 14px;">
+    <div>
+      <h1 style="font-size: 22px; font-weight: 700; margin: 0;">Cobertura dos 33 Tribunais Mapeados</h1>
+      <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted);">Inventário de conexões, sistemas de processo eletrônico e capacidades de leitura e protocolo.</p>
+    </div>
+  </div>
+
+  <nav class="integrations-subnav">
+    <a href="{% url 'integrations:connectors' %}" class="subnav-pill">Conectores & APIs</a>
+    <a href="{% url 'integrations:monitors' %}" class="subnav-pill">Monitoramentos</a>
+    <a href="{% url 'integrations:triage' %}" class="subnav-pill">Fila de Triagem</a>
+    <a href="{% url 'integrations:coverage' %}" class="subnav-pill is-active">Cobertura dos Tribunais</a>
+    <a href="{% url 'integrations:reports' %}" class="subnav-pill">Relatórios Word (.docx)</a>
+  </nav>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <span class="muted small">Exibindo <strong>{{ total_courts }}</strong> tribunais e órgãos judiciais.</span>
+    <form method="get" style="display:flex;gap:8px;">
+      <input type="text" name="q" value="{{ search }}" placeholder="Filtrar por sigla (TJBA, TRF1...)" style="background:rgba(14,14,18,0.8);border:1px solid #3f3f46;border-radius:10px;padding:6px 12px;color:#fff;font-size:12px;min-height:36px;">
+      <button type="submit" class="button button-secondary" style="min-height:36px;padding:4px 12px;font-size:12px;">Filtrar</button>
+    </form>
+  </div>
+
+  <div class="coverage-table-card">
+    <div class="table-scroll">
+      <table class="mobile-records" style="width:100%;">
+        <thead>
+          <tr>
+            <th>Tribunal</th>
+            <th>Esfera / Ramo</th>
+            <th>Provedor Base</th>
+            <th>Capacidades Mapeadas</th>
+            <th>Endereço Base</th>
+            <th>Status de Cobertura</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in deployments %}
+            <tr>
+              <td><strong style="color:var(--primary);font-size:14px;">{{ d.court_code }}</strong></td>
+              <td>{{ d.branch|upper }}</td>
+              <td>{{ d.system }}</td>
+              <td>
+                {% for cap in d.capabilities.all %}
+                  <span class="cap-pill {% if 'djen' in cap.capability_type %}cap-djen{% elif 'mni' in cap.capability_type %}cap-mni{% else %}cap-dom{% endif %}">
+                    {{ cap.get_capability_type_display }}
+                  </span>
+                {% empty %}
+                  <span class="muted small">—</span>
+                {% endfor %}
+              </td>
+              <td><code style="font-size:10px;color:var(--muted);">{{ d.base_url|truncatechars:40 }}</code></td>
+              <td>
+                <span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-size:10px;">
+                  Mapeado
+                </span>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);">Nenhum tribunal localizado para o termo pesquisado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

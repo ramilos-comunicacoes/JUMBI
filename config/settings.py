@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "apps.intake",
     "apps.inventory",
     "apps.worklog",
+    "apps.integrations",
 ]
 
 MIDDLEWARE = [
@@ -93,13 +94,73 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
-PRIVATE_MEDIA_ROOT = Path(os.getenv("JUMBI_PRIVATE_MEDIA_ROOT", str(BASE_DIR / "private_media")))
+MEDIA_URL = "/media/"
+_shared_media = Path("/srv/jumbi/shared/media")
+if os.getenv("JUMBI_MEDIA_ROOT"):
+    MEDIA_ROOT = Path(os.getenv("JUMBI_MEDIA_ROOT"))
+elif _shared_media.parent.exists():
+    MEDIA_ROOT = _shared_media
+else:
+    MEDIA_ROOT = BASE_DIR / "media"
+
+_shared_private_media = Path("/srv/jumbi/shared/private_media")
+if os.getenv("JUMBI_PRIVATE_MEDIA_ROOT"):
+    PRIVATE_MEDIA_ROOT = Path(os.getenv("JUMBI_PRIVATE_MEDIA_ROOT"))
+elif _shared_private_media.parent.exists():
+    PRIVATE_MEDIA_ROOT = _shared_private_media
+else:
+    PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"
+
+for _p in (MEDIA_ROOT, PRIVATE_MEDIA_ROOT):
+    try:
+        _p.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} [{name}:{lineno}] {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
+FILE_UPLOAD_PERMISSIONS = 0o644
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 18 * 1024 * 1024
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "OPTIONS": {
+            "file_permissions_mode": 0o644,
+            "directory_permissions_mode": 0o755,
+        },
+    },
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 if DEBUG:

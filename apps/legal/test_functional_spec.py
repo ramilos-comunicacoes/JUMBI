@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.core.models import Membership, Organization, User
@@ -492,3 +493,47 @@ class FunctionalSpecAcceptanceTests(TestCase):
             self.assertIn("Geórgia de Andrade Almeida", xml_content)
             self.assertIn("PESQUISA PARCIAL", xml_content)
             self.assertIn("Falha ao acessar aba do TJSP", xml_content)
+
+    def test_t21_specialized_hubs_and_dynamic_djen_lawyer(self):
+        """T21: Módulos especializados Previdenciário e Trabalhista, e pesquisa DJEN personalizada."""
+        # 1. Test Branding Form with practice_areas
+        from apps.core.forms import OrganizationBrandingForm
+        form = OrganizationBrandingForm(
+            data={
+                "system_title": "Advocacia Especializada",
+                "brand_primary_color": "#F5A000",
+                "brand_accent_color": "#0F4050",
+                "brand_sidebar_color": "#0B1320",
+                "glassmorphism_intensity": "high",
+                "practice_areas": ["previdenciario", "trabalhista"],
+            },
+            instance=self.org,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        saved_org = form.save()
+        self.assertEqual(saved_org.practice_areas, ["previdenciario", "trabalhista"])
+
+        # 2. Test Previdenciário Hub view
+        self.client.force_login(self.dona)
+        resp_prev = self.client.get(reverse("legal:previdenciario_hub"))
+        self.assertEqual(resp_prev.status_code, 200)
+        self.assertContains(resp_prev, "Direito Previdenciário & INSS")
+        self.assertContains(resp_prev, "Calculadora EC 103/2019")
+
+        # 3. Test Trabalhista Hub view
+        resp_trab = self.client.get(reverse("legal:trabalhista_hub"))
+        self.assertEqual(resp_trab.status_code, 200)
+        self.assertContains(resp_trab, "Direito Trabalhista & Audiências")
+        self.assertContains(resp_trab, "Calculadora de Rescisão CLT")
+
+        # 4. Test Dynamic DJEN search with custom lawyer name
+        custom_name = "Carlos Eduardo Siqueira"
+        run, comms = run_daily_djen_search(
+            organization=self.org,
+            operator=self.dona,
+            queried_name=custom_name,
+        )
+        self.assertEqual(run.queried_name, custom_name)
+        self.assertTrue(run.total_deduplicated > 0)
+        self.assertIn(custom_name, comms[0].full_text)
+

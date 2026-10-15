@@ -1,0 +1,18 @@
+JUMBI — VERIFICAÇÃO LOCAL DO PACOTE v2
+Data de referência: 14/10/2026
+Python do ambiente de verificação: 3.13.5
+RESULTADO
+53 testes automatizados locais aprovados.
+Compilação: python -m compileall -q tools examples tests — executada sem erros de compilação.
+JSON: leitura e referências locais verificadas pelos testes.
+OpenAPI interno: 14 caminhos, 17 operações; referências e parâmetros de caminho conferidos.
+Inspeção: 17 operações encontradas; production_approved=false.
+Diagnóstico dry-run: request_count=0.
+ALCANCE
+Os testes exercitam primitivas de assinatura, idempotência, URLs, parsing de contratos, limites, token SSO com mocks, diagnóstico sem rede e consistência do pacote.
+As fixtures são sintéticas. Não são dados ou contratos de tribunais.
+Os 50 critérios AC-01..AC-50 são aceites da implementação futura, não 50 testes judiciais executados.
+Nenhuma credencial judicial utilizada, comunicação pessoal aberta ou petição protocolada.
+Nenhum teste autenticado, deploy ou alteração de DNS executado nesta entrega.
+O YAML DJEN e WSDLs brutos externos não foram obtidos no ambiente de pesquisa.
+Ran 53 tests in 0.087s OK

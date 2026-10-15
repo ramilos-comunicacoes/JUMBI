@@ -39,15 +39,17 @@ def extract_proposed_deadline(content_text, base_date):
 
 
 @transaction.atomic
-def run_daily_djen_search(*, organization, operator, base_date=None, records_source=None, sim_failures=None):
+def run_daily_djen_search(*, organization, operator, base_date=None, records_source=None, sim_failures=None, queried_name=None):
     """Execute the daily search across the 3 fields and consolidate deduplicated results."""
     date = base_date or timezone.localdate()
     sim_failures = sim_failures or []
 
+    resolved_name = queried_name or GEORGIA_NAME
+
     run = DJENSearchRun.objects.create(
         organization=organization,
         base_date=date,
-        queried_name=GEORGIA_NAME,
+        queried_name=resolved_name,
         fields_searched=["teor", "parte", "advogado"],
         operator=operator,
         status=DJENSearchRun.Status.COMPLETE,
@@ -55,7 +57,7 @@ def run_daily_djen_search(*, organization, operator, base_date=None, records_sou
     )
 
     # Simulated/Injected feed of records (e.g. from Comunica PJe scraper, API or test payload)
-    raw_feed = records_source if records_source is not None else get_default_djen_sample(date)
+    raw_feed = records_source if records_source is not None else get_default_djen_sample(date, lawyer_name=resolved_name)
 
     # 1. Search in 'teor'
     # 2. Search in 'parte'
@@ -78,11 +80,11 @@ def run_daily_djen_search(*, organization, operator, base_date=None, records_sou
             text = item.get("full_text", "")
             parties = item.get("parties", "")
             lawyer = item.get("lawyer_name", "")
-            if GEORGIA_NAME.lower() in text.lower():
+            if resolved_name.lower() in text.lower():
                 matches.append("teor")
-            if GEORGIA_NAME.lower() in parties.lower():
+            if resolved_name.lower() in parties.lower():
                 matches.append("parte")
-            if GEORGIA_NAME.lower() in lawyer.lower():
+            if resolved_name.lower() in lawyer.lower():
                 matches.append("advogado")
 
         if matches:
@@ -139,8 +141,9 @@ def run_daily_djen_search(*, organization, operator, base_date=None, records_sou
     return run, created_comms
 
 
-def get_default_djen_sample(date):
+def get_default_djen_sample(date, lawyer_name=None):
     """Sample daily notifications for demonstration and routine testing."""
+    lawyer = lawyer_name or GEORGIA_NAME
     return [
         {
             "communication_id": f"DJEN-{date.strftime('%Y%m%d')}-001",
@@ -149,7 +152,8 @@ def get_default_djen_sample(date):
             "case_number": "0000123-45.2026.5.13.0001",
             "parties": "José da Silva x Empresa Exemplo Ltda",
             "summary": "Intimação para apresentação de contrarrazões ao recurso ordinário no prazo de 8 dias.",
-            "full_text": f"Fica intimada a advogada {GEORGIA_NAME} para apresentar contrarrazões ao recurso ordinário no prazo de oito dias.",
+            "full_text": f"Fica intimado(a) o(a) advogado(a) {lawyer} para apresentar contrarrazões ao recurso ordinário no prazo de oito dias.",
+            "lawyer_name": lawyer,
             "found_in_advogado": True,
             "found_in_teor": True,
         },
@@ -160,7 +164,8 @@ def get_default_djen_sample(date):
             "case_number": "1002345-67.2026.4.01.3400",
             "parties": "Maria Souza x INSS",
             "summary": "Ciência de laudo pericial médico favorável. Manifestação em 15 dias.",
-            "full_text": f"Vista à parte autora, representada por {GEORGIA_NAME}, pelo prazo de 15 dias.",
+            "full_text": f"Vista à parte autora, representada por {lawyer}, pelo prazo de 15 dias.",
+            "lawyer_name": lawyer,
             "found_in_advogado": True,
         },
         {
@@ -168,9 +173,10 @@ def get_default_djen_sample(date):
             "court": "TJBA",
             "court_unit": "2ª Vara de Família",
             "case_number": "8009876-54.2026.8.05.0001",
-            "parties": f"{GEORGIA_NAME} e Outros",
+            "parties": f"{lawyer} e Outros",
             "summary": "Despacho de mero expediente sem prazo fixado.",
-            "full_text": f"Autos em cartório para vista às partes. Parte citada: {GEORGIA_NAME}.",
+            "full_text": f"Autos em cartório para vista às partes. Parte citada: {lawyer}.",
+            "lawyer_name": lawyer,
             "found_in_parte": True,
             "found_in_teor": True,
         },

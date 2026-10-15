@@ -1,0 +1,2 @@
+SYNTHETIC_LOCAL_ONLY
+Todos os JSON/YAML/WSDL desta pasta foram criados para os testes locais deste pacote. Não são respostas, contratos oficiais, processos ou credenciais de qualquer tribunal. Os hosts example.invalid são propositadamente não operacionais.

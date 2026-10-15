@@ -12,8 +12,8 @@
 <div class="page-heading">
   <div>
     <div class="eyebrow">COMUNICAÇÕES PROCESSUAIS <span class="eyebrow-divider">/</span> COMUNICA PJe & DJEN</div>
-    <h1>Pesquisa Diária: Geórgia de Andrade Almeida</h1>
-    <p>Rotina diária em 3 campos separados: teor da comunicação, nome da parte e nome da advogada.</p>
+    <h1>Pesquisa Diária: {{ office_lawyer|default:"Comunica PJe & DJEN" }}</h1>
+    <p>Rotina diária em 3 campos separados: teor da comunicação, nome da parte e nome do(a) advogado(a).</p>
   </div>
   <div class="heading-actions">
     {% if selected_run %}
@@ -22,10 +22,14 @@
       </a>
     {% endif %}
     {% if can_edit %}
-      <form method="post" action="{% url 'legal:djen_execute_search' %}" style="display:inline;">
+      <form method="post" action="{% url 'legal:djen_execute_search' %}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         {% csrf_token %}
+        <div style="display:flex;align-items:center;gap:6px;background:rgba(20,20,26,0.7);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:3px 10px;">
+          <label for="id_lawyer_name" style="margin:0;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;">Advogado(a):</label>
+          <input type="text" id="id_lawyer_name" name="lawyer_name" value="{{ office_lawyer }}" placeholder="Nome completo do advogado" style="background:transparent;border:0;color:#fff;font-size:12px;padding:4px 6px;min-width:210px;outline:none;" required>
+        </div>
         <button type="submit" class="button button-primary">
-          <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg> Executar pesquisa do dia
+          <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg> Executar pesquisa
         </button>
       </form>
     {% endif %}

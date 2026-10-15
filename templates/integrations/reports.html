@@ -1,0 +1,71 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}">
+<style>
+.integrations-subnav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; }
+.subnav-pill { padding: 8px 16px; border-radius: 99px; font-size: 12px; font-weight: 600; color: var(--muted); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); text-decoration: none; transition: all 150ms ease; display: inline-flex; align-items: center; gap: 6px; }
+.subnav-pill:hover, .subnav-pill.is-active { background: var(--amber-soft, rgba(245,160,0,0.12)); color: var(--primary, #F5A000); border-color: var(--amber-border, rgba(245,160,0,0.3)); }
+.report-card { background: rgba(24, 24, 28, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 20px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-workspace">
+  <div class="page-heading" style="margin-bottom: 14px;">
+    <div>
+      <h1 style="font-size: 22px; font-weight: 700; margin: 0;">Relatórios Diários Word (.docx)</h1>
+      <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted);">Documentos oficiais privativos do escritório em formato Microsoft Word (OOXML), com métricas e horário de Fortaleza.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <form method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="button button-primary">
+          <svg class="icon"><use href="#i-download"/></svg> Gerar Relatório de Hoje (.docx)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <nav class="integrations-subnav">
+    <a href="{% url 'integrations:connectors' %}" class="subnav-pill">Conectores & APIs</a>
+    <a href="{% url 'integrations:monitors' %}" class="subnav-pill">Monitoramentos</a>
+    <a href="{% url 'integrations:triage' %}" class="subnav-pill">Fila de Triagem</a>
+    <a href="{% url 'integrations:coverage' %}" class="subnav-pill">Cobertura dos Tribunais</a>
+    <a href="{% url 'integrations:reports' %}" class="subnav-pill is-active">Relatórios Word (.docx)</a>
+  </nav>
+
+  <div>
+    {% for r in reports %}
+      <div class="report-card">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(245,160,0,0.1);border:1px solid rgba(245,160,0,0.25);display:grid;place-items:center;color:var(--primary);">
+            <svg class="icon" style="width:22px;height:22px;"><use href="#i-documents"/></svg>
+          </div>
+          <div>
+            <strong style="color:#fff;font-size:15px;">Relatório Diário DJEN · {{ r.reference_date|date:"d/m/Y" }}</strong>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">
+              Gerado em: {{ r.generated_at|date:"d/m/Y H:i:s" }} (Fortaleza) · 
+              Total de Publicações: <strong>{{ r.total_communications }}</strong> ({{ r.total_matched }} confirmadas)
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <a href="{% url 'integrations:download_report' r.pk %}" class="button button-secondary" style="min-height:38px;padding:6px 14px;font-size:12px;">
+            <svg class="icon"><use href="#i-download"/></svg> Baixar .docx
+          </a>
+        </div>
+      </div>
+    {% empty %}
+      <div class="report-card" style="text-align:center;padding:36px;color:var(--muted);display:block;">
+        <p style="margin:0 0 14px;font-size:14px;">Nenhum relatório Word gerado até o momento.</p>
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="button button-primary">
+            Gerar Primeiro Relatório de Hoje (.docx)
+          </button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

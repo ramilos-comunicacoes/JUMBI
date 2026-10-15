@@ -6,6 +6,7 @@ from django.db import transaction
 from django.utils.text import slugify
 
 from .models import Membership, Organization, OrganizationRole, User
+from .niches import PRACTICE_AREAS, PRACTICE_AREA_LABELS
 
 
 class EmailAuthenticationForm(AuthenticationForm):
@@ -73,47 +74,85 @@ class OrganizationRegistrationForm(forms.ModelForm):
 
 
 class OrganizationBrandingForm(forms.ModelForm):
+    practice_areas = forms.MultipleChoiceField(
+        label="Áreas de Atuação do Escritório",
+        choices=PRACTICE_AREAS,
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "practice-area-checkbox"}),
+        required=False,
+        help_text="Selecione as áreas atendidas pelo escritório para ativar os módulos especializados correspondentes.",
+    )
+
     class Meta:
         model = Organization
         fields = (
+            "system_title",
             "brand_logo",
+            "brand_favicon",
+            "brand_collapsed_logo",
+            "glassmorphism_intensity",
             "brand_primary_color",
             "brand_accent_color",
             "brand_sidebar_color",
         )
         widgets = {
+            "system_title": forms.TextInput(attrs={"placeholder": "Ex: JUMBI ou Nome do seu Escritório"}),
+            "glassmorphism_intensity": forms.Select(),
             "brand_primary_color": forms.TextInput(attrs={"type": "color"}),
             "brand_accent_color": forms.TextInput(attrs={"type": "color"}),
             "brand_sidebar_color": forms.TextInput(attrs={"type": "color"}),
         }
         help_texts = {
-            "brand_logo": "PNG, JPG ou WebP, com no máximo 2 MB. Prefira uma versão horizontal e com fundo transparente.",
-            "brand_primary_color": "Usada em botões, ícones e seleção do menu.",
-            "brand_accent_color": "Usada em gradientes e detalhes secundários.",
-            "brand_sidebar_color": "Base de cor do menu lateral.",
+            "system_title": "Exibido no topo da barra, nos títulos das páginas e nas notificações.",
+            "brand_logo": "Logo principal com barra lateral expandida. PNG, JPG, SVG ou WebP (máx. 2 MB).",
+            "brand_favicon": "Favicon da aba do navegador E logo da barra lateral contraída (padrão). Máx. 2 MB.",
+            "brand_collapsed_logo": "Opcional: ícone alternativo para o menu recolhido (se não preenchido, usa o favicon).",
+            "glassmorphism_intensity": "Estilo visual de transparência e desfoque moderno dos cartões e painéis.",
+            "brand_primary_color": "Usada em botões, ícones e seleção ativa de abas.",
+            "brand_accent_color": "Usada em gradientes, foco e detalhes de destaque.",
+            "brand_sidebar_color": "Base de cor escura da barra lateral e cabeçalho.",
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields["practice_areas"].initial = self.instance.practice_areas or []
+
+    def clean_practice_areas(self):
+        areas = self.cleaned_data.get("practice_areas", [])
+        return [str(a) for a in areas if str(a) in PRACTICE_AREA_LABELS]
+
+    def save(self, commit=True):
+        org = super().save(commit=False)
+        if "practice_areas" in self.cleaned_data:
+            org.practice_areas = self.cleaned_data["practice_areas"]
+        if commit:
+            org.save()
+        return org
+
+    def _validate_image_file(self, field_name, max_mb=2, allow_ico=False):
+        f = self.cleaned_data.get(field_name)
+        if not isinstance(f, UploadedFile):
+            return f
+        if f.size > max_mb * 1024 * 1024:
+            raise forms.ValidationError(f"O arquivo deve ter no máximo {max_mb} MB.")
+        allowed_types = {"image/png", "image/jpeg", "image/webp", "image/svg+xml"}
+        if allow_ico:
+            allowed_types.update({"image/x-icon", "image/vnd.microsoft.icon"})
+        content_type = getattr(f, "content_type", "")
+        # Also check file extension as fallback for ICO/SVG
+        ext = f.name.split(".")[-1].lower() if "." in f.name else ""
+        if content_type not in allowed_types and ext not in {"png", "jpg", "jpeg", "webp", "svg", "ico"}:
+            raise forms.ValidationError("Envie uma imagem válida (PNG, JPG, WebP, SVG ou ICO).")
+        return f
+
     def clean_brand_logo(self):
-        logo = self.cleaned_data.get("brand_logo")
-        if not isinstance(logo, UploadedFile):
-            return logo
-        if logo.size > 2 * 1024 * 1024:
-            raise forms.ValidationError("A logo deve ter no máximo 2 MB.")
-        allowed_types = {"image/png", "image/jpeg", "image/webp"}
-        if getattr(logo, "content_type", "") not in allowed_types:
-            raise forms.ValidationError("Envie uma imagem PNG, JPG ou WebP válida.")
-        signatures = (
-            b"\x89PNG\r\n\x1a\n",
-            b"\xff\xd8\xff",
-            b"RIFF",
-        )
-        header = logo.read(12)
-        logo.seek(0)
-        if not any(header.startswith(signature) for signature in signatures):
-            raise forms.ValidationError("O conteúdo do arquivo não corresponde a uma imagem permitida.")
-        if header.startswith(b"RIFF") and header[8:12] != b"WEBP":
-            raise forms.ValidationError("O arquivo RIFF enviado não é uma imagem WebP.")
-        return logo
+        return self._validate_image_file("brand_logo", allow_ico=True)
+
+    def clean_brand_favicon(self):
+        return self._validate_image_file("brand_favicon", allow_ico=True)
+
+    def clean_brand_collapsed_logo(self):
+        return self._validate_image_file("brand_collapsed_logo", allow_ico=True)
 
 
 class UserAccessProvisionForm(forms.Form):

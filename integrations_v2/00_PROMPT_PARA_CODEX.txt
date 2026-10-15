@@ -1,0 +1,18 @@
+JUMBI — ORDEM DE IMPLEMENTAÇÃO DAS INTEGRAÇÕES JUDICIAIS
+Trabalhe no repositório real do Jumbi aberto nesta sessão. Leia as instruções locais aplicáveis e preserve arquivos, mudanças não commitadas, arquitetura e funcionalidades existentes. Não utilize o repositório de outro produto citado em documentos históricos.
+O pacote JUMBI_Integracoes_Codex_v2 contém a especificação deste trabalho. Leia:
+1. 01_ESPECIFICACAO_EXECUTAVEL.md;
+2. 02_CATALOGO_APIS.json e 03_REGISTRO_TRIBUNAIS.json;
+3. 04_CHECKLIST_ACEITE.md e 05_PENDENCIAS_EXTERNAS.md;
+4. openapi/jumbi-integrations.openapi.json;
+5. sources/FONTES.md e as ferramentas de referência em tools/ e examples/.
+Implemente, não entregue apenas outro planejamento. O produto é Django, multi-escritório, com domínio previsto jumbi.nabio.pro. Reaproveite a API, interface, autenticação, armazenamento privado e filas existentes. Se a base estiver vazia, mantenha Django/REST, PostgreSQL, React/TypeScript e Celery/RabbitMQ como direção inicial.
+Construa a central de integrações, contas externas, contratos versionados, inventário de tribunais, monitoramentos, execuções rastreáveis, triagem de comunicações, vinculação às pastas e processos, tarefas, conferência de prazos, painel e relatório diário em Word.
+Prepare as três buscas independentes de Geórgia de Andrade Almeida, sem inventar OAB/UF. Confirme no contrato a correspondência dos filtros. Use os endpoints publicados no catálogo.
+Primeiro obtenha e inspecione o OpenAPI/WSDL vigente; confirme filtros, paginação, respostas e limites. Rotas desconhecidas e exemplos condicionais não podem virar contratos oficiais presumidos.
+Implemente DJEN somente leitura; os outros conectores avançam conforme contratos e autorizações. O OpenAPI do pacote descreve a API INTERNA proposta do Jumbi, não a API do CNJ.
+Não bloqueie o projeto inteiro por falta de uma credencial. Conclua e teste tudo o que independe dela; registre somente a capacidade afetada como pendente. Mantenha importação manual e testes sintéticos claramente identificados.
+Não anuncie mock ou inventário cadastrado como integração funcionando. Não dê ciência, abra comunicação pessoal com efeitos jurídicos, protocole, aceite termos, contrate serviços ou execute mudanças destrutivas sem a autorização específica necessária. Não contorne CAPTCHA/MFA, não use credenciais de outro titular e não exponha segredos. Autorização de programação não equivale a autorização para praticar um ato jurídico.
+Execute testes por lote, verifique isolamento entre escritórios, repetição sem efeitos duplicados, falhas, paginação, revogação e documentos privados. Atualize docs/integrations/IMPLEMENTATION_STATUS.md, EXTERNAL_BLOCKERS.md e CONTRACTS.md.
+Informe resultados reais, contratos obtidos, capacidades homologadas e pendências; não prometa execução em segundo plano.
+Comece pelo Lote 1 e avance pelos demais enquanto os requisitos estiverem disponíveis. Publique somente quando o ambiente, o acesso e a autorização de deploy estiverem estabelecidos, preservando os outros serviços no servidor.

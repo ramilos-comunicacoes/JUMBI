@@ -39,6 +39,8 @@
   }
   function syncSidebar() {
     if (!sidebar) return;
+    const mainNav = sidebar.querySelector('.main-nav') || sidebar;
+    const currentScroll = mainNav ? mainNav.scrollTop : 0;
     root.classList.toggle('sidebar-auto', automaticSidebar.matches);
     if (automaticSidebar.matches) {
       const keyboardFocus = keyboardNavigation && sidebar.contains(document.activeElement);
@@ -47,6 +49,9 @@
       root.classList.remove('sidebar-collapsed');
     }
     updateCompactButton();
+    if (mainNav && currentScroll > 0) {
+      mainNav.scrollTop = currentScroll;
+    }
   }
   document.addEventListener('keydown', event => {
     if (event.key === 'Tab') keyboardNavigation = true;
@@ -56,6 +61,27 @@
     syncSidebar();
   }, true);
   if (sidebar) {
+    const mainNav = sidebar.querySelector('.main-nav') || sidebar;
+    if (mainNav) {
+      const restoreNavScroll = () => {
+        const saved = sessionStorage.getItem('jumbi_nav_scroll');
+        if (saved !== null) {
+          mainNav.scrollTop = parseInt(saved, 10) || 0;
+        }
+      };
+      restoreNavScroll();
+      requestAnimationFrame(restoreNavScroll);
+      setTimeout(restoreNavScroll, 80);
+
+      let scrollTimeout;
+      mainNav.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+          sessionStorage.setItem('jumbi_nav_scroll', String(mainNav.scrollTop));
+        }, 50);
+      }, { passive: true });
+    }
+
     sidebar.addEventListener('pointerenter', event => {
       if (event.pointerType === 'touch') return;
       pointerOverSidebar = true;

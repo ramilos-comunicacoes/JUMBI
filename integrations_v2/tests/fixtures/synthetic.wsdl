@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" targetNamespace="urn:SYNTHETIC_LOCAL_ONLY">
+<import namespace="urn:synthetic-import" location="https://example.invalid/schema.wsdl"/>
+<portType name="Synthetic"><operation name="syntheticConsult"/></portType>
+<service name="Synthetic"><port name="Synthetic"><soap:address location="https://example.invalid/soap"/></port></service>
+</definitions>

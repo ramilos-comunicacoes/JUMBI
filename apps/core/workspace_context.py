@@ -20,20 +20,29 @@ def workspace_context(request):
     if manager and advanced:
         sections.append(("finance", "Financeiro", "wallet"))
     sections.append(("crm", "Relacionamento", "briefcase"))
-    nav = [{"key": "dashboard", "label": "Visão geral", "url": reverse("legal:dashboard"), "icon": "grid"}]
-    nav.append({"key": "my_routine", "label": "Minha rotina", "url": reverse("legal:my_routine"), "icon": "my_routine"})
-    nav.append({"key": "djen", "label": "Comunica PJe / DJEN", "url": reverse("legal:djen_dashboard"), "icon": "djen"})
-    nav.extend([
-        {"key": "search", "label": "Busca unificada", "url": reverse("discovery:search"), "icon": "search"},
-        {"key": "notifications", "label": "Notificações", "url": reverse("notifications:inbox"), "icon": "notifications"},
-    ])
+    practice_areas = getattr(organization, "practice_areas", []) or []
+    is_prev = "previdenciario" in practice_areas or not practice_areas
+    is_trab = "trabalhista" in practice_areas or not practice_areas
+
+    nav = [
+        {"key": "dashboard", "label": "Visão geral", "url": reverse("legal:dashboard"), "icon": "grid"},
+        {"key": "my_routine", "label": "Minha rotina", "url": reverse("legal:my_routine"), "icon": "my_routine"},
+        {"key": "djen", "label": "Comunica PJe / DJEN", "url": reverse("legal:djen_dashboard"), "icon": "djen"},
+    ]
+    if is_prev:
+        nav.append({"key": "demands", "label": "Previdenciário & INSS", "url": reverse("legal:previdenciario_hub"), "icon": "demands"})
+    if is_trab:
+        nav.append({"key": "trabalhista", "label": "Trabalhista & Audiências", "url": reverse("legal:trabalhista_hub"), "icon": "scale"})
+
     nav.extend({"key": key, "label": label, "icon": icon, "url": reverse("legal:list", args=[key])}
-               for key, label, icon in sections)
+               for key, label, icon in sections if key != "demands")
+
     for item in nav:
         if item["key"] == "tasks":
             item.update(label="Tarefas · Kanban", url=reverse("legal:kanban"))
         elif item["key"] == "appointments":
             item.update(label="Calendário e agenda", url=reverse("legal:calendar"))
+
     nav.append({"key": "goals", "label": "Metas", "url": reverse("performance:list"), "icon": "target"})
     nav.append({"key": "ranking", "label": "Ranking da equipe", "url": reverse("performance:ranking"), "icon": "ranking"})
     nav.append({"key": "contact_messages", "label": "Contatos e WhatsApp", "url": reverse("legal:contact_messages_list"), "icon": "contact_messages"})
@@ -50,9 +59,11 @@ def workspace_context(request):
     nav.append({"key": "guide", "label": "Como usar o JUMBI", "url": reverse("legal:guide"), "icon": "help"})
     if manager:
         nav.extend([
-            {"key": "intake", "label": "Importar planilha", "url": reverse("intake:home"), "icon": "intake"},
             {"key": "team", "label": "Equipe", "url": reverse("core:team"), "icon": "users"},
+            {"key": "intake", "label": "Importar planilha", "url": reverse("intake:home"), "icon": "intake"},
             {"key": "audit", "label": "Auditoria", "url": reverse("core:audit"), "icon": "shield"},
+            {"key": "connectors", "label": "Conectores e APIs", "url": reverse("integrations:connectors"), "icon": "connectors"},
+            {"key": "customization", "label": "Personalização & Visual", "url": reverse("core:customization"), "icon": "customization"},
         ])
     if organization:
         nav.append({"key": "subscription", "label": "Plano e assinatura", "url": reverse("billing:subscription"), "icon": "wallet"})
@@ -64,10 +75,11 @@ def workspace_context(request):
             {'key': 'security', 'label': 'Segurança da conta', 'url': reverse('security:account'), 'icon': 'shield'},
         ]
     navigation_groups = [
-        ("Dia a dia", ["my_routine", "dashboard", "demands", "djen", "ranking", "tutorials", "search", "notifications", "appointments", "tasks", "deadlines", "goals", "routines"]),
-        ("Acervo jurídico", ["matters", "contacts", "contact_messages", "client_map", "cases", "documents", "portal", "contracts"]),
-        ("Gestão do escritório", ["crm", "fees", "finance", "inventory"]),
-        ("Administração", ["intake", "team", "audit", "subscription", "guide", "security", "platform"]),
+        ("Dia a dia", ["my_routine", "dashboard", "tasks", "deadlines", "appointments", "djen"]),
+        ("Módulos Especializados", ["demands", "trabalhista"]),
+        ("Acervo jurídico", ["matters", "contacts", "cases", "documents", "contact_messages", "client_map", "contracts", "portal"]),
+        ("Gestão do escritório", ["ranking", "goals", "crm", "fees", "finance", "inventory", "tutorials"]),
+        ("Administração", ["team", "intake", "audit", "subscription", "guide", "security", "connectors", "customization", "platform"]),
     ]
 
     indexed_nav = {item["key"]: item for item in nav}

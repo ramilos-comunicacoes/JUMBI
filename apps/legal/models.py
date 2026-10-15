@@ -78,7 +78,7 @@ class TenantModel(models.Model):
             old_org = original_values.get("organization_id")
             if old_org is not None and old_org != self.organization_id:
                 errors["organization"] = "Não é permitido transferir registros entre escritórios."
-            if "matter_id" in original_values and original_values["matter_id"] != getattr(self, "matter_id", None):
+            if original_values.get("matter_id") is not None and original_values["matter_id"] != getattr(self, "matter_id", None):
                 errors["matter"] = "O vínculo com a pasta deve ser preservado para manter o histórico e as permissões."
         from apps.core.models import Membership
 

@@ -28,6 +28,11 @@ def djen_dashboard(request):
 
     comms = DJENCommunication.objects.filter(search_run=selected_run).select_related("matter") if selected_run else []
 
+    org_slug = (getattr(request.organization, "slug", "") or "").lower()
+    org_name = (getattr(request.organization, "name", "") or "").lower()
+    is_georgia = "georgia" in org_slug or "geórgia" in org_name or "georgia" in org_name
+    office_lawyer = "Geórgia de Andrade Almeida" if is_georgia else (getattr(request.organization, "system_title", None) or request.organization.name)
+
     return render(request, "legal/djen_dashboard.html", {
         "title": "DJEN · Rotina de Pesquisa Diária",
         "page_title": "Comunica PJe & DJEN",
@@ -36,6 +41,8 @@ def djen_dashboard(request):
         "selected_run": selected_run,
         "comms": comms,
         "can_edit": can_edit(request),
+        "is_georgia": is_georgia,
+        "office_lawyer": office_lawyer,
     })
 
 
@@ -46,13 +53,26 @@ def djen_execute_search(request):
     if not can_edit(request):
         raise PermissionDenied("Permissão negada.")
 
+    org_slug = (getattr(request.organization, "slug", "") or "").lower()
+    org_name = (getattr(request.organization, "name", "") or "").lower()
+    is_georgia = "georgia" in org_slug or "geórgia" in org_name or "georgia" in org_name
+
+    lawyer_input = request.POST.get("lawyer_name", "").strip()
+    if is_georgia and not lawyer_input:
+        queried_name = "Geórgia de Andrade Almeida"
+    elif lawyer_input:
+        queried_name = lawyer_input
+    else:
+        queried_name = request.user.get_full_name() or request.organization.name
+
     run, comms = run_daily_djen_search(
         organization=request.organization,
         operator=request.user,
         base_date=timezone.localdate(),
+        queried_name=queried_name,
     )
     messages.success(request, f"Pesquisa diária concluída para {run.queried_name}. {run.total_deduplicated} comunicação/ões identificada(s).")
-    return redirect(reverse("legal:djen_dashboard"))
+    return redirect(f"{reverse('legal:djen_dashboard')}?run={run.pk}")
 
 
 @organization_required

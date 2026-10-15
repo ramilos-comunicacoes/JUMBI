@@ -1,0 +1,230 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}">
+<style>
+.integrations-subnav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; }
+.subnav-pill { padding: 8px 16px; border-radius: 99px; font-size: 12px; font-weight: 600; color: var(--muted); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); text-decoration: none; transition: all 150ms ease; display: inline-flex; align-items: center; gap: 6px; }
+.subnav-pill:hover, .subnav-pill.is-active { background: var(--amber-soft, rgba(245,160,0,0.12)); color: var(--primary, #F5A000); border-color: var(--amber-border, rgba(245,160,0,0.3)); }
+.panel-glass { background: rgba(24, 24, 28, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px; padding: 22px; margin-bottom: 20px; }
+.rule-card { background: rgba(14, 14, 18, 0.6); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
+.search-grid-box { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 14px; }
+.field-group { display: grid; gap: 6px; }
+.field-group label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.field-group input, .field-group select { width: 100%; min-height: 40px; background: rgba(12, 12, 16, 0.85); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 8px 12px; color: #fff; font-size: 13px; }
+.field-group input:focus, .field-group select:focus { border-color: var(--primary, #F5A000); outline: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-workspace">
+  <div class="page-heading" style="margin-bottom: 14px;">
+    <div>
+      <h1 style="font-size: 22px; font-weight: 700; margin: 0;">
+        {% if is_georgia %}
+          Monitoramentos Judiciais & DJEN — Dra. Geórgia de Andrade Almeida
+        {% else %}
+          Monitoramentos Judiciais & DJEN — {{ default_target }}
+        {% endif %}
+      </h1>
+      <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted);">
+        {% if is_georgia %}
+          Pesquisas automáticas e independentes (Advogado, Parte e Teor) exclusivas do titular do escritório.
+        {% else %}
+          Pesquise e monitore qualquer advogado(a), OAB/UF ou parte diretamente no Diário da Justiça Eletrônico Nacional (DJEN).
+        {% endif %}
+      </p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <a href="{% url 'integrations:triage' %}" class="button button-secondary">
+        <svg class="icon"><use href="#i-tasks"/></svg> Ver Fila de Triagem
+      </a>
+    </div>
+  </div>
+
+  <nav class="integrations-subnav">
+    <a href="{% url 'integrations:connectors' %}" class="subnav-pill">Conectores & APIs</a>
+    <a href="{% url 'integrations:monitors' %}" class="subnav-pill is-active">Monitoramentos</a>
+    <a href="{% url 'integrations:triage' %}" class="subnav-pill">Fila de Triagem</a>
+    <a href="{% url 'integrations:coverage' %}" class="subnav-pill">Cobertura dos Tribunais</a>
+    <a href="{% url 'integrations:reports' %}" class="subnav-pill">Relatórios Word (.docx)</a>
+  </nav>
+
+  <!-- Painel de Busca Imediata e Sincronização no DJEN -->
+  <section class="panel-glass" style="border-left: 4px solid var(--primary, #F5A000);">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+      <div>
+        <h2 style="font-size: 16px; font-weight: 700; margin: 0 0 4px; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <svg class="icon" style="color:var(--primary);width:18px;height:18px;"><use href="#i-search"/></svg>
+          Pesquisa Imediata & Sincronização no DJEN (Comunica PJe)
+        </h2>
+        <p style="font-size: 12px; color: var(--muted); margin: 0;">
+          {% if is_georgia %}
+            Executa simultaneamente 3 buscas oficiais independentes (<strong>Advogado</strong>, <strong>Parte</strong> e <strong>Teor</strong>) para Dra. Geórgia de Andrade Almeida.
+          {% else %}
+            Informe o nome do advogado(a) ou cliente para puxar publicações recentes direto da API pública oficial do CNJ.
+          {% endif %}
+        </p>
+      </div>
+      <span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-size:11px;padding:4px 10px;">
+        API CNJ Oficial 100% Operacional
+      </span>
+    </div>
+
+    <form method="post" style="margin-top: 14px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="sync_now">
+
+      <div class="search-grid-box">
+        <div class="field-group" style="grid-column: span 2;">
+          <label for="target_name">Nome Completo do Advogado(a) / Parte</label>
+          <input type="text" id="target_name" name="target_name" value="{{ default_target }}" placeholder="Ex: Nome Completo do Advogado ou Cliente" required>
+        </div>
+
+        <div class="field-group">
+          <label for="oab_number">Número da OAB (opcional)</label>
+          <input type="text" id="oab_number" name="oab_number" placeholder="Ex: 12345">
+        </div>
+
+        <div class="field-group">
+          <label for="oab_uf">UF da OAB (opcional)</label>
+          <input type="text" id="oab_uf" name="oab_uf" maxlength="2" placeholder="Ex: BA, SP, RJ, CE..." style="text-transform:uppercase;">
+        </div>
+
+        <div class="field-group">
+          <label for="court_sigla">Tribunal (opcional)</label>
+          <input type="text" id="court_sigla" name="court_sigla" placeholder="Ex: TRF1, TRF5, TJBA, TJSP, STJ..." style="text-transform:uppercase;">
+        </div>
+
+        <div class="field-group">
+          <label for="date_from">Data Inicial (opcional)</label>
+          <input type="date" id="date_from" name="date_from">
+        </div>
+
+        <div class="field-group">
+          <label for="date_to">Data Final (opcional)</label>
+          <input type="date" id="date_to" name="date_to">
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;">
+          <svg class="icon" style="width:14px;height:14px;color:#818cf8;"><use href="#i-shield"/></svg>
+          Modo Seguro Ativo: leitura pública de publicações sem abertura de citação pessoal ou ciência processual tácita.
+        </span>
+
+        <button type="submit" class="button button-primary" style="min-height:42px;padding:0 20px;">
+          <svg class="icon"><use href="#i-arrow"/></svg>
+          {% if is_georgia %}
+            Sincronizar Agora (3 Buscas Geórgia)
+          {% else %}
+            Buscar e Sincronizar Publicações (3 Buscas)
+          {% endif %}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <div style="display:grid;grid-template-columns:minmax(0, 1.4fr) minmax(320px, 1fr);gap:20px;align-items:start;">
+    <div>
+      <section class="panel-glass">
+        <h2 style="font-size:16px;font-weight:700;margin:0 0 16px;color:#fff;">Regras de Monitoramento Contínuo</h2>
+        {% for rule in rules %}
+          <div class="rule-card">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <strong style="color:#fff;font-size:14px;">{{ rule.label }}</strong>
+                <span class="badge badge-amber" style="font-size:10px;">{{ rule.get_kind_display }}</span>
+              </div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px;">
+                Termo / Nome: <code>{{ rule.value }}</code>
+                {% if rule.oab_uf %} · OAB UF: {{ rule.oab_uf }}{% endif %}
+              </div>
+            </div>
+            <span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);">Ativo</span>
+          </div>
+        {% empty %}
+          <div style="padding:24px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6;">
+            {% if is_georgia %}
+              Nenhuma regra adicional cadastrada.<br>As 3 buscas oficiais para <strong>Dra. Geórgia de Andrade Almeida</strong> (Advogado, Parte e Teor) são executadas automaticamente.
+            {% else %}
+              Nenhuma regra adicional cadastrada.<br>As buscas utilizam <strong>{{ default_target }}</strong> como titular do escritório, ou qualquer critério digitado no formulário acima.
+            {% endif %}
+          </div>
+        {% endfor %}
+      </section>
+
+      <section class="panel-glass">
+        <h2 style="font-size:16px;font-weight:700;margin:0 0 14px;color:#fff;">Histórico Recente de Execuções</h2>
+        <table class="mobile-records" style="width:100%;">
+          <thead>
+            <tr>
+              <th>ID da Coleta</th>
+              <th>Regra</th>
+              <th>Páginas</th>
+              <th>Publicações</th>
+              <th>Data/Hora</th>
+              <th>Situação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for run in recent_runs %}
+              <tr>
+                <td><code>#{{ run.pk }}</code></td>
+                <td>{{ run.rule.label|default:"DJEN Padrão" }}</td>
+                <td>{{ run.page_count }}</td>
+                <td><strong>{{ run.item_count }}</strong></td>
+                <td>{{ run.started_at|date:"d/m/Y H:i" }}</td>
+                <td><span class="badge badge-amber">{{ run.get_status_display }}</span></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px;">Nenhuma execução registrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <!-- Right Side: Add Rule Form -->
+    <aside class="panel-glass">
+      <h2 style="font-size:16px;font-weight:700;margin:0 0 8px;color:#fff;">Adicionar Regra Contínua</h2>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
+        Cadastre nomes de advogados da equipe, sócios ou clientes prioritários para acompanhamento diário automático.
+      </p>
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_rule">
+
+        <div style="display:grid;gap:6px;margin-bottom:14px;">
+          <label style="font-size:12px;font-weight:600;color:var(--muted);">Rótulo / Identificação</label>
+          <input type="text" name="label" placeholder="{% if is_georgia %}Ex: Monitoramento Dra. Geórgia{% else %}Ex: Monitoramento {{ default_target }}{% endif %}" style="background:rgba(12,12,16,0.85);border:1px solid #3f3f46;border-radius:10px;padding:8px 12px;color:#fff;" required>
+        </div>
+
+        <div style="display:grid;gap:6px;margin-bottom:14px;">
+          <label style="font-size:12px;font-weight:600;color:var(--muted);">Critério de Busca</label>
+          <select name="kind" style="background:rgba(12,12,16,0.85);border:1px solid #3f3f46;border-radius:10px;padding:8px 12px;color:#fff;">
+            <option value="lawyer_name">Nome de Advogado</option>
+            <option value="party_name">Nome da Parte / Cliente</option>
+            <option value="content_text">Texto / Palavra-chave no Teor</option>
+            <option value="case_number">Número do Processo (CNJ)</option>
+            <option value="oab">Número de OAB</option>
+          </select>
+        </div>
+
+        <div style="display:grid;gap:6px;margin-bottom:14px;">
+          <label style="font-size:12px;font-weight:600;color:var(--muted);">Valor Pesquisado</label>
+          <input type="text" name="value" placeholder="{% if is_georgia %}Ex: Geórgia de Andrade Almeida{% else %}Ex: {{ default_target }}{% endif %}" style="background:rgba(12,12,16,0.85);border:1px solid #3f3f46;border-radius:10px;padding:8px 12px;color:#fff;" required>
+        </div>
+
+        <div style="display:grid;gap:6px;margin-bottom:14px;">
+          <label style="font-size:12px;font-weight:600;color:var(--muted);">UF da OAB (se aplicável)</label>
+          <input type="text" name="oab_uf" maxlength="2" placeholder="Ex: BA, SP, RJ..." style="background:rgba(12,12,16,0.85);border:1px solid #3f3f46;border-radius:10px;padding:8px 12px;color:#fff;text-transform:uppercase;">
+        </div>
+
+        <button type="submit" class="button button-primary" style="width:100%;margin-top:10px;">
+          Salvar Regra de Monitoramento
+        </button>
+      </form>
+    </aside>
+  </div>
+</div>
+{% endblock %}

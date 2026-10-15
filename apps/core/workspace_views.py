@@ -242,6 +242,41 @@ def audit_trail(request):
     return render(request, "legal/audit.html", {"events": page, "activity": page, "page_obj": page, "page_title": "Auditoria", "active_nav": "audit"})
 
 
+@login_required
+@require_http_methods(["GET", "POST"])
+def customization(request):
+    _manager(request)
+    from .forms import OrganizationBrandingForm
+    org = request.organization
+    form = OrganizationBrandingForm(request.POST or None, request.FILES or None, instance=org)
+    if request.method == "POST":
+        if form.is_valid():
+            try:
+                org = form.save()
+                from apps.legal.services import audit
+                audit(
+                    organization=org,
+                    actor=request.user,
+                    action="organization.customized",
+                    description="Identidade visual e personalização do sistema atualizadas.",
+                )
+                messages.success(request, "Personalização do sistema salva com sucesso!")
+                return redirect("core:customization")
+            except Exception as e:
+                import logging
+                logging.getLogger("django.request").exception("Erro ao salvar personalização: %s", e)
+                messages.error(request, f"Ocorreu um erro ao gravar as alterações: {e}")
+        else:
+            messages.error(request, "Por favor, revise os campos destacados antes de salvar.")
+
+    return render(request, "core/customization.html", {
+        "page_title": "Personalização & Identidade Visual",
+        "active_nav": "customization",
+        "form": form,
+        "organization": org,
+    })
+
+
 def error403(request, exception=None):
     return render(request, "registration/error.html", {"code": 403, "message": "Sua conta não tem permissão para acessar este conteúdo."}, status=403)
 

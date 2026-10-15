@@ -1,0 +1,21 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "SYNTHETIC_LOCAL_ONLY", "version": "0" },
+  "paths": {
+    "/synthetic": {
+      "parameters": [ { "$ref": "#/components/parameters/Page" } ],
+      "get": {
+        "operationId": "synthetic_list",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 }, "required": true }
+        ],
+        "responses": { "200": { "description": "synthetic" } }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "Page": { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 0 } }
+    }
+  }
+}

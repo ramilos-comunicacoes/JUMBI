@@ -1,0 +1,159 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}">
+<style>
+.integrations-subnav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; }
+.subnav-pill { padding: 8px 16px; border-radius: 99px; font-size: 12px; font-weight: 600; color: var(--muted); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); text-decoration: none; transition: all 150ms ease; display: inline-flex; align-items: center; gap: 6px; }
+.subnav-pill:hover, .subnav-pill.is-active { background: var(--amber-soft, rgba(245,160,0,0.12)); color: var(--primary, #F5A000); border-color: var(--amber-border, rgba(245,160,0,0.3)); }
+.triage-card { background: rgba(24, 24, 28, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 20px; margin-bottom: 16px; display: grid; gap: 12px; }
+.triage-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.triage-snippet { font-size: 12px; color: var(--text); background: rgba(12, 12, 16, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px; line-height: 1.6; max-height: 150px; overflow-y: auto; }
+.triage-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; }
+.confirm-dialog { max-width: 500px; width: calc(100% - 32px); background: rgba(22, 22, 28, 0.98); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 24px; color: #fff; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+.confirm-dialog::backdrop { background: rgba(0,0,0,0.75); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-workspace">
+  <div class="page-heading" style="margin-bottom: 14px;">
+    <div>
+      <h1 style="font-size: 22px; font-weight: 700; margin: 0;">Fila de Triagem de Publicações & Prazos</h1>
+      <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted);">Confirme publicações, vincule a pastas jurídicas e gere prazos e tarefas automaticamente.</p>
+    </div>
+  </div>
+
+  <nav class="integrations-subnav">
+    <a href="{% url 'integrations:connectors' %}" class="subnav-pill">Conectores & APIs</a>
+    <a href="{% url 'integrations:monitors' %}" class="subnav-pill">Monitoramentos</a>
+    <a href="{% url 'integrations:triage' %}" class="subnav-pill is-active">Fila de Triagem</a>
+    <a href="{% url 'integrations:coverage' %}" class="subnav-pill">Cobertura dos Tribunais</a>
+    <a href="{% url 'integrations:reports' %}" class="subnav-pill">Relatórios Word (.docx)</a>
+  </nav>
+
+  <!-- Filter Bar -->
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;">
+    <div style="display:flex;gap:8px;">
+      <a href="?status=pending" class="subnav-pill {% if status_filter == 'pending' %}is-active{% endif %}">Pendentes</a>
+      <a href="?status=confirmed" class="subnav-pill {% if status_filter == 'confirmed' %}is-active{% endif %}">Confirmadas</a>
+      <a href="?status=dismissed" class="subnav-pill {% if status_filter == 'dismissed' %}is-active{% endif %}">Descartadas</a>
+      <a href="?status=all" class="subnav-pill {% if status_filter == 'all' %}is-active{% endif %}">Todas</a>
+    </div>
+    <form method="get" style="display:flex;gap:8px;">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+      <input type="text" name="q" value="{{ search }}" placeholder="Buscar por processo, teor..." style="background:rgba(14,14,18,0.8);border:1px solid #3f3f46;border-radius:10px;padding:6px 12px;color:#fff;font-size:12px;min-height:36px;">
+      <button type="submit" class="button button-secondary" style="min-height:36px;padding:4px 12px;font-size:12px;">Buscar</button>
+    </form>
+  </div>
+
+  <!-- Communications List -->
+  {% for comm in communications %}
+    <div class="triage-card">
+      <div class="triage-card-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <strong style="color:var(--primary);font-size:15px;">{{ comm.case_number|default:"Publicação s/ número de processo" }}</strong>
+            <span class="badge" style="font-size:10px;background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">{{ comm.court_name|default:comm.deployment.court_code }}</span>
+            <span class="badge badge-amber" style="font-size:10px;">{{ comm.get_triage_status_display }}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">
+            Data: {{ comm.communication_date|date:"d/m/Y" }} · Destinatário / Pesquisado: <strong>{{ comm.recipient_name|default:"Titular do Escritório" }}</strong>
+            {% if comm.matched_matter %} · Pasta: <a href="{% url 'legal:detail' comm.matched_matter.pk %}" style="color:var(--primary);">{{ comm.matched_matter.title }}</a>{% endif %}
+          </div>
+        </div>
+        <span class="small muted">ID: {{ comm.external_id }}</span>
+      </div>
+
+      <div class="triage-snippet">
+        {{ comm.full_content|linebreaksbr }}
+      </div>
+
+      {% if comm.triage_status == 'pending' %}
+        <div class="triage-actions">
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="dismiss">
+            <input type="hidden" name="communication_id" value="{{ comm.pk }}">
+            <input type="hidden" name="reason" value="Descartado na triagem operacional.">
+            <button type="submit" class="button button-secondary" style="min-height:36px;font-size:12px;">
+              Descartar
+            </button>
+          </form>
+
+          <button type="button" class="button button-primary" style="min-height:36px;font-size:12px;" onclick="openConfirmDialog('{{ comm.pk }}', '{{ comm.case_number|default:comm.external_id }}');">
+            <svg class="icon"><use href="#i-check"/></svg> Confirmar & Gerar Prazo
+          </button>
+        </div>
+      {% else %}
+        <div class="triage-actions" style="justify-content:flex-start;font-size:11px;color:var(--muted);">
+          Revisado por {{ comm.reviewed_by.get_full_name|default:comm.reviewed_by.email }} em {{ comm.reviewed_at|date:"d/m/Y H:i" }}.
+          {% if comm.deadline %}Prazo fatal: <strong>{{ comm.deadline.due_date|date:"d/m/Y" }}</strong>.{% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="triage-card" style="text-align:center;padding:36px;color:var(--muted);">
+      <p style="margin:0;font-size:14px;">Nenhuma publicação encontrada para o filtro selecionado.</p>
+    </div>
+  {% endfor %}
+
+  {% if page_obj.has_other_pages %}
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:20px;">
+      {% if page_obj.has_previous %}<a class="button button-secondary" href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}">Anterior</a>{% endif %}
+      <span class="muted small" style="align-self:center;">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class="button button-secondary" href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}">Próxima</a>{% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<!-- Modal Dialog Confirmar -->
+<dialog class="confirm-dialog" id="modal-confirm-dialog">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <h2 style="font-size:17px;font-weight:700;margin:0;">Confirmar Comunicação & Criar Prazo</h2>
+    <button type="button" class="icon-button" onclick="document.getElementById('modal-confirm-dialog').close();">
+      <svg class="icon"><use href="#i-close"/></svg>
+    </button>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">
+    Processo: <strong id="dialog-comm-case" style="color:#fff;"></strong>
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="confirm">
+    <input type="hidden" name="communication_id" id="dialog-comm-id">
+
+    <div style="display:grid;gap:6px;margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:600;color:var(--muted);">Vincular à Pasta Jurídica</label>
+      <select name="matter_id" style="background:rgba(12,12,16,0.85);border:1px solid #3f3f46;border-radius:10px;padding:8px 12px;color:#fff;">
+        <option value="">-- Selecione uma pasta (ou criar/vincular depois) --</option>
+        {% for m in matters %}
+          <option value="{{ m.pk }}">{{ m.title }} ({{ m.client.name|default:"Sem cliente" }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display:grid;gap:6px;margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:600;color:var(--muted);">Prazo Legal Estimado (dias corridos)</label>
+      <input type="number" name="deadline_days" value="15" min="1" max="180" style="background:rgba(12,12,16,0.85);border:1px solid #3f3f46;border-radius:10px;padding:8px 12px;color:#fff;">
+    </div>
+
+    <div style="display:grid;gap:6px;margin-bottom:18px;">
+      <label style="font-size:12px;font-weight:600;color:var(--muted);">Observações da Triagem</label>
+      <textarea name="notes" rows="2" placeholder="Ex: Intimação para contrarrazões..." style="background:rgba(12,12,16,0.85);border:1px solid #3f3f46;border-radius:10px;padding:8px 12px;color:#fff;"></textarea>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;">
+      <button type="button" class="button button-secondary" onclick="document.getElementById('modal-confirm-dialog').close();">Cancelar</button>
+      <button type="submit" class="button button-primary">Confirmar e Criar Prazo</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+function openConfirmDialog(commId, caseNum) {
+  document.getElementById('dialog-comm-id').value = commId;
+  document.getElementById('dialog-comm-case').textContent = caseNum;
+  document.getElementById('modal-confirm-dialog').showModal();
+}
+</script>
+{% endblock %}

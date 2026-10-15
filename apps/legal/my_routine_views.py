@@ -79,7 +79,7 @@ def my_routine(request):
         owner=user,
         status=Task.Status.DONE,
     ).filter(
-        Q(completed_at__date__gte=start_of_month) | Q(completed_at__isnull=True, updated_at__date__gte=start_of_month)
+        Q(completed_at__date__gte=start_of_month) | Q(completed_at__isnull=True, created_at__date__gte=start_of_month)
     ).count()
 
     # Deadlines punctuality rate

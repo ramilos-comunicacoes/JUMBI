@@ -70,11 +70,31 @@ class Organization(models.Model):
     practice_areas = models.JSONField("áreas de atuação", default=list, db_default=[], blank=True, validators=[validate_practice_areas])
     city = models.CharField("cidade", max_length=100, blank=True)
     state = models.CharField("UF", max_length=2, blank=True)
+    system_title = models.CharField("nome do sistema", max_length=100, blank=True, default="JUMBI")
     brand_logo = models.FileField(
         "logo da organização",
         upload_to="organization-logos/%Y/%m/",
         blank=True,
-        validators=[FileExtensionValidator(allowed_extensions=("png", "jpg", "jpeg", "webp"))],
+        validators=[FileExtensionValidator(allowed_extensions=("png", "jpg", "jpeg", "webp", "svg"))],
+    )
+    brand_favicon = models.FileField(
+        "favicon e logo contraída",
+        upload_to="organization-favicons/%Y/%m/",
+        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=("png", "ico", "svg", "webp", "jpg", "jpeg"))],
+    )
+    brand_collapsed_logo = models.FileField(
+        "logo contraída alternativa",
+        upload_to="organization-logos/%Y/%m/",
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=("png", "ico", "svg", "webp", "jpg", "jpeg"))],
+    )
+    glassmorphism_intensity = models.CharField(
+        "intensidade glassmorphism",
+        max_length=20,
+        default="high",
+        choices=[("standard", "Padrão"), ("high", "Acentuado (Vidro fosco)"), ("ultra", "Ultra Glass")],
     )
     brand_primary_color = models.CharField(
         "cor principal",
@@ -106,6 +126,33 @@ class Organization(models.Model):
     @property
     def practice_area_labels(self):
         return [PRACTICE_AREA_LABELS[code] for code in self.practice_areas if code in PRACTICE_AREA_LABELS]
+
+    @property
+    def favicon_url(self):
+        if self.brand_favicon:
+            try:
+                return self.brand_favicon.url
+            except Exception:
+                pass
+        return "/static/brand/favicon.png"
+
+    @property
+    def logo_url(self):
+        if self.brand_logo:
+            try:
+                return self.brand_logo.url
+            except Exception:
+                pass
+        return "/static/brand/logo.png"
+
+    @property
+    def collapsed_logo_url(self):
+        if self.brand_collapsed_logo:
+            try:
+                return self.brand_collapsed_logo.url
+            except Exception:
+                pass
+        return self.favicon_url
 
 
 class OrganizationRole(models.Model):

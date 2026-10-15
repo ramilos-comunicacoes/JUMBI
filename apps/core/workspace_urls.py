@@ -19,4 +19,5 @@ urlpatterns = [
     path("convite/<str:token>/", views.accept_invitation, name="invitation"),
     path("organizacao/selecionar/", views.switch_organization, name="switch_organization"),
     path("auditoria/", views.audit_trail, name="audit"),
+    path("personalizacao/", views.customization, name="customization"),
 ]

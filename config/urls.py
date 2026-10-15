@@ -17,6 +17,7 @@ urlpatterns = [
     path('metas/', include('apps.performance.urls')),
     path('contratos/', include('apps.contracts.urls')),
     path('plataforma/', include('apps.core.platform_urls')),
+    path('integracoes/', include('apps.integrations.urls')),
     path('', include('apps.billing.urls')),
     path('', include('apps.core.workspace_urls')),
 ]

@@ -1,0 +1,319 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}">
+<style>
+.customization-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 980px) { .customization-grid { grid-template-columns: 1fr; } }
+.brand-preview-card { position: sticky; top: 84px; background: rgba(24, 24, 28, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 24px; box-shadow: 0 12px 36px rgba(0,0,0,0.35); }
+.preview-browser-bar { display: flex; align-items: center; gap: 8px; background: rgba(14, 14, 17, 0.9); border-radius: 12px; padding: 10px 14px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.06); }
+.browser-dots { display: flex; gap: 6px; }
+.browser-dot { width: 10px; height: 10px; border-radius: 50%; opacity: 0.8; }
+.dot-red { background: #ef4444; } .dot-yellow { background: #f59e0b; } .dot-green { background: #10b981; }
+.browser-tab { display: inline-flex; align-items: center; gap: 8px; background: rgba(36, 36, 44, 0.9); padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; color: #e4e4e7; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.browser-tab img { width: 15px; height: 15px; object-fit: contain; }
+.preview-sidebar-shell { background: var(--sidebar, #0b1320); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; margin-bottom: 20px; transition: background 200ms ease; }
+.preview-sidebar-expanded { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.preview-logo-img { max-height: 40px; max-width: 160px; object-fit: contain; }
+.preview-sidebar-collapsed { display: flex; align-items: center; gap: 14px; padding-top: 14px; }
+.preview-favicon-badge { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); display: grid; place-items: center; }
+.preview-favicon-badge img { width: 24px; height: 24px; object-fit: contain; }
+.color-swatch-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+.color-swatch-box { border-radius: 12px; padding: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.08); font-size: 11px; font-weight: 600; }
+.swatch-chip { width: 100%; height: 28px; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.15); }
+.form-section-card { background: rgba(24, 24, 28, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px; padding: 22px; margin-bottom: 20px; }
+.form-section-card h2 { font-size: 16px; font-weight: 700; margin: 0 0 6px; display: flex; align-items: center; gap: 10px; color: var(--strong, #fafafa); }
+.form-section-card p.section-sub { font-size: 12px; color: var(--muted, #a1a1aa); margin: 0 0 16px; }
+.field-row { display: grid; gap: 8px; margin-bottom: 16px; }
+.field-row label { font-size: 12px; font-weight: 600; color: var(--muted, #a1a1aa); }
+.field-row input[type="text"], .field-row select { width: 100%; min-height: 44px; background: rgba(14, 14, 18, 0.8); border: 1px solid var(--border-soft, #3f3f46); border-radius: 12px; padding: 10px 14px; color: var(--text, #e4e4e7); }
+.field-row input[type="file"] { width: 100%; min-height: 44px; background: rgba(14, 14, 18, 0.6); border: 1px dashed var(--border-soft, #3f3f46); border-radius: 12px; padding: 10px 14px; color: var(--muted, #a1a1aa); cursor: pointer; }
+.field-row input[type="color"] { width: 64px; height: 42px; border: 1px solid var(--border-soft, #3f3f46); border-radius: 10px; background: transparent; cursor: pointer; }
+.field-help { font-size: 11px; color: var(--muted, #a1a1aa); margin-top: 4px; line-height: 1.5; }
+.custom-submit-bar { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-workspace">
+  <div class="page-heading" style="margin-bottom: 16px;">
+    <div>
+      <h1 style="font-size: 22px; font-weight: 700; margin: 0;">Personalização & Identidade Visual</h1>
+      <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted);">Configure o nome do sistema, logotipos, favicon, paleta de cores e estilo visual do seu escritório.</p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="branding-form">
+    {% csrf_token %}
+    {% if form.errors %}
+      <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; color: #fca5a5;">
+        <strong style="display:flex;align-items:center;gap:8px;">
+          <svg class="icon" style="width:18px;height:18px;color:#ef4444;"><use href="#i-alert"/></svg>
+          Não foi possível salvar as alterações:
+        </strong>
+        <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 13px;">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              <li><strong>{{ field }}:</strong> {{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    <div class="customization-grid">
+      <!-- Form Controls -->
+      <div class="customization-form-col">
+        <!-- Section 1: Nome do Sistema -->
+        <section class="form-section-card">
+          <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-platform"/></svg> Nome e Título do Sistema</h2>
+          <p class="section-sub">Substitua o nome padrão em todas as telas, cabeçalhos e na aba do navegador.</p>
+          <div class="field-row">
+            <label for="{{ form.system_title.id_for_label }}">Nome exibido na plataforma</label>
+            {{ form.system_title }}
+            <span class="field-help">{{ form.system_title.help_text }}</span>
+            {% for error in form.system_title.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+          </div>
+        </section>
+
+        <!-- Section 2: Logotipos & Favicon -->
+        <section class="form-section-card">
+          <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-documents"/></svg> Logotipos e Favicon</h2>
+          <p class="section-sub">A logo contraída do menu lateral assume automaticamente o Favicon por padrão.</p>
+          
+          <div class="field-row">
+            <label for="{{ form.brand_favicon.id_for_label }}">Favicon da Aba & Logo Contraída (Ícone)</label>
+            {{ form.brand_favicon }}
+            <span class="field-help">{{ form.brand_favicon.help_text }}</span>
+            {% if organization.brand_favicon %}
+              <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+                <img src="{{ organization.brand_favicon.url }}" alt="Favicon atual" style="width:24px;height:24px;object-fit:contain;background:rgba(255,255,255,0.06);border-radius:6px;padding:2px;">
+                <span class="small muted">Arquivo atual: {{ organization.brand_favicon.name }}</span>
+              </div>
+            {% endif %}
+            {% for error in form.brand_favicon.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+          </div>
+
+          <div class="field-row">
+            <label for="{{ form.brand_logo.id_for_label }}">Logo Principal Completa (Menu Expandido)</label>
+            {{ form.brand_logo }}
+            <span class="field-help">{{ form.brand_logo.help_text }}</span>
+            {% if organization.brand_logo %}
+              <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+                <img src="{{ organization.brand_logo.url }}" alt="Logo atual" style="max-height:30px;max-width:140px;object-fit:contain;background:rgba(255,255,255,0.06);border-radius:6px;padding:4px;">
+                <span class="small muted">Arquivo atual: {{ organization.brand_logo.name }}</span>
+              </div>
+            {% endif %}
+            {% for error in form.brand_logo.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+          </div>
+
+          <div class="field-row">
+            <label for="{{ form.brand_collapsed_logo.id_for_label }}">Logo Contraída Alternativa (Opcional)</label>
+            {{ form.brand_collapsed_logo }}
+            <span class="field-help">{{ form.brand_collapsed_logo.help_text }}</span>
+            {% for error in form.brand_collapsed_logo.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+          </div>
+        </section>
+
+        <!-- Section 3: Paleta e Cores -->
+        <section class="form-section-card">
+          <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-sun"/></svg> Paleta de Cores & Menu</h2>
+          <p class="section-sub">Defina as tonalidades que expressam a identidade visual do seu escritório.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:16px;">
+            <div class="field-row">
+              <label for="{{ form.brand_primary_color.id_for_label }}">Cor Principal</label>
+              <div style="display:flex;align-items:center;gap:10px;">
+                {{ form.brand_primary_color }}
+                <span id="label-primary-color" style="font-family:monospace;font-size:12px;">{{ form.brand_primary_color.value|default:'#F5A000' }}</span>
+              </div>
+              <span class="field-help">{{ form.brand_primary_color.help_text }}</span>
+            </div>
+            <div class="field-row">
+              <label for="{{ form.brand_accent_color.id_for_label }}">Cor de Destaque</label>
+              <div style="display:flex;align-items:center;gap:10px;">
+                {{ form.brand_accent_color }}
+                <span id="label-accent-color" style="font-family:monospace;font-size:12px;">{{ form.brand_accent_color.value|default:'#0F4050' }}</span>
+              </div>
+              <span class="field-help">{{ form.brand_accent_color.help_text }}</span>
+            </div>
+            <div class="field-row">
+              <label for="{{ form.brand_sidebar_color.id_for_label }}">Fundo do Menu Lateral</label>
+              <div style="display:flex;align-items:center;gap:10px;">
+                {{ form.brand_sidebar_color }}
+                <span id="label-sidebar-color" style="font-family:monospace;font-size:12px;">{{ form.brand_sidebar_color.value|default:'#0B1320' }}</span>
+              </div>
+              <span class="field-help">{{ form.brand_sidebar_color.help_text }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 4: Glassmorphism -->
+        <section class="form-section-card">
+          <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-security"/></svg> Estilo Glassmorphism</h2>
+          <p class="section-sub">Intensidade de transparência, desfoque fosco e profundidade dos cartões.</p>
+          <div class="field-row">
+            <label for="{{ form.glassmorphism_intensity.id_for_label }}">Intensidade Visual de Vidro Fosco</label>
+            {{ form.glassmorphism_intensity }}
+            <span class="field-help">{{ form.glassmorphism_intensity.help_text }}</span>
+          </div>
+        </section>
+
+        <!-- Section 5: Áreas de Atuação & Módulos Especializados -->
+        <section class="form-section-card">
+          <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-scale"/></svg> Áreas de Atuação & Módulos Especializados</h2>
+          <p class="section-sub">Selecione as áreas do seu escritório. O JUMBI adapta menus, calculadoras, fluxos de prazos e modelos de petições para a prática real de cada área.</p>
+
+          <div class="practice-areas-selection-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-top: 14px;">
+            {% for choice in form.practice_areas %}
+              <label class="practice-area-option-card" style="display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; cursor: pointer; transition: all 150ms ease;">
+                <span style="padding-top: 2px;">{{ choice.tag }}</span>
+                <div style="display: grid; gap: 3px;">
+                  <span style="font-size: 13px; font-weight: 600; color: #fff;">{{ choice.choice_label }}</span>
+                  {% if choice.data.value == 'previdenciario' %}
+                    <span class="badge" style="background: rgba(245,160,0,0.18); color: #f5a000; font-size: 9px; padding: 2px 6px; border-radius: 6px; width: fit-content; border: 1px solid rgba(245,160,0,0.3);">INSS · Exigências · EC 103</span>
+                  {% elif choice.data.value == 'trabalhista' %}
+                    <span class="badge" style="background: rgba(16,185,129,0.18); color: #10b981; font-size: 9px; padding: 2px 6px; border-radius: 6px; width: fit-content; border: 1px solid rgba(16,185,129,0.3);">Audiências · Rescisão CLT</span>
+                  {% elif choice.data.value == 'civil' %}
+                    <span class="badge" style="background: rgba(59,130,246,0.18); color: #60a5fa; font-size: 9px; padding: 2px 6px; border-radius: 6px; width: fit-content; border: 1px solid rgba(59,130,246,0.3);">Contratos · Prazos CPC</span>
+                  {% elif choice.data.value == 'familia' %}
+                    <span class="badge" style="background: rgba(236,72,153,0.18); color: #f472b6; font-size: 9px; padding: 2px 6px; border-radius: 6px; width: fit-content; border: 1px solid rgba(236,72,153,0.3);">Alimentos · Ritos</span>
+                  {% elif choice.data.value == 'tributario' %}
+                    <span class="badge" style="background: rgba(168,85,247,0.18); color: #c084fc; font-size: 9px; padding: 2px 6px; border-radius: 6px; width: fit-content; border: 1px solid rgba(168,85,247,0.3);">Execução Fiscal · Débitos</span>
+                  {% endif %}
+                </div>
+              </label>
+            {% endfor %}
+          </div>
+          {% for error in form.practice_areas.errors %}<span class="text-danger small" style="margin-top:6px;display:block;">{{ error }}</span>{% endfor %}
+        </section>
+
+        <div class="custom-submit-bar">
+          <button type="submit" class="button button-primary" style="min-width:180px;">Salvar Personalização</button>
+        </div>
+      </div>
+
+      <!-- Live Preview Sidebar -->
+      <aside class="customization-preview-col">
+        <div class="brand-preview-card">
+          <h3 style="font-size:14px;font-weight:700;margin:0 0 14px;display:flex;align-items:center;justify-content:space-between;">
+            <span>Prévia em Tempo Real</span>
+            <span class="badge badge-amber" style="font-size:10px;">Live View</span>
+          </h3>
+
+          <!-- Mock Browser Tab -->
+          <div class="preview-browser-bar">
+            <div class="browser-dots">
+              <div class="browser-dot dot-red"></div>
+              <div class="browser-dot dot-yellow"></div>
+              <div class="browser-dot dot-green"></div>
+            </div>
+            <div class="browser-tab" id="preview-tab">
+              <img id="preview-favicon-img" src="{{ organization.favicon_url }}" alt="Favicon">
+              <span id="preview-tab-title">{{ organization.system_title|default:"JUMBI" }} · Gestão Jurídica</span>
+            </div>
+          </div>
+
+          <!-- Mock Sidebar Header Preview -->
+          <div class="preview-sidebar-shell" id="preview-sidebar-shell" style="background: {{ organization.brand_sidebar_color|default:'#0B1320' }};">
+            <div class="preview-sidebar-expanded">
+              <div>
+                <small style="display:block;font-size:9px;text-transform:uppercase;color:var(--muted);letter-spacing:0.05em;margin-bottom:4px;">Menu Expandido</small>
+                <img id="preview-logo-img" class="preview-logo-img" src="{{ organization.logo_url }}" alt="Logo Principal">
+              </div>
+              <span class="badge" style="font-size:10px;background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.1);">Sidebar</span>
+            </div>
+
+            <div class="preview-sidebar-collapsed">
+              <div class="preview-favicon-badge">
+                <img id="preview-collapsed-img" src="{{ organization.collapsed_logo_url }}" alt="Logo Contraída">
+              </div>
+              <div>
+                <strong style="display:block;font-size:12px;color:#fff;">Menu Contraído</strong>
+                <small style="color:var(--muted);font-size:10px;">Usa o favicon da marca</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Color Swatches Preview -->
+          <div class="color-swatch-row">
+            <div class="color-swatch-box" style="background: rgba(255,255,255,0.03);">
+              <div class="swatch-chip" id="chip-primary" style="background: {{ organization.brand_primary_color|default:'#F5A000' }};"></div>
+              <span>Principal</span>
+            </div>
+            <div class="color-swatch-box" style="background: rgba(255,255,255,0.03);">
+              <div class="swatch-chip" id="chip-accent" style="background: {{ organization.brand_accent_color|default:'#0F4050' }};"></div>
+              <span>Destaque</span>
+            </div>
+            <div class="color-swatch-box" style="background: rgba(255,255,255,0.03);">
+              <div class="swatch-chip" id="chip-sidebar" style="background: {{ organization.brand_sidebar_color|default:'#0B1320' }};"></div>
+              <span>Menu Lateral</span>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;padding:14px;border-radius:12px;background:rgba(245,160,0,0.08);border:1px solid rgba(245,160,0,0.2);font-size:11px;color:var(--text);line-height:1.5;">
+            <strong>Nota:</strong> As alterações salvas aplicam-se a todos os membros do escritório imediatamente.
+          </div>
+        </div>
+      </aside>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const titleInput = document.getElementById('{{ form.system_title.id_for_label }}');
+  const tabTitle = document.getElementById('preview-tab-title');
+  if (titleInput && tabTitle) {
+    titleInput.addEventListener('input', () => {
+      tabTitle.textContent = (titleInput.value.trim() || 'JUMBI') + ' · Gestão Jurídica';
+    });
+  }
+
+  // Live Color Pickers
+  const primaryInput = document.getElementById('{{ form.brand_primary_color.id_for_label }}');
+  const accentInput = document.getElementById('{{ form.brand_accent_color.id_for_label }}');
+  const sidebarInput = document.getElementById('{{ form.brand_sidebar_color.id_for_label }}');
+
+  if (primaryInput) {
+    primaryInput.addEventListener('input', (e) => {
+      document.getElementById('label-primary-color').textContent = e.target.value.toUpperCase();
+      document.getElementById('chip-primary').style.backgroundColor = e.target.value;
+    });
+  }
+  if (accentInput) {
+    accentInput.addEventListener('input', (e) => {
+      document.getElementById('label-accent-color').textContent = e.target.value.toUpperCase();
+      document.getElementById('chip-accent').style.backgroundColor = e.target.value;
+    });
+  }
+  if (sidebarInput) {
+    sidebarInput.addEventListener('input', (e) => {
+      document.getElementById('label-sidebar-color').textContent = e.target.value.toUpperCase();
+      document.getElementById('chip-sidebar').style.backgroundColor = e.target.value;
+      document.getElementById('preview-sidebar-shell').style.backgroundColor = e.target.value;
+    });
+  }
+
+  // Image File Previews
+  function bindImagePreview(inputId, imgTargetId, secondaryImgTargetId) {
+    const input = document.getElementById(inputId);
+    const target = document.getElementById(imgTargetId);
+    const secondary = secondaryImgTargetId ? document.getElementById(secondaryImgTargetId) : null;
+    if (!input || !target) return;
+
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          target.src = e.target.result;
+          if (secondary) secondary.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  bindImagePreview('{{ form.brand_favicon.id_for_label }}', 'preview-favicon-img', 'preview-collapsed-img');
+  bindImagePreview('{{ form.brand_logo.id_for_label }}', 'preview-logo-img', null);
+  bindImagePreview('{{ form.brand_collapsed_logo.id_for_label }}', 'preview-collapsed-img', null);
+});
+</script>
+{% endblock %}

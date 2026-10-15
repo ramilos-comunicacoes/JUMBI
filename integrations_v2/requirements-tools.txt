@@ -1,0 +1,3 @@
+# Versões usadas para os testes locais deste pacote; não são a stack do Jumbi.
+PyYAML==6.0.3
+defusedxml==0.7.1
