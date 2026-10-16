@@ -121,3 +121,97 @@ def trabalhista_hub(request):
         "labor_tasks": labor_tasks,
         "can_edit": can_edit(request),
     })
+
+
+@organization_required
+@require_http_methods(["POST"])
+def demand_action(request, pk, action):
+    """Executes actions on an AdministrativeDemand (criar_prazo, cumprir, judicializar)."""
+    if not can_edit(request):
+        raise PermissionDenied("Você não tem permissão para alterar demandas.")
+
+    org = request.organization
+    user = request.user
+    demand = get_object_or_404(AdministrativeDemand, pk=pk, organization=org)
+
+    if action == "criar_prazo":
+        due = demand.requirement_due_date or (timezone.localdate() + timedelta(days=30))
+        deadline = Deadline(
+            organization=org,
+            matter=demand.matter,
+            title=f"Cumprir Exigência INSS - Prot. {demand.protocol_number}",
+            source=f"Exigência INSS ({demand.service_name}) - Prot. {demand.protocol_number}",
+            due_date=due,
+            owner=user,
+            status=Deadline.Status.PENDING,
+            kind=Deadline.Kind.ADMINISTRATIVE,
+        )
+        deadline.full_clean()
+        deadline.save()
+
+        task = Task(
+            organization=org,
+            matter=demand.matter,
+            title=f"Cumprir Exigência INSS: {demand.service_name}",
+            description=(
+                f"Exigência INSS do protocolo {demand.protocol_number}.\n"
+                f"Segurado(a): {demand.contact.name if demand.contact else 'N/A'}\n"
+                f"Exigência/Decisão: {demand.demands_summary or 'Apresentação de documentos complementares.'}"
+            ),
+            due_date=due,
+            owner=user,
+            priority=Task.Priority.URGENT,
+            deadline=deadline,
+        )
+        task.full_clean()
+        task.save()
+
+        if demand.status != AdministrativeDemand.Status.REQUIREMENT:
+            demand.status = AdministrativeDemand.Status.REQUIREMENT
+            demand.save(update_fields=["status", "updated_at"])
+
+        messages.success(
+            request,
+            f"Prazo fatal e tarefa criados com sucesso para o protocolo {demand.protocol_number} (Vencimento: {due.strftime('%d/%m/%Y')})!"
+        )
+
+    elif action == "cumprir":
+        demand.status = AdministrativeDemand.Status.PENDING
+        action_note = f"\n[Exigência cumprida em {timezone.localdate().strftime('%d/%m/%Y')} por {user.get_full_name() or user.email}]"
+        demand.next_action = (demand.next_action or "") + action_note
+        demand.save(update_fields=["status", "next_action", "updated_at"])
+        messages.success(
+            request,
+            f"Exigência do protocolo {demand.protocol_number} marcada como cumprida! Status alterado para 'Em análise'."
+        )
+
+    elif action == "judicializar":
+        demand.status = AdministrativeDemand.Status.REJECTED
+        action_note = f"\n[Encaminhado para judicialização em {timezone.localdate().strftime('%d/%m/%Y')} por {user.get_full_name() or user.email}]"
+        demand.next_action = (demand.next_action or "") + action_note
+        demand.save(update_fields=["status", "next_action", "updated_at"])
+
+        task = Task(
+            organization=org,
+            matter=demand.matter,
+            title=f"Distribuir Ação Judicial: {demand.service_name}",
+            description=(
+                f"Demanda administrativa indeferida (Prot. {demand.protocol_number}). "
+                f"Elaborar petição inicial e ajuizar na Justiça Federal / JEF competente."
+            ),
+            due_date=timezone.localdate() + timedelta(days=15),
+            owner=user,
+            priority=Task.Priority.HIGH,
+        )
+        task.full_clean()
+        task.save()
+        messages.info(
+            request,
+            f"Requerimento {demand.protocol_number} encaminhado para via judicial! Tarefa de peticionamento criada."
+        )
+    else:
+        messages.warning(request, f"Ação '{action}' não reconhecida.")
+
+    next_url = request.POST.get("next") or reverse("legal:previdenciario_hub")
+    return redirect(next_url)
+

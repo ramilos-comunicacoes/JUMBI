@@ -7,14 +7,14 @@
 
 {% block content %}
 <div class="section-workspace">
-  <!-- Clean Header with Direct Action -->
+  <!-- Top Heading -->
   <div class="page-heading" style="margin-bottom: 20px;">
     <div>
       <h1 style="font-size: 22px; font-weight: 700; margin: 0; display:flex; align-items:center; gap:10px;">
         <svg class="icon" style="width:24px;height:24px;color:var(--primary);"><use href="#i-demands"/></svg>
         Direito Previdenciário & INSS
       </h1>
-      <p style="margin: 4px 0 0; font-size: 12px; color: var(--muted);">Gestão avançada de requerimentos administrativos, acompanhamento de exigências com vencimento informado e conferido na fonte oficial.</p>
+      <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted);">Central especializada de gestão previdenciária: exigências INSS, simulador de transição EC 103/2019, checklists inteligentes e minutas fundamentadas.</p>
     </div>
     <div class="heading-actions">
       {% if can_edit %}
@@ -25,147 +25,1125 @@
     </div>
   </div>
 
-  <!-- Metric Badges -->
+  <!-- Metric Badges Hero -->
   <div class="niche-grid-hero">
     <div class="niche-stat-box">
       <span class="stat-lbl">Requerimentos Ativos</span>
       <span class="stat-val" style="color:var(--primary);">{{ active_count }}</span>
-      <span class="small muted">Em análise ou trâmite</span>
+      <span class="small muted">Em análise ou trâmite administrativo</span>
     </div>
-    <div class="niche-stat-box" style="border-color: rgba(239, 68, 68, 0.3);">
-      <span class="stat-lbl">Em exigência</span>
+    <div class="niche-stat-box" style="border-color: rgba(239, 68, 68, 0.35);">
+      <span class="stat-lbl">Em Exigência INSS</span>
       <span class="stat-val" style="color:#ef4444;">{{ requirement_count }}</span>
-      <span class="small muted">Conferir a fonte e o vencimento</span>
+      <span class="small muted">Prazos de 30 dias sob monitoramento</span>
     </div>
     <div class="niche-stat-box">
       <span class="stat-lbl">Concluídos / Concedidos</span>
       <span class="stat-val" style="color:#10b981;">{{ concluded_count }}</span>
-      <span class="small muted">Benefícios deferidos</span>
+      <span class="small muted">Benefícios deferidos com sucesso</span>
     </div>
     <div class="niche-stat-box">
       <span class="stat-lbl">Indeferidos / Judicializáveis</span>
-      <span class="stat-val" style="color:#a1a1aa;">{{ rejected_count }}</span>
-      <span class="small muted">Prontos para ação judicial</span>
+      <span class="stat-val" style="color:#a855f7;">{{ rejected_count }}</span>
+      <span class="small muted">Prontos para inicial no JEF/Justiça Federal</span>
     </div>
   </div>
 
-  <div class="niche-two-col">
-    <!-- Left Column: Requerimentos & Exigências Críticas -->
-    <div>
-      <!-- 30-Day Exigência Monitoring Box -->
-      {% if demands_with_deadlines %}
-        <section class="form-section-card" style="border-color: rgba(239,68,68,0.35); background: rgba(35, 18, 22, 0.7); margin-bottom: 20px;">
-          <h2 style="color:#ef4444;"><svg class="icon" style="width:18px;height:18px;"><use href="#i-clock"/></svg> Contagem Regressiva de Exigências INSS</h2>
-          <p class="section-sub">Os alertas usam a data informada no cadastro. Sem uma data conferida, a exigência permanece pendente de verificação.</p>
-          <div style="display:grid;gap:10px;">
-            {% for item in demands_with_deadlines %}
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(20,20,26,0.8);border:1px solid rgba(255,255,255,0.08);">
+  <!-- Specialized Hub Navigation Tabs -->
+  <div class="niche-tabs">
+    <button type="button" class="niche-tab-btn active" onclick="switchNicheTab('tab-demandas', this)">
+      <svg class="icon" style="width:16px;height:16px;"><use href="#i-clock"/></svg>
+      Acompanhamento & Exigências
+      {% if requirement_count %}<span class="badge-pill">{{ requirement_count }}</span>{% endif %}
+    </button>
+    <button type="button" class="niche-tab-btn" onclick="switchNicheTab('tab-simulador', this)">
+      <svg class="icon" style="width:16px;height:16px;"><use href="#i-calendar"/></svg>
+      Simulador EC 103/2019
+    </button>
+    <button type="button" class="niche-tab-btn" onclick="switchNicheTab('tab-checklist', this)">
+      <svg class="icon" style="width:16px;height:16px;"><use href="#i-tasks"/></svg>
+      Checklists & Cobrança WhatsApp
+    </button>
+    <button type="button" class="niche-tab-btn" onclick="switchNicheTab('tab-peticoes', this)">
+      <svg class="icon" style="width:16px;height:16px;"><use href="#i-documents"/></svg>
+      Biblioteca de Petições Previdenciárias
+    </button>
+  </div>
+
+  <!-- TAB 1: Demandas & Exigências INSS -->
+  <div id="tab-demandas" class="niche-tab-content active">
+    <div class="niche-two-col">
+      <div>
+        <!-- 30-Day Requirement Countdown Section -->
+        {% if demands_with_deadlines %}
+          <section class="form-section-card" style="border-color: rgba(239,68,68,0.4); background: rgba(35, 18, 22, 0.7); margin-bottom: 24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h2 style="color:#ef4444; margin:0; display:flex; align-items:center; gap:8px;">
+                <svg class="icon" style="width:18px;height:18px;"><use href="#i-clock"/></svg>
+                Contagem Regressiva de Exigências INSS (Prazo Fatal 30 Dias)
+              </h2>
+              <span class="badge badge-urgent" style="font-size:11px;">Atenção Prioritária</span>
+            </div>
+            <p class="section-sub">Conforme a IN 128/2022, o não cumprimento da exigência no prazo legal acarreta o indeferimento ou arquivamento sumário do benefício.</p>
+
+            <div style="display:grid; gap:12px; margin-top:14px;">
+              {% for item in demands_with_deadlines %}
+                <div class="exigencia-card">
+                  <div class="exigencia-header">
+                    <div>
+                      <strong style="font-size:14px; color:#fff; display:block;">
+                        {{ item.demand.service_name }} · Prot: {{ item.demand.protocol_number }}
+                      </strong>
+                      <span class="small muted" style="display:block; margin-top:2px;">
+                        Segurado(a): <strong style="color:var(--strong);">{{ item.demand.contact.name }}</strong> · Pasta: <a href="{% url 'legal:detail' item.demand.matter_id %}" class="text-link">{{ item.demand.matter.title }}</a>
+                      </span>
+                      {% if item.demand.demands_summary %}
+                        <div style="font-size:12px; color:#e2e8f0; background:rgba(0,0,0,0.3); border-left:3px solid #ef4444; padding:6px 10px; border-radius:4px; margin-top:8px;">
+                          <strong>Exigência:</strong> {{ item.demand.demands_summary|truncatechars:180 }}
+                        </div>
+                      {% endif %}
+                    </div>
+                    <div style="text-align:right; min-width:140px;">
+                      <span class="badge {% if item.days_left == None %}badge-slate{% elif item.days_left < 0 %}badge-danger{% elif item.days_left <= 7 %}badge-urgent{% else %}badge-attention{% endif %}" style="font-size:11px;font-weight:700;">
+                        {% if item.deadline_date == None %}Vencimento a conferir{% elif item.days_left < 0 %}Venceu há {{ item.days_left|stringformat:"d"|slice:"1:" }} dias{% elif item.days_left == 0 %}VENCE HOJE!{% else %}Faltam {{ item.days_left }} dias{% endif %}
+                      </span>
+                      <span class="small muted" style="display:block; margin-top:4px;">
+                        Limite: <strong>{{ item.deadline_date|date:"d/m/Y"|default:"Não conferido" }}</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Inline Quick Actions -->
+                  {% if can_edit %}
+                    <div class="exigencia-actions">
+                      <form method="post" action="{% url 'legal:demand_action' item.demand.pk 'criar_prazo' %}" style="margin:0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'legal:previdenciario_hub' %}">
+                        <button type="submit" class="btn-action-sm btn-deadline" title="Cria prazo fatal no Calendário e tarefa urgente no Kanban">
+                          <svg class="icon" style="width:13px;height:13px;"><use href="#i-calendar"/></svg> + Criar Prazo Fatal & Tarefa
+                        </button>
+                      </form>
+
+                      <form method="post" action="{% url 'legal:demand_action' item.demand.pk 'cumprir' %}" style="margin:0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'legal:previdenciario_hub' %}">
+                        <button type="submit" class="btn-action-sm btn-fulfill" title="Marca a exigência como cumprida e devolve para análise do INSS">
+                          <svg class="icon" style="width:13px;height:13px;"><use href="#i-check"/></svg> Marcar Cumprida
+                        </button>
+                      </form>
+
+                      <form method="post" action="{% url 'legal:demand_action' item.demand.pk 'judicializar' %}" style="margin:0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'legal:previdenciario_hub' %}">
+                        <button type="submit" class="btn-action-sm btn-judicialize" title="Encaminha para ajuizamento de ação e cria tarefa de peticionamento">
+                          <svg class="icon" style="width:13px;height:13px;"><use href="#i-balance"/></svg> Judicializar
+                        </button>
+                      </form>
+
+                      <a href="{% url 'legal:detail' item.demand.matter_id %}" class="btn-action-sm" style="margin-left:auto;">
+                        Abrir Pasta &rarr;
+                      </a>
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </section>
+        {% endif %}
+
+        <!-- Tabela de Requerimentos Recentes -->
+        <section class="form-section-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-folder"/></svg> Protocolos e Requerimentos Recentes</h2>
+            <a href="{% url 'legal:list' 'demands' %}" class="text-link" style="font-size:12px;">Ver todos os {{ demands.count }} &rarr;</a>
+          </div>
+          <p class="section-sub">Acompanhamento contínuo dos protocolos Meu INSS / SAG Gestão.</p>
+
+          <div class="table-scroll">
+            <table class="table-records">
+              <thead>
+                <tr>
+                  <th>Protocolo / Benefício</th>
+                  <th>Segurado</th>
+                  <th>Situação</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in demands %}
+                  <tr>
+                    <td>
+                      <strong>{{ d.protocol_number }}</strong>
+                      <span class="small muted" style="display:block;">{{ d.service_name }}</span>
+                    </td>
+                    <td>{{ d.contact.name }}</td>
+                    <td>
+                      <span class="badge badge-{{ d.status }}">{{ d.get_status_display }}</span>
+                    </td>
+                    <td>
+                      <div style="display:flex; gap:6px; align-items:center;">
+                        <a href="{% url 'legal:detail' d.matter_id %}" class="text-link" style="font-size:12px;">Pasta</a>
+                        <span class="muted">·</span>
+                        <a href="{% url 'legal:edit' 'demands' d.pk %}" class="text-link" style="font-size:12px;">Editar</a>
+                      </div>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center muted" style="padding:24px;">Nenhum requerimento administrativo cadastrado ainda.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column: Pastas Previdenciárias & Links Rápidos -->
+      <aside>
+        <section class="form-section-card" style="margin-bottom:20px;">
+          <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-briefcase"/></svg> Pastas Previdenciárias Ativas</h2>
+          <p class="section-sub">Últimas pastas vinculadas ao nicho Previdenciário.</p>
+          <div style="display:grid; gap:8px;">
+            {% for m in matters_prev %}
+              <div style="padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                  <strong style="font-size:13px;color:#fff;display:block;">{{ item.demand.service_name }} · Prot: {{ item.demand.protocol_number }}</strong>
-                  <span class="small muted">Segurado(a): {{ item.demand.contact.name }} · Pasta: {{ item.demand.matter.title }}</span>
+                  <a href="{% url 'legal:detail' m.pk %}" style="font-size:13px; font-weight:600; color:var(--strong); text-decoration:none;">{{ m.title }}</a>
+                  <span class="small muted" style="display:block;">Cliente: {{ m.client.name|default:"Sem cliente vinculado" }}</span>
                 </div>
-                <div style="text-align:right;">
-                  <span class="badge {% if item.days_left < 0 %}badge-danger{% elif item.days_left <= 7 %}badge-urgent{% else %}badge-attention{% endif %}" style="font-size:11px;font-weight:700;">
-                    {% if item.deadline_date == None %}Vencimento a conferir{% elif item.days_left < 0 %}Venceu há {{ item.days_left|stringformat:"d"|slice:"1:" }} dias{% elif item.days_left == 0 %}Vence HOJE!{% else %}Faltam {{ item.days_left }} dias{% endif %}
-                  </span>
-                  <span class="small muted" style="display:block;margin-top:2px;">Limite: {{ item.deadline_date|date:"d/m/Y" }}</span>
-                </div>
+                <span class="badge badge-slate" style="font-size:10px;">{{ m.get_status_display }}</span>
               </div>
+            {% empty %}
+              <p class="small muted" style="padding:12px 0;">Nenhuma pasta classificada como Previdenciário ainda.</p>
             {% endfor %}
           </div>
         </section>
-      {% endif %}
 
-      <!-- Tabela de Requerimentos Recentes -->
-      <section class="form-section-card">
-        <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-folder"/></svg> Protocolos e Requerimentos Recentes</h2>
-        <p class="section-sub">Acompanhamento contínuo dos protocolos Meu INSS / SAG Gestão.</p>
-        <div class="table-scroll">
-          <table class="table-records">
-            <thead>
-              <tr>
-                <th>Protocolo / Benefício</th>
-                <th>Segurado</th>
-                <th>Situação</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for d in demands %}
-                <tr>
-                  <td>
-                    <strong>{{ d.protocol_number }}</strong>
-                    <span class="small muted" style="display:block;">{{ d.service_name }}</span>
-                  </td>
-                  <td>{{ d.contact.name }}</td>
-                  <td>
-                    <span class="badge badge-{{ d.status }}">{{ d.get_status_display }}</span>
-                  </td>
-                  <td>
-                    <a href="{% url 'legal:detail' d.matter_id %}" class="text-link" style="font-size:12px;">Ver Pasta</a>
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="4" class="text-center muted" style="padding:24px;">Nenhum requerimento administrativo cadastrado ainda.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Modelos Prontos de Peças Previdenciárias -->
-      <section class="form-section-card">
-        <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-documents"/></svg> Modelos Rápidos de Petições Previdenciárias</h2>
-        <p class="section-sub">Peças completas com fundamentação atualizada para uso imediato pelo escritório.</p>
-
-        <div class="template-piece-card">
-          <div class="piece-info">
-            <h3>Mandado de Segurança por Excesso de Prazo do INSS</h3>
-            <p>Demora injustificada na análise (+45 dias da Lei 9.784/99 ou Acordo STF RE 1.171.152).</p>
+        <section class="form-section-card" style="border-color: rgba(245, 160, 0, 0.25);">
+          <h2><svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-check"/></svg> Conferência técnica e Boas Práticas IN 128/2022</h2>
+          <p class="section-sub">Registre a análise, os documentos e os cálculos conferidos pela equipe na pasta do cliente.</p>
+          <div style="font-size:12px; color:var(--muted); line-height:1.6; display:grid; gap:8px; margin-top:8px;">
+            <div>✦ <strong>Exigência em 30 Dias:</strong> Não deixe para o último dia. Protocolar pelo menos 5 dias antes para evitar instabilidade no Meu INSS.</div>
+            <div>✦ <strong>Autodeclaração Rural:</strong> Deve ser preenchida de próprio punho ou assinada digitalmente com documentos contemporâneos dos anos declarados.</div>
+            <div>✦ <strong>PPP e LTCAT:</strong> Conferir código GFIP, responsável pelos registros ambientais e agente nocivo com mensuração.</div>
           </div>
-          <button type="button" class="copy-pill-btn" onclick="copyTemplate('ms_inss')">
-            <svg class="icon" style="width:14px;height:14px;"><use href="#i-file"/></svg> Copiar Minuta
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- TAB 2: Simulador EC 103/2019 -->
+  <div id="tab-simulador" class="niche-tab-content">
+    <div class="sim-container">
+      <!-- Calculator Inputs Form -->
+      <div class="sim-form-card">
+        <div>
+          <h2 style="font-size:16px; margin:0 0 4px; color:var(--strong); display:flex; align-items:center; gap:8px;">
+            <svg class="icon" style="width:18px;height:18px;color:var(--primary);"><use href="#i-calendar"/></svg>
+            Dados do Segurado(a)
+          </h2>
+          <p class="small muted" style="margin:0;">Simule instantaneamente as 5 regras de transição da EC 103/2019, Aposentadoria por Idade e BPC/LOAS.</p>
+        </div>
+
+        <div class="sim-form-group">
+          <label>Sexo do Segurado(a)</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <button type="button" id="btn-sex-m" class="niche-tab-btn active" style="justify-content:center;" onclick="setSimulatorSex('M')">Homem</button>
+            <button type="button" id="btn-sex-f" class="niche-tab-btn" style="justify-content:center;" onclick="setSimulatorSex('F')">Mulher</button>
+          </div>
+        </div>
+
+        <div class="sim-form-group">
+          <label for="sim-birthdate">Data de Nascimento</label>
+          <input type="date" id="sim-birthdate" class="sim-input" value="1964-06-15" onchange="runEc103Simulator()">
+          <span class="hint" id="sim-age-display">Idade calculada: 60 anos</span>
+        </div>
+
+        <div class="sim-form-group">
+          <label>Tempo de Contribuição até 13/11/2019 (Data da Reforma)</label>
+          <div class="sim-form-row">
+            <div>
+              <input type="number" id="sim-tc-years-pre" class="sim-input" value="32" min="0" max="60" oninput="runEc103Simulator()">
+              <span class="hint">Anos</span>
+            </div>
+            <div>
+              <input type="number" id="sim-tc-months-pre" class="sim-input" value="6" min="0" max="11" oninput="runEc103Simulator()">
+              <span class="hint">Meses</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sim-form-group">
+          <label>Tempo de Contribuição após 13/11/2019</label>
+          <div class="sim-form-row">
+            <div>
+              <input type="number" id="sim-tc-years-post" class="sim-input" value="4" min="0" max="10" oninput="runEc103Simulator()">
+              <span class="hint">Anos</span>
+            </div>
+            <div>
+              <input type="number" id="sim-tc-months-post" class="sim-input" value="8" min="0" max="11" oninput="runEc103Simulator()">
+              <span class="hint">Meses</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sim-form-group">
+          <label for="sim-carencia">Carência Efetiva (Meses Pagos em Dia)</label>
+          <input type="number" id="sim-carencia" class="sim-input" value="210" min="0" max="600" oninput="runEc103Simulator()">
+          <span class="hint">Mínimo legal de 180 meses exigido para a maioria das regras</span>
+        </div>
+
+        <div class="sim-form-group">
+          <label for="sim-client-name">Nome do Cliente para Parecer</label>
+          <input type="text" id="sim-client-name" class="sim-input" placeholder="Ex: Maria das Graças Silva" value="Segurado(a) em Análise">
+        </div>
+
+        <button type="button" class="button button-primary" style="width:100%; justify-content:center;" onclick="copySimulatorReport()">
+          <svg class="icon"><use href="#i-copy"/></svg> Copiar Parecer Técnico da Simulação
+        </button>
+      </div>
+
+      <!-- Calculator Live Results Grid -->
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div>
+            <h2 style="font-size:18px; margin:0; color:var(--strong);">Diagnóstico de Elegibilidade Previdenciária</h2>
+            <p class="small muted" style="margin:2px 0 0;">Cálculo baseado nas regras vigentes em {{ today|date:"Y" }} (Artigos 15, 16, 17, 18 e 20 da EC 103/2019).</p>
+          </div>
+          <span id="sim-total-tc-badge" class="badge badge-accent" style="font-size:12px; padding:6px 12px;">Tempo Total: 37a 2m</span>
+        </div>
+
+        <div class="sim-results-grid">
+          <!-- Regra 1: Pontos Art. 15 -->
+          <div class="sim-rule-card" id="card-regra-pontos">
+            <div class="sim-rule-header">
+              <div>
+                <h3 class="sim-rule-title">1. Regra dos Pontos</h3>
+                <p class="sim-rule-sub">Art. 15 da EC 103/2019 (Idade + Tempo)</p>
+              </div>
+              <span id="badge-regra-pontos" class="sim-badge pending">Calculando</span>
+            </div>
+            <div class="sim-rule-metrics" id="desc-regra-pontos">
+              Soma: <strong>97.2 pts</strong> | Exigido: <strong>101 pts</strong> (Homem em 2024)<br>
+              Tempo mín: 35 anos. Faltam 3.8 pontos.
+            </div>
+          </div>
+
+          <!-- Regra 2: Idade Progressiva Art. 16 -->
+          <div class="sim-rule-card" id="card-regra-idade-prog">
+            <div class="sim-rule-header">
+              <div>
+                <h3 class="sim-rule-title">2. Idade Mínima Progressiva</h3>
+                <p class="sim-rule-sub">Art. 16 da EC 103/2019 (+6 meses/ano)</p>
+              </div>
+              <span id="badge-regra-idade-prog" class="sim-badge pending">Calculando</span>
+            </div>
+            <div class="sim-rule-metrics" id="desc-regra-idade-prog">
+              Idade atual: 60 anos | Exigido em 2024: 63,5 anos (Homem)<br>
+              Tempo mín: 35 anos (Atingido). Faltam 3,5 anos de idade.
+            </div>
+          </div>
+
+          <!-- Regra 3: Pedágio 50% Art. 17 -->
+          <div class="sim-rule-card" id="card-regra-pedagio-50">
+            <div class="sim-rule-header">
+              <div>
+                <h3 class="sim-rule-title">3. Pedágio 50%</h3>
+                <p class="sim-rule-sub">Art. 17 da EC 103/2019 (Faltavam até 2a na EC)</p>
+              </div>
+              <span id="badge-regra-pedagio-50" class="sim-badge pending">Calculando</span>
+            </div>
+            <div class="sim-rule-metrics" id="desc-regra-pedagio-50">
+              Tempo em 13/11/2019: 32a 6m (Faltavam 2a 6m - Inelegível)<br>
+              Exigia no mínimo 33a (H) ou 28a (M) na data da promulgação.
+            </div>
+          </div>
+
+          <!-- Regra 4: Pedágio 100% Art. 20 -->
+          <div class="sim-rule-card highlight" id="card-regra-pedagio-100">
+            <div class="sim-rule-header">
+              <div>
+                <h3 class="sim-rule-title">4. Pedágio 100% (Sem Fator Previdenciário)</h3>
+                <p class="sim-rule-sub">Art. 20 da EC 103/2019 (100% da média integral)</p>
+              </div>
+              <span id="badge-regra-pedagio-100" class="sim-badge pending">Calculando</span>
+            </div>
+            <div class="sim-rule-metrics" id="desc-regra-pedagio-100">
+              Idade mínima: 60 anos (H) / 57 anos (M)<br>
+              Tempo necessário com pedágio dobro: 37a 6m.<br>
+              Tempo atual: 37a 2m. Faltam apenas 4 meses!
+            </div>
+          </div>
+
+          <!-- Regra 5: Aposentadoria Idade Urbana Art. 18 -->
+          <div class="sim-rule-card" id="card-regra-idade-urbana">
+            <div class="sim-rule-header">
+              <div>
+                <h3 class="sim-rule-title">5. Aposentadoria por Idade Urbana</h3>
+                <p class="sim-rule-sub">Art. 18 da EC 103/2019 (65a Homem / 62a Mulher)</p>
+              </div>
+              <span id="badge-regra-idade-urbana" class="sim-badge pending">Calculando</span>
+            </div>
+            <div class="sim-rule-metrics" id="desc-regra-idade-urbana">
+              Idade atual: 60 anos | Exigido: 65 anos (Homem)<br>
+              Carência: 210 meses (OK, mín. 180 meses). Faltam 5 anos.
+            </div>
+          </div>
+
+          <!-- Regra 6: Aposentadoria Rural / Especial -->
+          <div class="sim-rule-card" id="card-regra-rural-loas">
+            <div class="sim-rule-header">
+              <div>
+                <h3 class="sim-rule-title">6. Rural & BPC/LOAS</h3>
+                <p class="sim-rule-sub">Segurado Especial (55F/60M) ou Lei 8.742/93</p>
+              </div>
+              <span id="badge-regra-rural-loas" class="sim-badge pending">Calculando</span>
+            </div>
+            <div class="sim-rule-metrics" id="desc-regra-rural-loas">
+              Rural: 60 anos atingidos (se comprovado 180m de atividade rural).<br>
+              BPC/LOAS Idoso: Disponível aos 65 anos com renda familiar < 1/4 SM.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Checklist & Cobrança WhatsApp -->
+  <div id="tab-checklist" class="niche-tab-content">
+    <div class="checklist-wrapper">
+      <div class="checklist-card">
+        <h2 style="font-size:16px; margin:0 0 6px; color:var(--strong);">Checklist de Documentos por Benefício</h2>
+        <p class="small muted" style="margin:0 0 16px;">Selecione o benefício para carregar a relação completa de documentos exigidos pela IN 128/2022.</p>
+
+        <!-- Category Selector -->
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+          <button type="button" class="checklist-category-pill active" onclick="loadChecklistBenefit('idade_urbana', this)">Aposentadoria Idade Urbana</button>
+          <button type="button" class="checklist-category-pill" onclick="loadChecklistBenefit('tempo_contribuicao', this)">Aposentadoria Tempo/Transição</button>
+          <button type="button" class="checklist-category-pill" onclick="loadChecklistBenefit('especial', this)">Aposentadoria Especial (PPP)</button>
+          <button type="button" class="checklist-category-pill" onclick="loadChecklistBenefit('rural', this)">Aposentadoria Rural (Segurado Especial)</button>
+          <button type="button" class="checklist-category-pill" onclick="loadChecklistBenefit('incapacidade', this)">Auxílio por Incapacidade Temporária</button>
+          <button type="button" class="checklist-category-pill" onclick="loadChecklistBenefit('bpc_loas', this)">BPC/LOAS (Idoso / PCD)</button>
+          <button type="button" class="checklist-category-pill" onclick="loadChecklistBenefit('pensao_morte', this)">Pensão por Morte</button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+            <span class="muted">Documentação conferida:</span>
+            <strong id="chk-progress-text" style="color:var(--primary);">0% concluído</strong>
+          </div>
+          <div style="height:8px; border-radius:999px; background:rgba(255,255,255,0.08); overflow:hidden;">
+            <div id="chk-progress-bar" style="height:100%; width:0%; background:linear-gradient(90deg, #f5a000, #10b981); transition:width 0.3s ease;"></div>
+          </div>
+        </div>
+
+        <!-- Checklist Checkboxes Container -->
+        <div class="checklist-items-list" id="checklist-items-box">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Right Column: WhatsApp Generator -->
+      <div>
+        <div class="whatsapp-preview-box">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; font-weight:700; color:#4ade80; display:flex; align-items:center; gap:6px;">
+              <svg class="icon" style="width:16px;height:16px;"><use href="#i-chat"/></svg>
+              Mensagem para o Cliente (WhatsApp)
+            </span>
+            <span class="badge" style="background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid rgba(34,197,94,0.3); font-size:10px;">Pronta para envio</span>
+          </div>
+
+          <div class="sim-form-group">
+            <label for="wa-client-name" style="font-size:11px; color:#94a3b8;">Nome do Segurado(a):</label>
+            <input type="text" id="wa-client-name" class="sim-input" style="background:#091410; border-color:rgba(34,197,94,0.3); font-size:12px;" value="Dona Maria" oninput="updateWhatsAppPreview()">
+          </div>
+
+          <div class="whatsapp-chat-bubble" id="wa-message-preview">
+            <!-- Populated by JS -->
+          </div>
+
+          <button type="button" class="button button-primary" style="background:#22c55e; border-color:#16a34a; justify-content:center; color:#0b1320; font-weight:700;" onclick="copyWhatsAppMessage()">
+            <svg class="icon"><use href="#i-copy"/></svg> Copiar Mensagem de Pendências
           </button>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <div class="template-piece-card">
-          <div class="piece-info">
-            <h3>Petição Inicial: BPC/LOAS (Deficiente ou Idoso)</h3>
-            <p>Requisito etário/médico c/c critério de vulnerabilidade socioeconômica e laudo pericial.</p>
-          </div>
-          <button type="button" class="copy-pill-btn" onclick="copyTemplate('bpc_loas')">
-            <svg class="icon" style="width:14px;height:14px;"><use href="#i-file"/></svg> Copiar Minuta
-          </button>
-        </div>
-
-        <div class="template-piece-card">
-          <div class="piece-info">
-            <h3>Restabelecimento de Auxílio-Incapacidade c/c Aposentadoria</h3>
-            <p>Cessação indevida de benefício por incapacidade temporária (alta programada pelo INSS).</p>
-          </div>
-          <button type="button" class="copy-pill-btn" onclick="copyTemplate('incapacidade')">
-            <svg class="icon" style="width:14px;height:14px;"><use href="#i-file"/></svg> Copiar Minuta
-          </button>
-        </div>
-
-        <div class="template-piece-card">
-          <div class="piece-info">
-            <h3>Recurso Ordinário à Junta de Recursos (CRPS)</h3>
-            <p>Impugnação administrativa de indeferimento de aposentadoria ou pensão por morte.</p>
-          </div>
-          <button type="button" class="copy-pill-btn" onclick="copyTemplate('crps')">
-            <svg class="icon" style="width:14px;height:14px;"><use href="#i-file"/></svg> Copiar Minuta
-          </button>
-        </div>
-      </section>
+  <!-- TAB 4: Biblioteca de Petições Previdenciárias -->
+  <div id="tab-peticoes" class="niche-tab-content">
+    <div style="margin-bottom:16px;">
+      <h2 style="font-size:18px; margin:0 0 4px; color:var(--strong);">Modelos Estruturados e Fundamentados</h2>
+      <p class="section-sub" style="margin:0;">Petições completas com artigos da Lei 8.213/91, EC 103/2019, jurisprudência do STF e súmulas da TNU prontas para copiar.</p>
     </div>
 
-    <!-- Right Column: Calculadora Interativa EC 103/2019 -->
-    <aside><section class="panel" style="padding:24px"><h2>Conferência técnica</h2><p>Registre a análise, os documentos e os cálculos conferidos pela equipe na pasta do cliente.</p><p>Este painel acompanha registros do escritório. Cálculos jurídicos e conclusões de elegibilidade exigem revisão profissional e não são gerados automaticamente.</p><a class="button button-secondary" href="{% url 'legal:list' 'matters' %}">Abrir pastas</a></section></aside>
+    <div style="display:grid; gap:14px;">
+      <!-- Peça 1: Mandado de Segurança Excesso de Prazo INSS -->
+      <div class="template-piece-card">
+        <div class="piece-info">
+          <h3>1. Mandado de Segurança por Excesso de Prazo do INSS (+45 dias)</h3>
+          <p>Cabível quando o INSS ultrapassa os prazos legais sem decisão (Art. 49 da Lei 9.784/99 e Acordo STF RE 1.171.152 - Tema 1.171). Pede concessão liminar para conclusão em 10 dias.</p>
+        </div>
+        <button type="button" class="copy-pill-btn" onclick="copyTemplatePrevidenciario('ms_inss')">
+          <svg class="icon"><use href="#i-copy"/></svg> Copiar Minuta Completa
+        </button>
+      </div>
+
+      <!-- Peça 2: Petição Inicial - Concessão Aposentadoria Idade Urbana -->
+      <div class="template-piece-card">
+        <div class="piece-info">
+          <h3>2. Petição Inicial: Aposentadoria por Idade Urbana c/c Vínculo em CTPS fora do CNIS</h3>
+          <p>Ação perante o Juizado Especial Federal demonstrando o preenchimento dos 65a (H) ou 62a (M) e 180 meses de carência, com aplicação da Súmula 75 da TNU para cômputo de período em carteira.</p>
+        </div>
+        <button type="button" class="copy-pill-btn" onclick="copyTemplatePrevidenciario('aposentadoria_idade')">
+          <svg class="icon"><use href="#i-copy"/></svg> Copiar Minuta Completa
+        </button>
+      </div>
+
+      <!-- Peça 3: Ação Restabelecimento de Auxílio-Incapacidade c/c Perícia -->
+      <div class="template-piece-card">
+        <div class="piece-info">
+          <h3>3. Ação de Restabelecimento de Auxílio por Incapacidade Temporária c/c Perícia Judicial</h3>
+          <p>Impugnação de cessação indevida ("alta programada") do auxílio-doença (espécie 31/91), com pedido alternativo de aposentadoria por incapacidade permanente e agendamento de perícia médica judicial.</p>
+        </div>
+        <button type="button" class="copy-pill-btn" onclick="copyTemplatePrevidenciario('incapacidade')">
+          <svg class="icon"><use href="#i-copy"/></svg> Copiar Minuta Completa
+        </button>
+      </div>
+
+      <!-- Peça 4: Petição Inicial BPC/LOAS Pessoa com Deficiência -->
+      <div class="template-piece-card">
+        <div class="piece-info">
+          <h3>4. Petição Inicial de Benefício de Prestação Continuada (BPC/LOAS) - Deficiência</h3>
+          <p>Fundamentada no art. 20 da Lei 8.742/93, demonstrando o impedimento de longo prazo e a miserabilidade econômica com dedução de despesas médicas essenciais e aplicação da Súmula 79 da TNU.</p>
+        </div>
+        <button type="button" class="copy-pill-btn" onclick="copyTemplatePrevidenciario('bpc_loas')">
+          <svg class="icon"><use href="#i-copy"/></svg> Copiar Minuta Completa
+        </button>
+      </div>
+
+      <!-- Peça 5: Recurso Ordinário CRPS -->
+      <div class="template-piece-card">
+        <div class="piece-info">
+          <h3>5. Recurso Ordinário à Junta de Recursos da Previdência Social (CRPS)</h3>
+          <p>Peça recursal administrativa tempestiva contra indeferimento de benefício pelo INSS, invocando o art. 305 do Decreto 3.048/99 e a reavaliação de provas documentais.</p>
+        </div>
+        <button type="button" class="copy-pill-btn" onclick="copyTemplatePrevidenciario('recurso_crps')">
+          <svg class="icon"><use href="#i-copy"/></svg> Copiar Minuta Completa
+        </button>
+      </div>
+
+      <!-- Peça 6: Cumprimento de Exigência INSS Digital -->
+      <div class="template-piece-card">
+        <div class="piece-info">
+          <h3>6. Petição Administrativa de Cumprimento de Exigência (INSS Digital)</h3>
+          <p>Apresentação formal de certidões, autodeclarações e documentos complementares solicitados pela carta de exigência da Agência da Previdência Social.</p>
+        </div>
+        <button type="button" class="copy-pill-btn" onclick="copyTemplatePrevidenciario('cumprimento_exigencia')">
+          <svg class="icon"><use href="#i-copy"/></svg> Copiar Minuta Completa
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
+<!-- Floating Toast Container -->
+<div id="jumbi-toast">
+  <svg class="icon" style="width:18px;height:18px;color:#10b981;"><use href="#i-check"/></svg>
+  <span id="jumbi-toast-text">Copiado com sucesso!</span>
+</div>
 
+<script>
+// --- Global Toast Function ---
+function showToast(message) {
+  var toast = document.getElementById('jumbi-toast');
+  var toastText = document.getElementById('jumbi-toast-text');
+  if (!toast || !toastText) return;
+  toastText.textContent = message;
+  toast.classList.add('visible');
+  clearTimeout(window._toastTimeout);
+  window._toastTimeout = setTimeout(function() {
+    toast.classList.remove('visible');
+  }, 3200);
+}
+
+// --- Tab Switching ---
+function switchNicheTab(tabId, btn) {
+  document.querySelectorAll('.niche-tab-content').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.querySelectorAll('.niche-tab-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  var target = document.getElementById(tabId);
+  if (target) target.classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// --- Simulator EC 103/2019 Engine ---
+var simSex = 'M';
+
+function setSimulatorSex(sex) {
+  simSex = sex;
+  document.getElementById('btn-sex-m').classList.toggle('active', sex === 'M');
+  document.getElementById('btn-sex-f').classList.toggle('active', sex === 'F');
+  runEc103Simulator();
+}
+
+function calculateExactAge(birthDate) {
+  var today = new Date();
+  var birth = new Date(birthDate);
+  var age = today.getFullYear() - birth.getFullYear();
+  var m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  // Decimal age for precise pontuação
+  var diffTime = Math.abs(today - birth);
+  var decimalAge = diffTime / (1000 * 60 * 60 * 24 * 365.25);
+  return { intAge: age, decimalAge: decimalAge };
+}
+
+function runEc103Simulator() {
+  var birthInput = document.getElementById('sim-birthdate').value;
+  var tcPreY = parseInt(document.getElementById('sim-tc-years-pre').value || 0, 10);
+  var tcPreM = parseInt(document.getElementById('sim-tc-months-pre').value || 0, 10);
+  var tcPostY = parseInt(document.getElementById('sim-tc-years-post').value || 0, 10);
+  var tcPostM = parseInt(document.getElementById('sim-tc-months-post').value || 0, 10);
+  var carencia = parseInt(document.getElementById('sim-carencia').value || 0, 10);
+
+  var ageObj = calculateExactAge(birthInput);
+  var age = ageObj.intAge;
+  var decimalAge = ageObj.decimalAge;
+  document.getElementById('sim-age-display').textContent = 'Idade calculada: ' + age + ' anos (' + decimalAge.toFixed(1) + ' anos precisos)';
+
+  var totalPreDecimal = tcPreY + (tcPreM / 12);
+  var totalPostDecimal = tcPostY + (tcPostM / 12);
+  var totalTcDecimal = totalPreDecimal + totalPostDecimal;
+
+  var totalY = Math.floor(totalTcDecimal);
+  var totalM = Math.round((totalTcDecimal - totalY) * 12);
+  if (totalM === 12) { totalY += 1; totalM = 0; }
+  document.getElementById('sim-total-tc-badge').textContent = 'Tempo Total: ' + totalY + 'a ' + totalM + 'm';
+
+  // 1. Regra dos Pontos (Art. 15 EC 103)
+  // 2024: Homem 101 pts (mín 35 anos tempo) / Mulher 91 pts (mín 30 anos tempo)
+  var minTempoPontos = (simSex === 'M') ? 35 : 30;
+  var pontosExigidos = (simSex === 'M') ? 101 : 91;
+  var pontosAtuais = decimalAge + totalTcDecimal;
+  var badgePontos = document.getElementById('badge-regra-pontos');
+  var descPontos = document.getElementById('desc-regra-pontos');
+  if (totalTcDecimal >= minTempoPontos && pontosAtuais >= pontosExigidos && carencia >= 180) {
+    badgePontos.className = 'sim-badge eligible';
+    badgePontos.textContent = 'Elegível Agora';
+    descPontos.innerHTML = 'Pontos atuais: <strong>' + pontosAtuais.toFixed(1) + ' pts</strong> (Exigido: ' + pontosExigidos + ')<br>Tempo: ' + totalTcDecimal.toFixed(1) + ' anos (mín. ' + minTempoPontos + ' atingido). <strong>Direito Adquirido!</strong>';
+  } else {
+    badgePontos.className = 'sim-badge pending';
+    badgePontos.textContent = 'Pendente';
+    var diffPts = (pontosExigidos - pontosAtuais > 0) ? (pontosExigidos - pontosAtuais).toFixed(1) + ' pts' : 'Tempo mín. (' + minTempoPontos + 'a)';
+    descPontos.innerHTML = 'Pontos atuais: <strong>' + pontosAtuais.toFixed(1) + ' pts</strong> | Exigido em 2024: <strong>' + pontosExigidos + ' pts</strong><br>Tempo: ' + totalTcDecimal.toFixed(1) + 'a. Faltam: <strong>' + diffPts + '</strong>.';
+  }
+
+  // 2. Idade Progressiva (Art. 16 EC 103)
+  // 2024: Homem 63.5 anos + 35 tempo / Mulher 58.5 anos + 30 tempo
+  var idadeProgExigida = (simSex === 'M') ? 63.5 : 58.5;
+  var badgeIdadeProg = document.getElementById('badge-regra-idade-prog');
+  var descIdadeProg = document.getElementById('desc-regra-idade-prog');
+  if (decimalAge >= idadeProgExigida && totalTcDecimal >= minTempoPontos && carencia >= 180) {
+    badgeIdadeProg.className = 'sim-badge eligible';
+    badgeIdadeProg.textContent = 'Elegível Agora';
+    descIdadeProg.innerHTML = 'Idade atual: <strong>' + age + ' anos</strong> (Exigido: ' + idadeProgExigida + 'a)<br>Tempo: <strong>' + totalTcDecimal.toFixed(1) + ' anos</strong>. Regra 100% cumprida!';
+  } else {
+    badgeIdadeProg.className = 'sim-badge pending';
+    badgeIdadeProg.textContent = 'Pendente';
+    var faltamIdade = Math.max(0, (idadeProgExigida - decimalAge)).toFixed(1);
+    var faltamTempo = Math.max(0, (minTempoPontos - totalTcDecimal)).toFixed(1);
+    descIdadeProg.innerHTML = 'Idade: ' + age + 'a (Exigido: ' + idadeProgExigida + 'a) | Tempo: ' + totalTcDecimal.toFixed(1) + 'a (Mín: ' + minTempoPontos + 'a)<br>Falta idade: ' + faltamIdade + 'a | Falta tempo: ' + faltamTempo + 'a.';
+  }
+
+  // 3. Pedágio 50% (Art. 17 EC 103)
+  // Requisito prévio em 13/11/2019: Mulher >= 28 anos, Homem >= 33 anos
+  var tempoMinPre = (simSex === 'M') ? 33 : 28;
+  var tempoTotalAntigo = (simSex === 'M') ? 35 : 30;
+  var badgePedagio50 = document.getElementById('badge-regra-pedagio-50');
+  var descPedagio50 = document.getElementById('desc-regra-pedagio-50');
+  if (totalPreDecimal < tempoMinPre) {
+    badgePedagio50.className = 'sim-badge not-eligible';
+    badgePedagio50.textContent = 'Inelegível';
+    descPedagio50.innerHTML = 'Em 13/11/2019 tinha ' + totalPreDecimal.toFixed(1) + 'a. O art. 17 exige que faltassem no máximo 2 anos na promulgação (' + tempoMinPre + 'a mínimos).';
+  } else {
+    var faltavaPre = tempoTotalAntigo - totalPreDecimal;
+    var pedagio50 = faltavaPre * 0.5;
+    var tempoTotalNecessario50 = tempoTotalAntigo + pedagio50;
+    if (totalTcDecimal >= tempoTotalNecessario50 && carencia >= 180) {
+      badgePedagio50.className = 'sim-badge eligible';
+      badgePedagio50.textContent = 'Elegível Agora';
+      descPedagio50.innerHTML = 'Tempo necessário com pedágio 50%: <strong>' + tempoTotalNecessario50.toFixed(1) + 'a</strong>.<br>Tempo acumulado: <strong>' + totalTcDecimal.toFixed(1) + 'a</strong>. Atingido! (Sujeito a Fator Previdenciário).';
+    } else {
+      badgePedagio50.className = 'sim-badge pending';
+      badgePedagio50.textContent = 'Pendente';
+      descPedagio50.innerHTML = 'Faltavam ' + (faltavaPre * 12).toFixed(0) + ' meses em 2019. Pedágio de ' + (pedagio50 * 12).toFixed(0) + ' meses.<br>Meta total: ' + tempoTotalNecessario50.toFixed(1) + 'a. Faltam: ' + (tempoTotalNecessario50 - totalTcDecimal).toFixed(1) + 'a.';
+    }
+  }
+
+  // 4. Pedágio 100% (Art. 20 EC 103)
+  // Idade 60 (H) / 57 (M) + Pedágio de 100% do que faltava em 13/11/2019
+  var idadeMin100 = (simSex === 'M') ? 60 : 57;
+  var faltava100 = Math.max(0, tempoTotalAntigo - totalPreDecimal);
+  var tempoTotalNecessario100 = tempoTotalAntigo + faltava100;
+  var badgePedagio100 = document.getElementById('badge-regra-pedagio-100');
+  var descPedagio100 = document.getElementById('desc-regra-pedagio-100');
+  if (decimalAge >= idadeMin100 && totalTcDecimal >= tempoTotalNecessario100 && carencia >= 180) {
+    badgePedagio100.className = 'sim-badge eligible';
+    badgePedagio100.textContent = 'ELEGÍVEL (Melhor Benefício)';
+    descPedagio100.innerHTML = 'Idade: <strong>' + age + 'a</strong> (mín. ' + idadeMin100 + 'a) | Tempo: <strong>' + totalTcDecimal.toFixed(1) + 'a</strong> (meta: ' + tempoTotalNecessario100.toFixed(1) + 'a).<br><strong style="color:#10b981;">Regra Integral: 100% da média aritmética sem redutor!</strong>';
+  } else {
+    badgePedagio100.className = 'sim-badge pending';
+    badgePedagio100.textContent = 'Pendente';
+    var faltamIdade100 = Math.max(0, idadeMin100 - decimalAge).toFixed(1);
+    var faltamTempo100 = Math.max(0, tempoTotalNecessario100 - totalTcDecimal).toFixed(1);
+    descPedagio100.innerHTML = 'Meta: ' + idadeMin100 + ' anos de idade e ' + tempoTotalNecessario100.toFixed(1) + ' anos de tempo.<br>Faltam ' + faltamIdade100 + 'a de idade e ' + faltamTempo100 + 'a de tempo de contribuição.';
+  }
+
+  // 5. Aposentadoria Idade Urbana (Art. 18 EC 103)
+  // 65 anos Homem / 62 anos Mulher + 15 anos tempo + 180 meses carência
+  var idadeUrbanaExigida = (simSex === 'M') ? 65 : 62;
+  var badgeIdadeUrbana = document.getElementById('badge-regra-idade-urbana');
+  var descIdadeUrbana = document.getElementById('desc-regra-idade-urbana');
+  if (decimalAge >= idadeUrbanaExigida && totalTcDecimal >= 15 && carencia >= 180) {
+    badgeIdadeUrbana.className = 'sim-badge eligible';
+    badgeIdadeUrbana.textContent = 'Elegível Agora';
+    descIdadeUrbana.innerHTML = 'Idade: <strong>' + age + ' anos</strong> (mín. ' + idadeUrbanaExigida + 'a atingida)<br>Tempo: ' + totalTcDecimal.toFixed(1) + 'a e Carência: ' + carencia + ' meses. <strong>Concessão Imediata!</strong>';
+  } else {
+    badgeIdadeUrbana.className = 'sim-badge pending';
+    badgeIdadeUrbana.textContent = 'Pendente';
+    descIdadeUrbana.innerHTML = 'Idade atual: ' + age + ' anos | Exigido: ' + idadeUrbanaExigida + ' anos.<br>Faltam: <strong>' + Math.max(0, (idadeUrbanaExigida - decimalAge)).toFixed(1) + ' anos</strong> de idade.';
+  }
+
+  // 6. Rural & BPC
+  var badgeRural = document.getElementById('badge-regra-rural-loas');
+  var descRural = document.getElementById('desc-regra-rural-loas');
+  var idadeRural = (simSex === 'M') ? 60 : 55;
+  if (decimalAge >= idadeRural) {
+    badgeRural.className = 'sim-badge eligible';
+    badgeRural.textContent = 'Idade Rural OK';
+    descRural.innerHTML = 'Idade rural de ' + idadeRural + ' anos atingida (' + age + 'a).<br>Requer comprovação documental de 180 meses em atividade rural / segurado especial.';
+  } else {
+    badgeRural.className = 'sim-badge pending';
+    badgeRural.textContent = 'Pendente';
+    descRural.innerHTML = 'Idade exigida rural: ' + idadeRural + ' anos (atual: ' + age + 'a).<br>BPC/LOAS Idoso: exigido 65 anos com renda familiar per capita < 1/4 SM.';
+  }
+}
+
+function copySimulatorReport() {
+  var client = document.getElementById('sim-client-name').value || 'Segurado(a)';
+  var birthInput = document.getElementById('sim-birthdate').value;
+  var ageObj = calculateExactAge(birthInput);
+  var tcPreY = document.getElementById('sim-tc-years-pre').value;
+  var tcPreM = document.getElementById('sim-tc-months-pre').value;
+  var tcPostY = document.getElementById('sim-tc-years-post').value;
+  var tcPostM = document.getElementById('sim-tc-months-post').value;
+  var carencia = document.getElementById('sim-carencia').value;
+
+  var bPontos = document.getElementById('badge-regra-pontos').textContent;
+  var bProg = document.getElementById('badge-regra-idade-prog').textContent;
+  var bPed50 = document.getElementById('badge-regra-pedagio-50').textContent;
+  var bPed100 = document.getElementById('badge-regra-pedagio-100').textContent;
+  var bUrb = document.getElementById('badge-regra-idade-urbana').textContent;
+
+  var report = "════════════════════════════════════════════════════════\n" +
+               " PARECER TÉCNICO PREVIDENCIÁRIO - REFORMA EC 103/2019\n" +
+               " JUMBI GESTÃO JURÍDICA · ESCRITÓRIO DE ADVOCACIA\n" +
+               "════════════════════════════════════════════════════════\n\n" +
+               "CLIENTE: " + client + "\n" +
+               "SEXO: " + (simSex === 'M' ? 'Masculino' : 'Feminino') + "\n" +
+               "IDADE ATUAL: " + ageObj.intAge + " anos\n" +
+               "TEMPO ATÉ 13/11/2019: " + tcPreY + " anos e " + tcPreM + " meses\n" +
+               "TEMPO PÓS-REFORMA: " + tcPostY + " anos e " + tcPostM + " meses\n" +
+               "CARÊNCIA COMPROVADA: " + carencia + " meses\n\n" +
+               "DIAGNÓSTICO DAS REGRAS DE TRANSIÇÃO (ANO 2024):\n" +
+               "--------------------------------------------------------\n" +
+               "1. Regra dos Pontos (Art. 15): [" + bPontos.toUpperCase() + "]\n" +
+               "2. Idade Mínima Progressiva (Art. 16): [" + bProg.toUpperCase() + "]\n" +
+               "3. Pedágio 50% (Art. 17): [" + bPed50.toUpperCase() + "]\n" +
+               "4. Pedágio 100% sem redutor (Art. 20): [" + bPed100.toUpperCase() + "]\n" +
+               "5. Aposentadoria Idade Urbana (Art. 18): [" + bUrb.toUpperCase() + "]\n\n" +
+               "CONCLUSÃO JURÍDICA E PRÓXIMOS PASSOS:\n" +
+               "Realizar o batimento do extrato do CNIS para identificar eventuais indicadores " +
+               "(PEXT, PREV-IND) que necessitem de acerto de vínculos antes de formular o protocolo oficial no Meu INSS.\n" +
+               "Documento emitido em: " + new Date().toLocaleDateString('pt-BR');
+
+  navigator.clipboard.writeText(report).then(function() {
+    showToast("Parecer Técnico copiado para a área de transferência!");
+  });
+}
+
+// --- Checklist & WhatsApp Message Generator ---
+var currentBenefitKey = 'idade_urbana';
+
+var benefitChecklists = {
+  idade_urbana: {
+    title: 'Aposentadoria por Idade Urbana',
+    docs: [
+      { id: 'rg_cpf', title: 'Documento de Identificação (RG/CPF ou CNH)', desc: 'Documento legível com foto recente.' },
+      { id: 'compr_resid', title: 'Comprovante de Residência Atualizado', desc: 'Conta de água, luz ou telefone dos últimos 90 dias.' },
+      { id: 'cnis', title: 'Extrato Previdenciário (CNIS Completo)', desc: 'Obtido diretamente no portal Meu INSS.' },
+      { id: 'ctps', title: 'Carteiras de Trabalho (CTPS Físicas e Digital)', desc: 'Todas as vias de CTPS, incluindo páginas de identificação e alterações salariais.' },
+      { id: 'cert_reservista', title: 'Certificado de Reservista (Para Homens)', desc: 'Necessário para averbação do tempo de serviço militar obrigatório.' },
+      { id: 'carne_gps', title: 'Carnês de Recolhimento (GPS)', desc: 'Comprovantes de recolhimento como contribuinte individual ou facultativo.' }
+    ]
+  },
+  tempo_contribuicao: {
+    title: 'Aposentadoria por Tempo de Contribuição / Transição',
+    docs: [
+      { id: 'rg_cpf', title: 'Documento de Identificação (RG/CPF ou CNH)', desc: 'Documento com foto em bom estado.' },
+      { id: 'compr_resid', title: 'Comprovante de Residência Atualizado', desc: 'Emitido nos últimos 90 dias.' },
+      { id: 'cnis', title: 'Extrato CNIS de Vínculos e Remunerações', desc: 'Conferir eventuais vínculos sem data de término (código PREV-IND).' },
+      { id: 'ctps', title: 'Todas as Carteiras de Trabalho (CTPS)', desc: 'Especialmente contratos antigos ou com rasuras para justificação administrativa.' },
+      { id: 'ctc', title: 'Certidão de Tempo de Contribuição (CTC de Regime Próprio)', desc: 'Se trabalhou como servidor público estatutário.' },
+      { id: 'gps', title: 'Guias da Previdência Social (Carnês Antigos)', desc: 'Para vínculos de autônomo que não constem no CNIS.' }
+    ]
+  },
+  especial: {
+    title: 'Aposentadoria Especial (Insalubridade / Periculosidade)',
+    docs: [
+      { id: 'rg_cpf', title: 'Documento de Identificação Oficial e Comprovante de Residência', desc: 'Cópias autenticadas ou digitais legíveis.' },
+      { id: 'cnis', title: 'Extrato Previdenciário (CNIS)', desc: 'Com histórico de salários de contribuição.' },
+      { id: 'ppp', title: 'Perfil Profissiográfico Previdenciário (PPP) Assinado', desc: 'Emitido e carimbado pela empresa com indicação dos responsáveis ambientais.' },
+      { id: 'ltcat', title: 'Laudo Técnico de Condições Ambientais de Trabalho (LTCAT)', desc: 'Laudo assinado por Engenheiro de Segurança do Trabalho ou Médico do Trabalho.' },
+      { id: 'ctps', title: 'CTPS com Anotação das Funções e Adicionais', desc: 'Anotações gerais comprovando o recebimento de adicional de insalubridade.' }
+    ]
+  },
+  rural: {
+    title: 'Aposentadoria Rural (Segurado Especial)',
+    docs: [
+      { id: 'rg_cpf', title: 'Documento de Identidade, CPF e Comprovante de Residência', desc: 'Dos titulares e membros do grupo familiar.' },
+      { id: 'autodecl', title: 'Autodeclaração de Atividade Rural Homologada', desc: 'Preenchida detalhando os períodos, área do imóvel e regime de economia familiar.' },
+      { id: 'itr_ccir', title: 'Comprovantes da Terra (ITR, CCIR ou Contrato de Parceria/Arrendamento)', desc: 'Documentação da propriedade ou posse da terra explorada.' },
+      { id: 'notas_prod', title: 'Notas Fiscais de Produtor Rural ou Bloco de Notas', desc: 'Comercialização da produção rural em nome da família.' },
+      { id: 'certidoes_rurais', title: 'Certidões Civis Antigas com Profissão Lavrador/Agricultor', desc: 'Certidão de casamento, nascimento dos filhos e batismo.' },
+      { id: 'sindicato', title: 'Declaração do Sindicato dos Trabalhadores Rurais', desc: 'Com histórico de filiação e contribuição confederativa.' }
+    ]
+  },
+  incapacidade: {
+    title: 'Auxílio por Incapacidade Temporária / Permanente',
+    docs: [
+      { id: 'rg_cpf', title: 'Documento com Foto e Comprovante de Residência', desc: 'RG/CPF ou CNH.' },
+      { id: 'laudo_medico', title: 'Laudo Médico Atualizado com CID-10 e CRM', desc: 'Com data recente (menos de 60 dias), informando o tempo estimado de repouso.' },
+      { id: 'exames', title: 'Exames Complementares (Ressonâncias, Raios-X, Sangue, Biópsias)', desc: 'Todos os laudos e imagens comprobatórias da patologia.' },
+      { id: 'receituarios', title: 'Receituários Médicos e Comprovantes de Tratamento', desc: 'Medicamentos de uso contínuo, fisioterapia, relatórios psicológicos/psiquiátricos.' },
+      { id: 'declaracao_empresa', title: 'Declaração do Último Dia de Trabalho (DUT)', desc: 'Fornecida pela empresa empregadora para segurados empregados.' }
+    ]
+  },
+  bpc_loas: {
+    title: 'Benefício de Prestação Continuada (BPC/LOAS)',
+    docs: [
+      { id: 'cadunico', title: 'Comprovante de Inscrição e Atualização no CadÚnico', desc: 'Atualizado nos últimos 24 meses com todos os membros que coabitam na residência.' },
+      { id: 'rg_cpf_todos', title: 'RG e CPF de Todos os Membros do Grupo Familiar', desc: 'Imprescindível para conferência da renda per capita.' },
+      { id: 'laudo_defic', title: 'Laudo Médico Circunstanciado de Impedimento de Longo Prazo', desc: 'Comprovando barreira de pelo menos 2 anos que impeça a participação social plena.' },
+      { id: 'compr_gastos', title: 'Comprovantes de Gastos Essenciais com Saúde e Medicamentos', desc: 'Para dedução na aferição da miserabilidade socioeconômica (Súmula 79 TNU).' },
+      { id: 'compr_resid', title: 'Comprovante de Endereço', desc: 'Contemporâneo da residência da família.' }
+    ]
+  },
+  pensao_morte: {
+    title: 'Pensão por Morte (Urbana ou Rural)',
+    docs: [
+      { id: 'cert_obito', title: 'Certidão de Óbito do Segurado(a) Falecido(a)', desc: 'Cópia integral legível.' },
+      { id: 'rg_falecido', title: 'Documentos do Segurado Falecido (RG, CPF, CTPS, CNIS)', desc: 'Para comprovação da qualidade de segurado na data do óbito.' },
+      { id: 'cert_casamento', title: 'Certidão de Casamento ou Provas de União Estável', desc: 'Para união estável: ao menos 3 provas contemporâneas (mesmo endereço, filhos em comum, dependência no IR, conta conjunta).' },
+      { id: 'rg_dependentes', title: 'RG e CPF dos Dependentes e Certidões de Nascimento', desc: 'Dos filhos menores de 21 anos ou inválidos.' }
+    ]
+  }
+};
+
+function loadChecklistBenefit(key, btn) {
+  currentBenefitKey = key;
+  if (btn) {
+    document.querySelectorAll('.checklist-category-pill').forEach(function(el) {
+      el.classList.remove('active');
+    });
+    btn.classList.add('active');
+  }
+
+  var data = benefitChecklists[key];
+  if (!data) return;
+
+  var container = document.getElementById('checklist-items-box');
+  container.innerHTML = '';
+
+  data.docs.forEach(function(doc, idx) {
+    var itemDiv = document.createElement('label');
+    itemDiv.className = 'check-item';
+    itemDiv.innerHTML = '<input type="checkbox" id="chk_' + doc.id + '" onchange="updateChecklistProgress()">' +
+      '<div class="check-item-info">' +
+        '<div class="check-item-title">' + doc.title + '</div>' +
+        '<div class="check-item-desc">' + doc.desc + '</div>' +
+      '</div>';
+    container.appendChild(itemDiv);
+  });
+
+  updateChecklistProgress();
+}
+
+function updateChecklistProgress() {
+  var container = document.getElementById('checklist-items-box');
+  var checkboxes = container.querySelectorAll('input[type="checkbox"]');
+  var total = checkboxes.length;
+  var checked = 0;
+  checkboxes.forEach(function(c) {
+    if (c.checked) checked++;
+  });
+
+  var pct = total > 0 ? Math.round((checked / total) * 100) : 0;
+  document.getElementById('chk-progress-bar').style.width = pct + '%';
+  document.getElementById('chk-progress-text').textContent = pct + '% concluído (' + checked + ' de ' + total + ')';
+
+  updateWhatsAppPreview();
+}
+
+function updateWhatsAppPreview() {
+  var clientName = document.getElementById('wa-client-name').value || 'Cliente';
+  var data = benefitChecklists[currentBenefitKey];
+  if (!data) return;
+
+  var pendingDocs = [];
+  var container = document.getElementById('checklist-items-box');
+  var checkboxes = container.querySelectorAll('input[type="checkbox"]');
+
+  data.docs.forEach(function(doc, idx) {
+    var cb = checkboxes[idx];
+    if (cb && !cb.checked) {
+      pendingDocs.push("• " + doc.title);
+    }
+  });
+
+  var msg = "Olá, " + clientName + "! Tudo bem? ⚖️\n\n" +
+            "Aqui é da assessoria jurídica do escritório. Estamos analisando o seu requerimento de *" + data.title + "* junto ao INSS.\n\n";
+
+  if (pendingDocs.length === 0) {
+    msg += "🎉 *Excelente notícia:* toda a sua documentação foi conferida e está completa! Estamos preparando o protocolo do seu benefício.";
+  } else {
+    msg += "Para darmos entrada no seu processo e garantir o melhor benefício, precisamos que nos envie os seguintes documentos que ainda faltam:\n\n" +
+           pendingDocs.join("\n") + "\n\n" +
+           "Você pode enviar fotos legíveis dos documentos diretamente por este WhatsApp. Qualquer dúvida, estamos à inteira disposição!";
+  }
+
+  document.getElementById('wa-message-preview').textContent = msg;
+}
+
+function copyWhatsAppMessage() {
+  var text = document.getElementById('wa-message-preview').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    showToast("Mensagem do WhatsApp copiada para a área de transferência!");
+  });
+}
+
+// --- Petitions Library Templates ---
+var petitionTemplates = {
+  ms_inss: `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DA [[VARA_FEDERAL]] SUBSEÇÃO JUDICIÁRIA DE [[CIDADE]]/[[UF]]
+
+IMPETRANTE: [[NOME_CLIENTE]], brasileiro(a), estado civil: [[ESTADO_CIVIL]], profissão: [[PROFISSAO]], portador(a) do RG nº [[RG]] e inscrito(a) no CPF sob o nº [[CPF]], residente e domiciliado(a) na [[ENDERECO_COMPLETO]], com endereço eletrônico: [[EMAIL]], por seus advogados subscritos (procuração anexa);
+
+IMPETRADO: GERENTE EXECUTIVO DO INSTITUTO NACIONAL DO SEGURO SOCIAL - INSS, vinculado à Agência da Previdência Social de [[AGENCIA_INSS]], autoridade coatora integrante de pessoa jurídica de direito público interno, a ser notificado em sua sede funcional;
+
+MANDADO DE SEGURANÇA INDIVIDUAL COM PEDIDO DE LIMINAR
+(Por excesso desarrazoado de prazo na conclusão de processo administrativo)
+
+I - DOS FATOS
+O(A) Impetrante protocolou perante a Autarquia Previdenciária ré, por meio do sistema eletrônico Meu INSS, em [[DATA_PROTOCOLO]], requerimento administrativo de [[NOME_BENEFICIO]], cadastrado sob o Protocolo nº [[NUMERO_PROTOCOLO]].
+Ocorre que, transcorridos mais de [[DIAS_DECORRIDOS]] dias, o processo administrativo permanece paralisado, sem qualquer análise ou decisão conclusiva de mérito.
+Foram cumpridas todas as etapas instrutórias imputadas ao segurado, não havendo qualquer pendência atribuível à parte demandante.
+
+II - DO DIREITO LÍQUIDO E CERTO
+A inércia desarrazoada do ente autárquico fere de morte a garantia fundamental da razoável duração do processo, expressamente albergada no artigo 5º, inciso LXXVIII, da Constituição Federal.
+No âmbito infraconstitucional, a Lei Federal nº 9.784/1999 (que regula o processo administrativo federal) estabelece prazo cogente:
+"Art. 49. Concluída a instrução de processo administrativo, a Administração tem o prazo de até trinta dias para decidir, salvo prorrogação por igual período expressamente motivada."
+Outrossim, no julgamento do Recurso Extraordinário nº 1.171.152/SC (Tema 1.171 do STF), restou homologado acordo que estipulou prazos máximos para a conclusão dos benefícios pelo INSS, os quais restaram flagrantemente violados no presente caso.
+
+III - DO PEDIDO LIMINAR (FUMUS BONI IURIS E PERICULUM IN MORA)
+O fumus boni iuris salta aos olhos pela inequívoca violação literal aos prazos legais da Lei 9.784/99 e ao Tema 1171/STF.
+O periculum in mora é manifesto, porquanto o benefício previdenciário possui caráter alimentar indeclinável, destinado à subsistência material do(a) Impetrante.
+
+IV - DOS PEDIDOS
+Ante o exposto, requer a Vossa Excelência:
+a) A concessão de MEDIDA LIMINAR, inaudita altera parte, ordenando à autoridade coatora que proceda à imediata conclusão e decisão administrativa do requerimento nº [[NUMERO_PROTOCOLO]], no prazo improrrogável de 10 (dez) dias, sob pena de imposição de multa diária (astreintes);
+b) A notificação da autoridade impetrada para prestar informações no decêndio legal;
+c) A ciência do feito ao órgão de representação judicial do INSS;
+d) A manifestação do Ministério Público Federal;
+e) Ao final, a concessão em definitivo da SEGURANÇA pleiteada, ratificando a ordem liminar;
+f) A concessão dos benefícios da Gratuidade da Justiça, nos termos do art. 98 do CPC.
+
+Dá-se à causa o valor de R$ 1.000,00 (para efeitos fiscais).
+
+Nestes termos,
+Pede deferimento.
+
+[[CIDADE]]/[[UF]], [[DATA_ATUAL]].
+[[NOME_ADVOGADO]] · OAB/[[UF]] nº [[NUMERO_OAB]]`,
+
+  aposentadoria_idade: `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DO JUIZADO ESPECIAL FEDERAL DA SUBSEÇÃO JUDICIÁRIA DE [[CIDADE]]/[[UF]]
+
+AUTOR(A): [[NOME_CLIENTE]], brasileiro(a), estado civil: [[ESTADO_CIVIL]], nascido(a) em [[DATA_NASCIMENTO]], portador(a) do RG nº [[RG]] e CPF nº [[CPF]], residente e domiciliado(a) na [[ENDERECO_COMPLETO]], por seus advogados (procuração anexa);
+
+RÉU: INSTITUTO NACIONAL DO SEGURO SOCIAL - INSS, autarquia federal;
+
+AÇÃO ORDINÁRIA DE CONCESSÃO DE APOSENTADORIA POR IDADE URBANA
+(Com cômputo e averbação de vínculos em CTPS não integrados no CNIS)
+
+I - DOS FATOS E DO INDEFERIMENTO ADMINISTRATIVO
+O(A) Autor(a) requereu administrativamente em [[DATA_DER]] a concessão de Aposentadoria por Idade Urbana (NB: [[NUMERO_BENEFICIO]]), o qual restou indeferido sob a alegação de insuficiência de carência.
+Todavia, o INSS desconsiderou arbitrariamente vínculos de emprego devidamente anotados na Carteira de Trabalho e Previdência Social (CTPS), sob a alegação simplista de divergência ou ausência no Cadastro Nacional de Informações Sociais (CNIS).
+
+II - DO DIREITO: VALIDADE DA CTPS E SÚMULA 75 DA TNU
+As anotações na CTPS gozam de presunção juris tantum de veracidade (art. 19-B do Decreto 3.048/99 e Súmula 12 do TST).
+A responsabilidade pelo recolhimento das contribuições previdenciárias é do empregador (art. 30, I, 'a' da Lei 8.212/91), não podendo o trabalhador hipossuficiente ser penalizado pela omissão patronal ou inércia da fiscalização.
+Nesse exato sentido cristalizou a Turma Nacional de Uniformização:
+"Súmula 75 da TNU: A Carteira de Trabalho e Previdência Social (CTPS) em relação à qual não se aponta defeito formal que lhe comprometa a fidedignidade goza de presunção relativa de veracidade, formando prova suficiente de tempo de serviço para fins previdenciários, ainda que a anotação não conste no CNIS."
+Somados os vínculos da CTPS aos já admitidos pelo INSS, o(a) Autor(a) ultrapassa confortavelmente os 180 meses de carência e a idade mínima exigida pelo art. 18 da EC 103/2019.
+
+III - DOS PEDIDOS
+Diante de todo o exposto, requer a Vossa Excelência:
+a) A citação do INSS para, querendo, contestar a presente ação;
+b) O reconhecimento e averbação dos vínculos empregatícios anotados na CTPS, computando-os integralmente para fins de tempo de contribuição e carência;
+c) A PROCEDÊNCIA TOTAL DA AÇÃO para CONDENAR o INSS a conceder o benefício de APOSENTADORIA POR IDADE URBANA com data de início na DER ([[DATA_DER]]);
+d) O pagamento de todas as parcelas retroativas e vencidas, acrescidas de correção monetária e juros de mora legais;
+e) A concessão do benefício da Gratuidade da Justiça (art. 98 do CPC).
+
+Dá-se à causa o valor de R$ [[VALOR_CAUSA]].
+
+Nestes termos,
+Pede deferimento.
+
+[[CIDADE]]/[[UF]], [[DATA_ATUAL]].
+[[NOME_ADVOGADO]] · OAB/[[UF]] nº [[NUMERO_OAB]]`,
+
+  incapacidade: `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DO JUIZADO ESPECIAL FEDERAL DA SUBSEÇÃO JUDICIÁRIA DE [[CIDADE]]/[[UF]]
+
+AUTOR(A): [[NOME_CLIENTE]], brasileiro(a), estado civil: [[ESTADO_CIVIL]], profissão habitual: [[PROFISSAO]], portador(a) do RG nº [[RG]] e CPF nº [[CPF]], residente e domiciliado(a) na [[ENDERECO_COMPLETO]], por seus advogados constituídos;
+
+RÉU: INSTITUTO NACIONAL DO SEGURO SOCIAL - INSS;
+
+AÇÃO DE RESTABELECIMENTO DE AUXÍLIO POR INCAPACIDADE TEMPORÁRIA
+C/C CONVERSÃO EM APOSENTADORIA POR INCAPACIDADE PERMANENTE
+(Com pedido de tutela de urgência e perícia médica judicial)
+
+I - DO QUADRO CLÍNICO E DA CESSAÇÃO INDEVIDA
+O(A) Autor(a) era beneficiário(a) de benefício por incapacidade temporária (NB: [[NUMERO_BENEFICIO]]), cessado indevidamente pelo INSS em [[DATA_CESSACAO]], sob o fundamento de "ausência de incapacidade".
+Ocorre que o(a) requerente permanece acometido(a) de severas enfermidades (CID-10: [[CIDS]]), que provocam dores crônicas incapacitantes, impedindo o exercício de sua profissão habitual ou qualquer atividade que lhe garanta subsistência, consoante laudos médicos especializados anexos.
+
+II - DO DIREITO (ARTS. 42 E 59 DA LEI 8.213/91)
+Os artigos 59 e 42 da Lei 8.213/91 asseguram amparo previdenciário integral ao trabalhador acometido de incapacidade temporária ou permanente.
+Na avaliação da incapacidade, devem ser consideradas as condições pessoais, sociais e econômicas do segurado (Súmula 47 da TNU).
+
+III - DA TUTELA DE URGÊNCIA E PERÍCIA MÉDICA JUDICIAL
+A urgência é gritante diante da ausência de renda para compra de medicamentos essenciais e alimentação. Requer-se a designação de perícia médica judicial com especialista na área médica de [[ESPECIALIDADE_MEDICA]].
+
+IV - DOS PEDIDOS
+Requer:
+a) O deferimento de TUTELA DE URGÊNCIA para restabelecimento imediato do benefício;
+b) A realização de PERÍCIA MÉDICA JUDICIAL por perito de confiança do Juízo;
+c) A total PROCEDÊNCIA para condenar o INSS a restabelecer o auxílio por incapacidade temporária desde a data da cessação indevida ou convertê-lo em Aposentadoria por Incapacidade Permanente;
+d) O pagamento integral das diferenças devidas e gratuidade da justiça.
+
+Dá-se à causa o valor de R$ [[VALOR_CAUSA]].
+
+[[CIDADE]]/[[UF]], [[DATA_ATUAL]].
+[[NOME_ADVOGADO]] · OAB/[[UF]] nº [[NUMERO_OAB]]`,
+
+  bpc_loas: `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DO JUIZADO ESPECIAL FEDERAL DE [[CIDADE]]/[[UF]]
+
+AUTOR(A): [[NOME_CLIENTE]], brasileiro(a), portador(a) do CPF nº [[CPF]] e RG nº [[RG]], residente na [[ENDERECO_COMPLETO]], neste ato representado(a) por [[NOME_REPRESENTANTE]], por seus advogados;
+
+RÉU: INSTITUTO NACIONAL DO SEGURO SOCIAL - INSS;
+
+AÇÃO DE CONCESSÃO DE BENEFÍCIO DE PRESTAÇÃO CONTINUADA (BPC/LOAS)
+À PESSOA COM DEFICIÊNCIA (ART. 20 DA LEI 8.742/1993)
+
+I - DA DEFICIÊNCIA E VULNERABILIDADE SOCIAL
+O(A) Autor(a) é portador(a) de [[NOME_PATOLOGIA_OU_DEFICIENCIA]] (CID-10: [[CID]]), impedimento de longo prazo de natureza física/mental que obstrui sua participação plena e efetiva na sociedade em igualdade de condições.
+No plano socioeconômico, o grupo familiar sobrevive em situação de extrema penúria material, devidamente inscrito no CadÚnico sob o NIS nº [[NIS]], auferindo renda per capita manifestamente inferior ao limite legal, não dispondo de recursos para alimentação adequada e tratamentos contínuos.
+
+II - DA FLEXIBILIZAÇÃO DA RENDA (STF E TNU)
+O STF, no julgamento da Reclamação nº 4.374/PE, reconheceu a inconstitucionalidade parcial do critério rígido de 1/4 do salário mínimo, permitindo a dedução de despesas médicas, tratamentos, fraudas e medicamentos (Súmula 79 da TNU).
+
+III - DOS PEDIDOS
+Requer:
+a) A realização de perícia médica judicial e avaliação social por assistente social do Juízo;
+b) A PROCEDÊNCIA para condenar o INSS a implantar o benefício de BPC/LOAS (Espécie 87) desde a DER;
+c) O pagamento de todos os atrasados devidos e concessão da Justiça Gratuita.
+
+Dá-se à causa o valor de R$ [[VALOR_CAUSA]].
+
+[[CIDADE]]/[[UF]], [[DATA_ATUAL]].
+[[NOME_ADVOGADO]] · OAB/[[UF]] nº [[NUMERO_OAB]]`,
+
+  recurso_crps: `ILUSTRÍSSIMO(A) SENHOR(A) PRESIDENTE DA [[NUMERO_JUNTA]]ª JUNTA DE RECURSOS DO CONSELHO DE RECURSOS DA PREVIDÊNCIA SOCIAL - CRPS
+
+RECORRENTE: [[NOME_CLIENTE]]
+CPF: [[CPF]] · NB: [[NUMERO_BENEFICIO]] · Protocolo: [[NUMERO_PROTOCOLO]]
+RECORRIDO: INSTITUTO NACIONAL DO SEGURO SOCIAL - INSS (Agência da Previdência Social [[AGENCIA_INSS]])
+
+RAZÕES DE RECURSO ORDINÁRIO
+(Art. 305 do Decreto 3.048/1999 e Regimento Interno do CRPS)
+
+Egrégia Junta de Recursos,
+Ilustres Conselheiros,
+
+1. DA TEMPESTIVIDADE E CABIMENTO
+O presente recurso é tempestivo, interposto no prazo regimental de 30 (trinta) dias contados da ciência formal do indeferimento administrativo.
+
+2. DAS RAZÕES DE REFORMA
+A decisão administrativa denegatória proferida pela Autarquia Previdenciária merece total reforma, haja vista que desconsiderou os documentos carreados aos autos referentes ao período de [[PERIODO_CONTROVERTIDO]].
+As provas materiais acostadas são idôneas e contemporâneas, atendendo integralmente às diretrizes da Instrução Normativa PRES/INSS nº 128/2022.
+
+3. DO PEDIDO
+Ante o exposto, pugna pelo CONHECIMENTO e integral PROVIMENTO do presente Recurso Ordinário, determinando-se a reforma da decisão recorrida para CONCEDER o benefício previdenciário postulado, com efeitos financeiros retroativos à DER.
+
+Nestes termos,
+Pede deferimento.
+
+[[CIDADE]]/[[UF]], [[DATA_ATUAL]].
+[[NOME_CLIENTE]] / [[NOME_ADVOGADO]]`,
+
+  cumprimento_exigencia: `AO ILUSTRÍSSIMO CHEFE DO SERVIÇO DE BENEFÍCIOS DA AGÊNCIA DA PREVIDÊNCIA SOCIAL DE [[AGENCIA_INSS]]
+
+PROTOCOLO DO REQUERIMENTO: [[NUMERO_PROTOCOLO]]
+BENEFÍCIO REQUERIDO: [[NOME_BENEFICIO]]
+INTERESSADO(A): [[NOME_CLIENTE]], CPF nº [[CPF]]
+
+PETIÇÃO DE CUMPRIMENTO DE EXIGÊNCIA
+(Instrução Normativa PRES/INSS nº 128/2022)
+
+O(A) Interessado(a) qualificado(a) acima, por seus procuradores, vem perante esta Agência da Previdência Social, em atenção à Carta de Exigências expedida em [[DATA_EXIGENCIA]], apresentar a documentação complementar solicitada, na forma que segue:
+
+1. ROL DE DOCUMENTOS APRESENTADOS:
+a) [[DOCUMENTO_1]]: comprovação de tempo de contribuição / carência;
+b) [[DOCUMENTO_2]]: autodeclaração / certidão de vínculo empregatício;
+c) [[DOCUMENTO_3]]: comprovante de endereço contemporâneo atualizado.
+
+2. DA CONCLUSÃO E PEDIDO DE DEFERIMENTO:
+Cumprida tempestivamente e de forma integral a exigência formulada no prazo de 30 dias regulamentar, requer-se o imediato processamento e HOMOLOGAÇÃO do benefício previdenciário, com a emissão da competente Carta de Concessão e Memória de Cálculo.
+
+Termos em que pede deferimento.
+
+[[CIDADE]]/[[UF]], [[DATA_ATUAL]].
+[[NOME_ADVOGADO]] · OAB/[[UF]] nº [[NUMERO_OAB]]`
+};
+
+function copyTemplatePrevidenciario(key) {
+  var template = petitionTemplates[key];
+  if (!template) return;
+  navigator.clipboard.writeText(template).then(function() {
+    showToast("Minuta completa copiada com sucesso para a área de transferência!");
+  });
+}
+
+// Initialise upon page load
+document.addEventListener('DOMContentLoaded', function() {
+  runEc103Simulator();
+  loadChecklistBenefit('idade_urbana', null);
+});
+</script>
 {% endblock %}

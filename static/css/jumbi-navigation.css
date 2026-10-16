@@ -91,16 +91,17 @@
   .sidebar-collapsed .brand-logo { display: none !important; }
   .sidebar-collapsed .brand-symbol {
     display: block !important;
-    width: 40px !important;
-    height: 40px !important;
-    max-width: 40px !important;
-    max-height: 40px !important;
+    width: 44px !important;
+    height: 44px !important;
+    max-width: 44px !important;
+    max-height: 44px !important;
     object-fit: contain !important;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 3px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
   }
   .sidebar-collapsed .sidebar .workspace { min-height: 58px; padding: 10px 0; }
   .sidebar-auto .sidebar-brand, .sidebar-auto.sidebar-collapsed .sidebar-brand { height: 86px; min-height: 86px; display: flex; align-items: center; justify-content: center; }

@@ -11,6 +11,7 @@ app_name = "legal"
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("previdenciario/", niche_views.previdenciario_hub, name="previdenciario_hub"),
+    path("demandas/<int:pk>/<slug:action>/", niche_views.demand_action, name="demand_action"),
     path("trabalhista/", niche_views.trabalhista_hub, name="trabalhista_hub"),
     path("minha-rotina/", my_routine_views.my_routine, name="my_routine"),
     path("minha-rotina/redistribuir/", my_routine_views.bulk_reassign_tasks, name="bulk_reassign_tasks"),
