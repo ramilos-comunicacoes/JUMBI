@@ -67,7 +67,7 @@ def run_daily_djen_search(*, organization, operator, base_date=None, records_sou
         fields_searched=["teor", "parte", "advogado"],
         operator=operator,
         status=DJENSearchRun.Status.COMPLETE,
-        courts_searched=sorted({item.get("court", "DJEN") for item in records_source}),
+        courts_searched=sorted({item.get("court") for item in records_source if item.get("court")}) or ["DJEN"],
     )
 
     # Simulated/Injected feed of records (e.g. from Comunica PJe scraper, API or test payload)
