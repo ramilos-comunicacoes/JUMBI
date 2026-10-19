@@ -1,7 +1,29 @@
 /* Navigation: a steady desktop rail and a smooth touch drawer */
 .brand-symbol { display: none; }
-.app-body.j-office-shell .sidebar { overflow: hidden; }
-.sidebar .main-nav { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; padding: 0 4px 16px; }
+.app-body.j-office-shell .sidebar, .sidebar {
+  overflow: hidden;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.sidebar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.sidebar .main-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  padding: 0 6px 16px;
+}
+.sidebar .main-nav::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
 .sidebar .workspace { flex-shrink: 0; }
 .sidebar .sidebar-bottom { flex-shrink: 0; margin-top: 0; padding-top: 8px; border-top: 1px solid var(--border-soft); }
 .nav-group-label { margin: 16px 12px 6px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -103,7 +125,8 @@
     box-shadow: none !important;
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
   }
-  .sidebar-collapsed .sidebar .workspace { min-height: 58px; padding: 10px 0; }
+  .sidebar-collapsed .sidebar { padding: 0 8px !important; }
+  .sidebar-collapsed .sidebar .workspace { min-height: 58px; padding: 10px 0; justify-content: center; }
   .sidebar-auto .sidebar-brand, .sidebar-auto.sidebar-collapsed .sidebar-brand { height: 86px; min-height: 86px; display: flex; align-items: center; justify-content: center; }
 
   /* In collapsed rail, center icons nicely */
@@ -111,6 +134,7 @@
     justify-content: center;
     padding: 10px 0;
     width: 100%;
+    border-radius: 10px;
   }
   .sidebar-collapsed .sidebar .nav-link > span,
   .sidebar-collapsed .sidebar .nav-active-dot {

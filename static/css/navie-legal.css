@@ -2,7 +2,23 @@
  * Jumbi Legal Workspace
  * Visual language inspired by the operational clarity of NAVIE Hospedagens,
  * rebuilt for legal workflows, accessibility, responsiveness and tenant branding.
- */
+html, body, *, *::before, *::after {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+*::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  -webkit-appearance: none !important;
+}
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
 
 .app-juridico {
   --legal-bg: #f6f7f9;
@@ -1203,22 +1219,15 @@
 .legal-dialog-card {
   max-height: min(88dvh, 900px);
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--legal-amber) 55%, transparent) transparent;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   background: var(--legal-panel-solid);
 }
 
 .legal-dialog-card::-webkit-scrollbar {
-  width: 6px;
-}
-
-.legal-dialog-card::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.legal-dialog-card::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--legal-amber) 55%, transparent);
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .legal-dialog-card > header {

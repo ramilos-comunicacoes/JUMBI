@@ -2,6 +2,23 @@
  * Jumbi public experience
  * Deliberately isolated from the authenticated product UI.
  */
+html, body, *, *::before, *::after {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+*::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  -webkit-appearance: none !important;
+}
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
 .public-site {
   --public-bg: #05080e;
   --public-surface: #0b111c;

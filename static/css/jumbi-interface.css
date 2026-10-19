@@ -1,18 +1,123 @@
 /* Adapted from Navie Hospedagens' section, glass and navigation patterns.
    Uses JUMBI office tokens and native controls; no runtime CDN dependencies. */
-.app-body.j-office-shell{--control-bg:color-mix(in srgb,var(--bg) 70%,var(--surface-soft));--scroll-thumb:color-mix(in srgb,var(--muted) 42%,transparent)}
-.app-body.j-office-shell :is(.page-content,.main-nav,.table-scroll,.kanban-board,.calendar-week-scroll,.dashboard-scroll-list,.profile-scroll-list){scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) transparent}
-.app-body.j-office-shell ::-webkit-scrollbar{width:6px;height:6px}.app-body.j-office-shell ::-webkit-scrollbar-track{background:transparent}.app-body.j-office-shell ::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border:1px solid transparent;background-clip:padding-box;border-radius:10px}
-.app-body.j-office-shell .topbar{background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border-soft);min-height:56px;height:56px}
-.app-body.j-office-shell .page-content{padding-top:14px;padding-bottom:max(24px,env(safe-area-inset-bottom));min-width:0;max-width:1680px;margin:0 auto}
-.app-body.j-office-shell .page-heading{padding:12px 18px;border:1px solid var(--border-soft);border-radius:14px;background:linear-gradient(110deg,var(--amber-soft),transparent 65%),var(--surface);gap:14px;margin-bottom:14px;align-items:center}
-.app-body.j-office-shell .page-heading>div{min-width:0}.app-body.j-office-shell .page-heading h1,.app-body.j-office-shell .kanban-title-group h1{font-size:clamp(19px,1.5vw,24px);font-weight:750;letter-spacing:-.03em;line-height:1.2;color:var(--strong);margin:2px 0 3px;overflow-wrap:anywhere}
-.app-body.j-office-shell .page-heading p{font-size:12px;line-height:1.5;max-width:72ch;color:var(--muted);margin:0}
-.app-body.j-office-shell :is(.eyebrow,.section-kicker){letter-spacing:.08em;font-size:9.5px;font-weight:750}
-.app-body.j-office-shell :is(.panel,.stat-card){border-radius:14px;border-color:var(--border-soft)}
-.app-body.j-office-shell :is(.panel-heading,.section-heading){gap:12px;align-items:center;flex-wrap:wrap;padding:12px 18px;min-height:auto}
-.app-body.j-office-shell .panel-heading h2{font-size:14px;letter-spacing:-.015em;line-height:1.3;color:var(--strong);margin:0}
-.app-body.j-office-shell .panel-heading p{line-height:1.5;max-width:72ch;font-size:12px;margin:2px 0 0}
+.app-body.j-office-shell{--control-bg:color-mix(in srgb,var(--bg) 70%,var(--surface-soft));--scroll-thumb:transparent}
+/* Hide scrollbars across the entire application while preserving smooth mousewheel/touch scrolling */
+html, body, *, *::before, *::after {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+*::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar,
+.main-nav::-webkit-scrollbar,
+.page-content::-webkit-scrollbar,
+.app-main::-webkit-scrollbar,
+.dashboard-scroll-list::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar,
+.kanban-board::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  -webkit-appearance: none !important;
+}
+
+/* Eliminate horizontal / lateral scroll everywhere */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100%;
+}
+.app-main, .page-content, .section-workspace {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+.app-body.j-office-shell .topbar, .topbar {
+  background: color-mix(in srgb,var(--bg) 90%,transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-soft);
+  min-height: 58px;
+  height: 58px;
+  padding: 0 clamp(20px, 2.5vw, 36px) !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.topbar-location {
+  display: flex;
+  align-items: center;
+  gap: 12px !important;
+  padding-left: 2px;
+  min-width: 0;
+}
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px !important;
+  padding-right: 2px;
+  flex-shrink: 0;
+}
+
+.app-body.j-office-shell .page-content, .page-content {
+  padding: 20px clamp(20px, 2.5vw, 36px) 36px !important;
+  min-width: 0;
+  max-width: 1720px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.app-body.j-office-shell .page-heading, .page-heading {
+  padding: 16px 22px !important;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: linear-gradient(110deg,var(--amber-soft),transparent 65%),var(--surface);
+  gap: 16px !important;
+  margin-bottom: 18px !important;
+  align-items: center;
+}
+.app-body.j-office-shell .page-heading>div { min-width: 0; }
+.app-body.j-office-shell .page-heading h1, .app-body.j-office-shell .kanban-title-group h1 {
+  font-size: clamp(19px,1.5vw,24px);
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--strong);
+  margin: 2px 0 4px;
+  overflow-wrap: anywhere;
+}
+.app-body.j-office-shell .page-heading p { font-size: 12px; line-height: 1.5; max-width: 72ch; color: var(--muted); margin: 0; }
+.heading-actions { gap: 10px !important; }
+
+.app-body.j-office-shell :is(.eyebrow,.section-kicker) { letter-spacing: 0.08em; font-size: 9.5px; font-weight: 750; }
+.app-body.j-office-shell :is(.panel,.stat-card) { border-radius: 14px; border-color: var(--border-soft); }
+
+.app-body.j-office-shell :is(.panel-heading,.section-heading), .panel-heading {
+  gap: 14px;
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 22px !important;
+  min-height: auto;
+  border-bottom: 1px solid var(--border-soft);
+}
+.panel-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  padding-right: 2px;
+}
+.panel-heading .text-link {
+  padding: 4px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.app-body.j-office-shell .panel-heading h2 { font-size: 14px; letter-spacing: -0.015em; line-height: 1.3; color: var(--strong); margin: 0; }
+.app-body.j-office-shell .panel-heading p { line-height: 1.5; max-width: 72ch; font-size: 12px; margin: 2px 0 0; }
 .app-body.j-office-shell :is(.stat-card,.task-card,.kanban-card){transition:border-color .18s ease,box-shadow .18s ease}
 @media(hover:hover){.app-body.j-office-shell :is(a.stat-card,.task-card,.kanban-card):hover{border-color:var(--amber-border);box-shadow:0 6px 24px #00000012}}
 .app-body.j-office-shell .page-content :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=color]),select,textarea){border:1px solid var(--border);border-radius:9px;background-color:var(--control-bg);color:var(--text);min-width:0;max-width:100%;min-height:40px;padding:8px 12px;font:inherit;font-size:12.5px;line-height:1.45;box-shadow:inset 0 1px 3px #00000006;transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease}
@@ -29,10 +134,42 @@
 .app-body.j-office-shell .button{border-radius:9px;gap:7px;min-height:38px;padding:6px 14px;font-size:12px;line-height:1.4;white-space:normal;text-align:center}
 .app-body.j-office-shell .table-scroll{max-width:100%;max-height:calc(100vh - 250px);overflow-y:auto;overflow-x:auto;overscroll-behavior-x:contain;border-radius:12px;border:1px solid var(--border-soft)}
 .app-body.j-office-shell .table-scroll thead{background:var(--surface-soft);position:sticky;top:0;z-index:3}
-.app-body.j-office-shell .table-scroll th{position:sticky;top:0;z-index:3;background:var(--surface-soft);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:9.5px;font-weight:700;letter-spacing:.06em;line-height:1.4;text-transform:uppercase;color:var(--muted);padding:9px 14px}
-.app-body.j-office-shell .table-scroll td{padding:8px 14px;font-size:12px}
+.app-body.j-office-shell .table-scroll th{position:sticky;top:0;z-index:3;background:var(--surface-soft);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:9.5px;font-weight:700;letter-spacing:.06em;line-height:1.4;text-transform:uppercase;color:var(--muted);padding:12px 18px !important}
+.app-body.j-office-shell .table-scroll td{padding:13px 18px !important;font-size:12px}
 .app-body.j-office-shell .table-scroll tbody tr{transition:background .15s ease}.app-body.j-office-shell .table-scroll tbody tr:hover{background:var(--amber-soft)}
 .scroll-assist{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:6px 0;color:var(--muted);font-size:11px}.scroll-assist[hidden]{display:none}.scroll-assist span{margin-right:auto;line-height:1.5}.scroll-assist button{height:32px;width:34px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);cursor:pointer;font-size:16px}.scroll-assist button:disabled{opacity:.35;cursor:default}.scroll-assist button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+/* Empty states and breathing room for card interiors */
+.app-body.j-office-shell .dashboard-empty,
+.dashboard-empty {
+  padding: 30px 20px !important;
+  margin: 0 !important;
+  text-align: center !important;
+  color: var(--muted) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 84px !important;
+  line-height: 1.5 !important;
+}
+.subcol-header {
+  padding: 12px 18px !important;
+}
+.dashboard-subgrid {
+  padding: 0 18px 18px !important;
+  gap: 16px !important;
+}
+.pipeline-empty {
+  padding: 22px 16px !important;
+  text-align: center !important;
+}
+.routine-checks > li.routine-empty,
+.routine-comments > li.routine-empty,
+.task-thread-empty {
+  padding: 24px 18px !important;
+  text-align: center !important;
+  color: var(--muted) !important;
+}
 @media(min-width:981px){html[data-density=compact] .app-body.j-office-shell .page-heading{padding:10px 16px;margin-bottom:12px}html[data-density=compact] .app-body.j-office-shell .page-heading h1{font-size:20px}.app-body.j-office-shell .table-scroll td{padding-top:7px;padding-bottom:7px}}
 /* Mobile has its own spacing, field sizing and navigation affordances. */
 @media(max-width:720px){
