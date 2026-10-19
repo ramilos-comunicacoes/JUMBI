@@ -1,12 +1,13 @@
-"""Read-only person and document workspaces with live organization scopes."""
+from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.shortcuts import get_object_or_404, render
-from django.views.decorators.http import require_GET
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.billing.services import has_advanced
 from apps.portal.services import visible_accesses, visible_publications, visible_reviews
-from .models import Contact, Document, DocumentVersion
+from .models import Contact, Document, DocumentVersion, Matter
 from .services import visible_matters
 from .views import accessible_audit, can_edit, organization_required, scoped_queryset
 
@@ -27,6 +28,27 @@ def contact_detail(request, pk):
         "activity": accessible_audit(request.user, request.organization).filter(
             object_type=Contact._meta.label_lower, object_id=str(contact.pk)
         )[:12],
+    })
+
+
+@organization_required
+@require_http_methods(["GET", "POST"])
+def contact_delete(request, pk):
+    if not can_edit(request):
+        raise PermissionDenied("Seu perfil de acesso não possui permissão para excluir clientes.")
+    contact = get_object_or_404(Contact.objects.filter(organization=request.organization), pk=pk)
+    matters = Matter.objects.filter(organization=request.organization, client=contact)
+    if request.method == "POST":
+        from .services import delete_contact_and_matters
+        matters_count = delete_contact_and_matters(contact=contact, actor=request.user)
+        messages.success(request, f"Cliente {contact.name} e suas {matters_count} pasta(s) vinculada(s) foram excluídos com sucesso.")
+        return redirect("legal:list", module="contacts")
+    return render(request, "legal/contact_confirm_delete.html", {
+        "page_title": f"Excluir {contact.name}",
+        "active_nav": "contacts",
+        "contact": contact,
+        "matters": matters,
+        "matters_count": matters.count(),
     })
 
 

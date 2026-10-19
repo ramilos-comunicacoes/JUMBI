@@ -183,3 +183,57 @@ def transition(*, instance, target_status, actor, permission, transition_map):
         metadata={"before": old_status, "after": target_status, "id": str(instance.pk)},
     )
     return instance
+
+
+AVAILABLE_MODULE_PERMISSIONS = [
+    ("matters", "Pastas jurídicas"),
+    ("contacts", "Pessoas e Clientes"),
+    ("cases", "Processos"),
+    ("tasks", "Tarefas e Kanban"),
+    ("deadlines", "Prazos"),
+    ("appointments", "Agenda e Calendário"),
+    ("documents", "Documentos"),
+    ("finance", "Financeiro"),
+    ("fees", "Honorários"),
+    ("crm", "Relacionamento e CRM"),
+    ("demands", "Previdenciário e INSS"),
+    ("trabalhista", "Trabalhista e Audiências"),
+    ("contracts", "Montar Contratos"),
+    ("djen", "Comunica PJe / DJEN"),
+    ("goals", "Metas"),
+    ("ranking", "Ranking da Equipe"),
+    ("tutorials", "Tutoriais e Treinamentos"),
+    ("client_map", "Mapa de Clientes"),
+    ("contact_messages", "Contatos e WhatsApp"),
+    ("portal", "Revisão e Portal"),
+    ("inventory", "Estoque e Patrimônio"),
+    ("team", "Gestão da Equipe"),
+    ("intake", "Importação de Planilhas"),
+    ("audit", "Auditoria"),
+    ("connectors", "Conectores e APIs"),
+    ("customization", "Personalização & Visual"),
+]
+
+
+def member_has_module(membership, module_key):
+    """Check if a membership has access to a specific module."""
+    if membership is None:
+        return False
+    if membership.role == "owner":
+        return True
+    perms = getattr(membership, "permissions", None) or []
+    # If no custom permissions assigned, fall back to default role permissions
+    if not perms or "*" in perms:
+        if membership.role == "client":
+            return module_key in {"portal", "security"}
+        if module_key in {"finance", "fees", "inventory"} and membership.role not in {"owner", "manager"}:
+            return False
+        if module_key in {"team", "customization", "audit", "connectors"} and membership.role not in {"owner", "manager"}:
+            return False
+        return True
+    # If custom permissions are set, check explicit list
+    # Always allow basic essentials
+    if module_key in {"dashboard", "my_routine", "security", "guide"}:
+        return True
+    return module_key in perms
+

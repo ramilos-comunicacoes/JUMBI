@@ -21,6 +21,9 @@ def fees_access(view):
         require_access(request.organization, advanced=True)
         if not can_manage_finance(request.user, request.organization):
             raise PermissionDenied("Honorários estão disponíveis aos perfis de direção e gestão.")
+        from apps.core.services import member_has_module
+        if not member_has_module(getattr(request, "membership", None), "fees"):
+            raise PermissionDenied("Acesso aos honorários restrito para o seu usuário.")
         response = view(request, *args, **kwargs)
         response["Cache-Control"] = "private, no-store"
         return response

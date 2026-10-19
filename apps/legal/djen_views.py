@@ -22,6 +22,10 @@ from apps.integrations.djen_client import resolve_search_target
 def djen_dashboard(request):
     """Dashboard of daily Comunica PJe searches for Georgia de Andrade Almeida."""
     require_integration_manager(request.user, request.organization)
+    from apps.core.services import member_has_module
+    from django.core.exceptions import PermissionDenied
+    if not member_has_module(getattr(request, "membership", None), "djen"):
+        raise PermissionDenied("Acesso ao Comunica PJe / DJEN restrito para o seu usuário.")
     runs = DJENSearchRun.objects.filter(organization=request.organization).order_by("-base_date", "-started_at")
     selected_run = runs.first()
 

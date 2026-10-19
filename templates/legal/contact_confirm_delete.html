@@ -1,0 +1,59 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-profiles.css' %}">{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'legal:contact_detail' contact.pk %}"><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg>Voltar à ficha do cliente</a>
+
+<div class="page-heading">
+  <div>
+    <div class="eyebrow">CONFIRMAÇÃO DE EXCLUSÃO <span class="eyebrow-divider">/</span> CLIENTE #{{ contact.pk }}</div>
+    <h1 style="color:var(--danger, #f87171);">Excluir cliente e pastas vinculadas</h1>
+    <p>Esta operação removerá o cliente e todas as pastas e dados jurídicos vinculados a ele.</p>
+  </div>
+</div>
+
+<div style="max-width: 680px; margin: 0 auto;">
+  <section class="panel" style="border-left: 4px solid var(--danger, #ef4444); padding: 24px;">
+    <h2 style="font-size: 1.25rem; margin-bottom: 12px; color: #fff;">Tem certeza que deseja excluir {{ contact.name }}?</h2>
+    
+    <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 16px; margin: 16px 0;">
+      <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: #fca5a5;">
+        <strong>Atenção:</strong> Ao excluir este cliente, 
+        {% if matters_count %}
+          <strong>{{ matters_count }} pasta{{ matters_count|pluralize }} jurídica{{ matters_count|pluralize }}</strong> vinculada{{ matters_count|pluralize }} (incluindo tarefas, prazos, documentos e processos)
+        {% else %}
+          todas as eventuais pastas vinculadas
+        {% endif %}
+        serão <strong>automaticamente e permanentemente excluídas</strong>.
+      </p>
+    </div>
+
+    {% if matters %}
+      <div style="margin: 20px 0;">
+        <span class="small muted" style="display:block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Pastas que serão excluídas automaticamente:</span>
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+          {% for matter in matters %}
+            <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;">
+              <span><strong>{{ matter.title }}</strong> {% if matter.area %}<small class="muted">· {{ matter.area_label }}</small>{% endif %}</span>
+              <span class="badge">{{ matter.get_status_display }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <dl class="profile-facts" style="margin: 20px 0; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
+      <div><dt>CPF / CNPJ</dt><dd>{{ contact.document|default:'Não informado' }}</dd></div>
+      <div><dt>Telefone</dt><dd>{{ contact.phone|default:'Não informado' }}</dd></div>
+      <div><dt>E-mail</dt><dd>{{ contact.email|default:'Não informado' }}</dd></div>
+    </dl>
+
+    <form method="post" style="margin-top: 24px; display: flex; gap: 12px; align-items: center; justify-content: flex-end;">
+      {% csrf_token %}
+      <a class="button button-secondary" href="{% url 'legal:contact_detail' contact.pk %}">Cancelar</a>
+      <button class="button button-danger" type="submit" style="background: #dc2626; color: #fff; border: 1px solid #b91c1c; font-weight: 600;">
+        Excluir cliente e pastas vinculadas
+      </button>
+    </form>
+  </section>
+</div>
+{% endblock %}

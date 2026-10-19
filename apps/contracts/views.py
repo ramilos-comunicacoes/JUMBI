@@ -21,6 +21,9 @@ def contracts_access(view):
     @wraps(view)
     def wrapped(request, *args, **kwargs):
         require_access(request.organization, advanced=True)
+        from apps.core.services import member_has_module
+        if not member_has_module(getattr(request, "membership", None), "contracts"):
+            raise PermissionDenied("Acesso ao módulo de contratos restrito para o seu usuário.")
         return view(request, *args, **kwargs)
     return organization_required(wrapped)
 

@@ -87,7 +87,8 @@ def workspace_context(request):
     indexed_nav = {item["key"]: item for item in nav}
     nav = [dict(indexed_nav[key], group=group) for group, keys in navigation_groups
            for key in keys if key in indexed_nav]
-    nav = [item for item in nav if item["key"] not in prefs["hidden_nav"] and (manager or item["key"] != "djen")]
+    from apps.core.services import member_has_module
+    nav = [item for item in nav if item["key"] not in prefs["hidden_nav"] and (manager or item["key"] != "djen") and member_has_module(membership, item["key"])]
     if prefs["nav_order"]:
         priorities = {key: pos for pos, key in enumerate(prefs["nav_order"])}
         nav.sort(key=lambda item: priorities.get(item["key"], len(priorities)))
@@ -96,13 +97,14 @@ def workspace_context(request):
     if organization and membership and membership.role != 'client' and subscription and subscription.is_available:
         from apps.notifications.services import unread_count
         notification_count = unread_count(request)
+    can_reset = bool(membership and (membership.role == 'owner' or getattr(request.user, 'is_superuser', False)))
     return {
         "organization": organization, "membership": membership, "nav": nav,
         "office_preferences": prefs, "brand_tokens": brand_tokens(organization),
         "preference_key": f"jumbi:{getattr(organization, 'pk', 0)}:{getattr(request.user, 'pk', 0)}",
         "plan_catalog": PLANS,
         "can_edit": bool(membership and membership.role in {'owner', 'manager', 'operator'}),
-        "can_manage": manager, "today": timezone.localdate(),
+        "can_manage": manager, "can_reset": can_reset, "today": timezone.localdate(),
         "notification_count": notification_count,
         "is_demo": bool((subscription and subscription.status == "demo") or (organization and organization.slug in {"jumbi-demonstracao-local", "jumbi-demonstracao"})),
         "workspace_memberships": request.user.memberships.filter(is_active=True, organization__status="active", organization__business_type="office").select_related("organization") if request.user.is_authenticated else [],

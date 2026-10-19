@@ -217,6 +217,7 @@ class Membership(models.Model):
         verbose_name="gestor direto",
     )
     is_active = models.BooleanField(default=True)
+    permissions = models.JSONField("permissões personalizadas", default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -248,6 +249,15 @@ class WorkspaceInvitation(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="workspace_invitations")
     email = models.EmailField()
     role = models.CharField(max_length=20, choices=Membership.Role.choices)
+    position = models.ForeignKey(
+        OrganizationRole,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="workspace_invitations",
+        verbose_name="cargo",
+    )
+    permissions = models.JSONField("permissões personalizadas", default=list, blank=True)
     token_hash = models.CharField(max_length=64, unique=True)
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="sent_workspace_invitations")
     created_at = models.DateTimeField(auto_now_add=True)

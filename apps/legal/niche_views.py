@@ -25,6 +25,9 @@ from .views import can_edit, organization_required
 @require_http_methods(["GET"])
 def previdenciario_hub(request):
     """Deep Previdenciário Hub: INSS requirements, 30-day deadline alerts, EC 103 calculator & templates."""
+    from apps.core.services import member_has_module
+    if not member_has_module(getattr(request, "membership", None), "demands"):
+        raise PermissionDenied("Acesso ao módulo Previdenciário restrito para o seu usuário.")
     today = timezone.localdate()
     org = request.organization
     user = request.user
@@ -79,6 +82,9 @@ def previdenciario_hub(request):
 @require_http_methods(["GET"])
 def trabalhista_hub(request):
     """Deep Trabalhista Hub: Labor claims, hearing checklist (CLT 844), severance calculator & templates."""
+    from apps.core.services import member_has_module
+    if not member_has_module(getattr(request, "membership", None), "trabalhista"):
+        raise PermissionDenied("Acesso ao módulo Trabalhista restrito para o seu usuário.")
     today = timezone.localdate()
     org = request.organization
     user = request.user

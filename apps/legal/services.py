@@ -11,7 +11,7 @@ from django.utils import timezone
 from apps.core.models import Membership
 from .models import (
     AuditEvent, Deadline, DeadlineRevision, Document, DocumentVersion,
-    FinanceEntry, Matter, Payment, Task, validate_document_file,
+    FinanceEntry, Matter, Payment, Task, allow_immutable_delete, validate_document_file,
 )
 
 
@@ -371,4 +371,274 @@ def ensure_client_matter(*, contact, actor=None, area=None, title=None):
         description=f"Pasta jurídica '{matter.title}' criada automaticamente para o cliente {contact.name}.",
     )
     return matter
+
+
+@transaction.atomic
+def delete_contact_and_matters(*, contact, actor=None):
+    """Safely cascades deletion of a contact and all their linked matters and records."""
+    org = contact.organization
+    with allow_immutable_delete():
+        matters = Matter.objects.filter(organization=org, client=contact)
+        matter_ids = list(matters.values_list("pk", flat=True))
+
+        # 1. Tasks & worklog comments
+        tasks = Task.objects.filter(organization=org, matter_id__in=matter_ids)
+        try:
+            from apps.worklog.models import TaskComment
+            TaskComment.objects.filter(task__in=tasks).delete()
+        except Exception:
+            pass
+        tasks.delete()
+
+        # 2. Deadlines and revisions
+        deadlines = Deadline.objects.filter(organization=org, matter_id__in=matter_ids)
+        DeadlineRevision.objects.filter(organization=org, deadline__in=deadlines).delete()
+        deadlines.delete()
+
+        # 3. Documents, versions, portal reviews and publications
+        docs = Document.objects.filter(organization=org, matter_id__in=matter_ids)
+        versions = DocumentVersion.objects.filter(organization=org, document__in=docs)
+        try:
+            from apps.portal.models import PublicationMessage, Publication, DocumentDecision, DocumentReview
+            reviews = DocumentReview.objects.filter(version__in=versions)
+            PublicationMessage.objects.filter(publication__review__in=reviews).delete()
+            Publication.objects.filter(review__in=reviews).delete()
+            DocumentDecision.objects.filter(review__in=reviews).delete()
+            reviews.delete()
+        except Exception:
+            pass
+
+        for v in versions:
+            try:
+                if v.file:
+                    v.file.delete(save=False)
+            except Exception:
+                pass
+        versions.delete()
+        docs.delete()
+
+        # 4. Finance, payments and receipts
+        try:
+            from .models import PaymentReceipt
+            PaymentReceipt.objects.filter(organization=org, matter_id__in=matter_ids).delete()
+        except Exception:
+            pass
+        entries = FinanceEntry.objects.filter(organization=org, matter_id__in=matter_ids)
+        Payment.objects.filter(organization=org, entry__in=entries).delete()
+        entries.delete()
+
+        # 5. Routines
+        try:
+            from apps.routines.models import RoutineCheckItem, RoutineComment, RoutineApplication
+            RoutineCheckItem.objects.filter(matter_id__in=matter_ids).delete()
+            RoutineComment.objects.filter(matter_id__in=matter_ids).delete()
+            RoutineApplication.objects.filter(matter_id__in=matter_ids).delete()
+        except Exception:
+            pass
+
+        # 6. Court Cases, Appointments, Demands, Contacts and Opportunities
+        from .models import CourtCase, Appointment, AdministrativeDemand, ClientContact, Opportunity
+        CourtCase.objects.filter(organization=org, matter_id__in=matter_ids).delete()
+        Appointment.objects.filter(organization=org, matter_id__in=matter_ids).delete()
+        AdministrativeDemand.objects.filter(organization=org).filter(Q(matter_id__in=matter_ids) | Q(contact=contact)).delete()
+        ClientContact.objects.filter(organization=org).filter(Q(matter_id__in=matter_ids) | Q(contact=contact)).delete()
+        Opportunity.objects.filter(organization=org, contact=contact).delete()
+
+        # 7. Contracts and Fee Plans
+        try:
+            from apps.contracts.models import ContractRevision, Contract
+            contracts = Contract.objects.filter(organization=org, client=contact)
+            ContractRevision.objects.filter(contract__in=contracts).delete()
+            contracts.delete()
+        except Exception:
+            pass
+
+        try:
+            from apps.fees.models import FeePlan
+            FeePlan.objects.filter(organization=org, client=contact).delete()
+        except Exception:
+            pass
+
+        # 8. Portal client access
+        try:
+            from apps.portal.models import PublicationMessage, Publication, ClientAccess
+            accesses = ClientAccess.objects.filter(contact=contact)
+            PublicationMessage.objects.filter(publication__access__in=accesses).delete()
+            Publication.objects.filter(access__in=accesses).delete()
+            accesses.delete()
+        except Exception:
+            pass
+
+        # 9. Communications (DJEN, PJe)
+        try:
+            from .models import DjenCommunication
+            DjenCommunication.objects.filter(organization=org, matter_id__in=matter_ids).delete()
+        except Exception:
+            pass
+        try:
+            from apps.integrations.models import CourtCommunication
+            CourtCommunication.objects.filter(organization=org, matter_id__in=matter_ids).delete()
+        except Exception:
+            pass
+
+        # 10. Birthday notifications
+        try:
+            from apps.notifications.models import BirthdayNotification
+            BirthdayNotification.objects.filter(contact=contact).delete()
+        except Exception:
+            pass
+
+        # 11. Delete matters
+        matters_count = len(matter_ids)
+        matters.delete()
+
+        # 12. Delete contact
+        contact_name = contact.name
+        contact.delete()
+
+        # 13. Audit
+        audit(
+            organization=org,
+            actor=actor,
+            action="contact.deleted",
+            description=f"Cliente '{contact_name}' e {matters_count} pasta(s) vinculada(s) foram excluídos com sucesso.",
+        )
+    return matters_count
+
+
+@transaction.atomic
+def reset_organization_operational_data(*, organization, actor=None):
+    """Safely resets all operational data for an organization, preserving accounts, team and subscription."""
+    org = organization
+    with allow_immutable_delete():
+        # 1. Worklog comments & tasks
+        try:
+            from apps.worklog.models import TaskComment
+            TaskComment.objects.filter(task__organization=org).delete()
+        except Exception:
+            pass
+        Task.objects.filter(organization=org).delete()
+
+        # 2. Deadlines and revisions
+        DeadlineRevision.objects.filter(organization=org).delete()
+        Deadline.objects.filter(organization=org).delete()
+
+        # 3. Documents, versions, portal reviews & publications
+        try:
+            from apps.portal.models import PublicationMessage, Publication, DocumentDecision, DocumentReview, ClientAccess
+            PublicationMessage.objects.filter(publication__review__version__document__organization=org).delete()
+            Publication.objects.filter(review__version__document__organization=org).delete()
+            DocumentDecision.objects.filter(review__version__document__organization=org).delete()
+            DocumentReview.objects.filter(version__document__organization=org).delete()
+            PublicationMessage.objects.filter(publication__access__contact__organization=org).delete()
+            Publication.objects.filter(access__contact__organization=org).delete()
+            ClientAccess.objects.filter(contact__organization=org).delete()
+        except Exception:
+            pass
+
+        for v in DocumentVersion.objects.filter(organization=org):
+            try:
+                if v.file:
+                    v.file.delete(save=False)
+            except Exception:
+                pass
+        DocumentVersion.objects.filter(organization=org).delete()
+        Document.objects.filter(organization=org).delete()
+
+        # 4. Finance, payments, receipts, fee plans
+        try:
+            from .models import PaymentReceipt
+            PaymentReceipt.objects.filter(organization=org).delete()
+        except Exception:
+            pass
+        Payment.objects.filter(organization=org).delete()
+        FinanceEntry.objects.filter(organization=org).delete()
+        try:
+            from apps.fees.models import FeePlan
+            FeePlan.objects.filter(organization=org).delete()
+        except Exception:
+            pass
+
+        # 5. Routines
+        try:
+            from apps.routines.models import RoutineCheckItem, RoutineComment, RoutineApplication
+            RoutineCheckItem.objects.filter(matter__organization=org).delete()
+            RoutineComment.objects.filter(matter__organization=org).delete()
+            RoutineApplication.objects.filter(matter__organization=org).delete()
+        except Exception:
+            pass
+
+        # 6. Court Cases, Appointments, Demands, Contacts and Opportunities
+        from .models import CourtCase, Appointment, AdministrativeDemand, ClientContact, Opportunity, Contact
+        CourtCase.objects.filter(organization=org).delete()
+        Appointment.objects.filter(organization=org).delete()
+        AdministrativeDemand.objects.filter(organization=org).delete()
+        ClientContact.objects.filter(organization=org).delete()
+        Opportunity.objects.filter(organization=org).delete()
+
+        # 7. Contracts
+        try:
+            from apps.contracts.models import ContractRevision, Contract
+            ContractRevision.objects.filter(contract__organization=org).delete()
+            Contract.objects.filter(organization=org).delete()
+        except Exception:
+            pass
+
+        # 8. Communications (DJEN, PJe)
+        try:
+            from .models import DjenCommunication, DjenSearchRun
+            DjenCommunication.objects.filter(organization=org).delete()
+            DjenSearchRun.objects.filter(organization=org).delete()
+        except Exception:
+            pass
+        try:
+            from apps.integrations.models import CourtCommunication
+            CourtCommunication.objects.filter(organization=org).delete()
+        except Exception:
+            pass
+
+        # 9. Performance goals
+        try:
+            from apps.performance.models import GoalUpdate, Goal, ScoreEvent
+            GoalUpdate.objects.filter(goal__organization=org).delete()
+            ScoreEvent.objects.filter(organization=org).delete()
+            Goal.objects.filter(organization=org).delete()
+        except Exception:
+            pass
+
+        # 10. Intake batches
+        try:
+            from apps.intake.models import ImportBatch
+            ImportBatch.objects.filter(organization=org).delete()
+        except Exception:
+            pass
+
+        # 11. Notifications
+        try:
+            from apps.notifications.models import Notification, BirthdayNotification
+            BirthdayNotification.objects.filter(contact__organization=org).delete()
+            Notification.objects.filter(recipient__memberships__organization=org).delete()
+        except Exception:
+            pass
+
+        # 12. Matters and Contacts
+        Matter.objects.filter(organization=org).delete()
+        Contact.objects.filter(organization=org).delete()
+
+        # 13. Audit trail (clean operational events, record reset event)
+        AuditEvent.objects.filter(organization=org).delete()
+        audit(
+            organization=org,
+            actor=actor,
+            action="workspace.reset",
+            description="O sistema do escritório foi resetado pelo administrador. Todos os dados operacionais foram limpos.",
+        )
+        from apps.core.models import AuditLog
+        AuditLog.objects.create(
+            organization=org,
+            actor=actor,
+            action="organization.reset",
+            metadata={"actor": str(actor), "reset_at": timezone.now().isoformat()},
+        )
+
 

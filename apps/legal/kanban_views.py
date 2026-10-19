@@ -27,6 +27,9 @@ class MoveForm(forms.Form):
 @organization_required
 @require_GET
 def board(request):
+    from apps.core.services import member_has_module
+    if not member_has_module(getattr(request, "membership", None), "tasks"):
+        raise PermissionDenied("Acesso ao Kanban e tarefas restrito para o seu usuário.")
     tasks = scoped_queryset(request.user, request.organization, Task).select_related("matter", "owner")
     form = TaskBoardFilterForm(request.GET, request=request)
     valid = form.is_valid()

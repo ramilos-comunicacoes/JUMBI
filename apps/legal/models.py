@@ -117,12 +117,29 @@ class TenantModel(models.Model):
         return super().save(*args, **kwargs)
 
 
+_ALLOW_IMMUTABLE_DELETE = False
+
+
+class allow_immutable_delete:
+    def __enter__(self):
+        global _ALLOW_IMMUTABLE_DELETE
+        self._prev = _ALLOW_IMMUTABLE_DELETE
+        _ALLOW_IMMUTABLE_DELETE = True
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        global _ALLOW_IMMUTABLE_DELETE
+        _ALLOW_IMMUTABLE_DELETE = self._prev
+
+
 class ImmutableQuerySet(models.QuerySet):
     def update(self, **kwargs):
         raise ValidationError("O registro é imutável; crie um novo registro de correção.")
 
     def delete(self):
-        raise ValidationError("O histórico deve ser preservado.")
+        if not _ALLOW_IMMUTABLE_DELETE:
+            raise ValidationError("O histórico deve ser preservado.")
+        return super().delete()
 
     def bulk_create(self, *args, **kwargs):
         raise ValidationError("Use os serviços de domínio para preservar validação e histórico.")
@@ -140,7 +157,9 @@ class ImmutableTenantModel(TenantModel):
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        raise ValidationError("O histórico deve ser preservado.")
+        if not _ALLOW_IMMUTABLE_DELETE:
+            raise ValidationError("O histórico deve ser preservado.")
+        return super().delete(*args, **kwargs)
 
 
 class Contact(TenantModel):

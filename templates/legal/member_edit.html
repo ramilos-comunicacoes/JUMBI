@@ -1,0 +1,107 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}">{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'core:team' %}"><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg>Voltar à equipe e acessos</a>
+
+<div class="page-heading">
+  <div>
+    <div class="eyebrow">EQUIPE E HIERARQUIA <span class="eyebrow-divider">/</span> ACESSOS</div>
+    <h1>Editar acesso de {{ member.user.get_full_name|default:member.user.email }}</h1>
+    <p>Personalize o cargo, o perfil de autoridade e selecione exatamente quais módulos este usuário pode acessar.</p>
+  </div>
+</div>
+
+<div style="max-width: 760px; margin: 0 auto;">
+  <section class="panel" style="padding: 28px;">
+    
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+      <div class="profile-monogram" style="width: 52px; height: 52px; border-radius: 50%; background: var(--office-primary, #f5a000); color: #0b1320; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.25rem;">
+        {{ member.user.first_name|default:member.user.email|slice:":1"|upper }}
+      </div>
+      <div>
+        <h2 style="font-size: 1.25rem; margin: 0; color: #fff;">{{ member.user.get_full_name|default:member.user.email }}</h2>
+        <span class="muted small">{{ member.user.email }}</span>
+        <div style="margin-top: 4px;">
+          <span class="badge {% if member.is_active %}badge-amber{% endif %}">
+            {% if member.is_active %}Acesso ativo{% else %}Acesso inativo{% endif %}
+          </span>
+          {% if member.position %}
+            <span class="badge" style="margin-left: 6px;">{{ member.position.name }} (Nível {{ member.position.hierarchy_level }})</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <form method="post" class="record-form">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-error" role="alert" style="margin-bottom: 16px;">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+        <div>
+          <label for="{{ form.role.id_for_label }}" style="display:block; font-weight: 600; margin-bottom: 6px;">
+            {{ form.role.label }} <span style="color:#f87171;">*</span>
+          </label>
+          {{ form.role }}
+          {% if form.role.errors %}
+            <div class="form-error" style="color:#f87171; font-size: 0.85rem; margin-top: 4px;">{{ form.role.errors }}</div>
+          {% endif %}
+          <small class="muted" style="display:block; margin-top: 4px;">Define a base de permissões operacionais.</small>
+        </div>
+
+        <div>
+          <label for="{{ form.position.id_for_label }}" style="display:block; font-weight: 600; margin-bottom: 6px;">
+            {{ form.position.label }}
+          </label>
+          {{ form.position }}
+          {% if form.position.errors %}
+            <div class="form-error" style="color:#f87171; font-size: 0.85rem; margin-top: 4px;">{{ form.position.errors }}</div>
+          {% endif %}
+          <small class="muted" style="display:block; margin-top: 4px;">Organograma e nível de responsabilidade.</small>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <label style="display:block; font-weight: 600; margin-bottom: 6px;">
+          {{ form.permissions.label }}
+        </label>
+        <p class="muted small" style="margin-top:0; margin-bottom: 12px;">{{ form.permissions.help_text }}</p>
+
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 16px; max-height: 320px; overflow-y: auto;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">
+            {% for choice in form.permissions %}
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 10px; border-radius: 4px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); font-size: 0.88rem;">
+                {{ choice.tag }}
+                <span>{{ choice.choice_label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% if form.permissions.errors %}
+          <div class="form-error" style="color:#f87171; font-size: 0.85rem; margin-top: 4px;">{{ form.permissions.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div style="margin-bottom: 28px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.95rem;">
+          {{ form.is_active }}
+          <strong>{{ form.is_active.label }}</strong>
+        </label>
+        {% if form.is_active.errors %}
+          <div class="form-error" style="color:#f87171; font-size: 0.85rem; margin-top: 4px;">{{ form.is_active.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
+        <a class="button button-secondary" href="{% url 'core:team' %}">Cancelar</a>
+        <button class="button button-primary" type="submit">Salvar alterações de acesso</button>
+      </div>
+    </form>
+
+  </section>
+</div>
+{% endblock %}

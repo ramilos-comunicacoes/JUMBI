@@ -9,6 +9,10 @@ from .views import organization_required
 @organization_required
 @require_GET
 def calendar_view(request):
+    from apps.core.services import member_has_module
+    from django.core.exceptions import PermissionDenied
+    if not member_has_module(getattr(request, "membership", None), "appointments"):
+        raise PermissionDenied("Acesso à agenda e calendário restrito para o seu usuário.")
     from apps.core.preferences import office_preferences
     params = request.GET.copy()
     params.setdefault("view", office_preferences(request.organization)["calendar_view"])

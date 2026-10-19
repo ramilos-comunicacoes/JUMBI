@@ -19,7 +19,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .models import Membership, Organization, User, WorkspaceInvitation
-from .workspace_forms import LoginForm, SignupForm, InvitationForm, InvitationAcceptForm
+from .workspace_forms import LoginForm, SignupForm, InvitationForm, InvitationAcceptForm, MemberEditForm, ResetSystemForm
 
 
 def home(request):
@@ -126,7 +126,7 @@ def _manager(request):
 @require_http_methods(["GET", "POST"])
 def team(request):
     _manager(request)
-    form = InvitationForm(request.POST if request.method == "POST" else None, membership=request.membership)
+    form = InvitationForm(request.POST if request.method == "POST" else None, membership=request.membership, organization=request.organization)
     invite_url = request.session.pop("new_invitation_url", "")
     if request.method == "POST" and form.is_valid():
         email = form.cleaned_data["email"]
@@ -137,8 +137,13 @@ def team(request):
             with transaction.atomic():
                 WorkspaceInvitation.objects.filter(organization=request.organization, email__iexact=email, accepted_at__isnull=True, revoked_at__isnull=True).update(revoked_at=timezone.now())
                 invitation = WorkspaceInvitation.objects.create(
-                    organization=request.organization, email=email, role=form.cleaned_data["role"],
-                    token_hash=hashlib.sha256(token.encode()).hexdigest(), invited_by=request.user,
+                    organization=request.organization,
+                    email=email,
+                    role=form.cleaned_data["role"],
+                    position=form.cleaned_data.get("position"),
+                    permissions=form.cleaned_data.get("permissions") or [],
+                    token_hash=hashlib.sha256(token.encode()).hexdigest(),
+                    invited_by=request.user,
                     expires_at=timezone.now() + timedelta(days=7),
                 )
                 from apps.legal.services import audit
@@ -146,8 +151,8 @@ def team(request):
             request.session["new_invitation_url"] = request.build_absolute_uri(reverse("core:invitation", args=[token]))
             messages.success(request, "Convite criado. Compartilhe o link com a pessoa convidada; ele expira em 7 dias.")
             return redirect("core:team")
-    members = Membership.objects.filter(organization=request.organization).select_related("user").order_by("-is_active", "user__first_name")
-    invitations = WorkspaceInvitation.objects.filter(organization=request.organization, accepted_at__isnull=True, revoked_at__isnull=True, expires_at__gt=timezone.now())
+    members = Membership.objects.filter(organization=request.organization).select_related("user", "position").order_by("-is_active", "position__hierarchy_level", "user__first_name")
+    invitations = WorkspaceInvitation.objects.filter(organization=request.organization, accepted_at__isnull=True, revoked_at__isnull=True, expires_at__gt=timezone.now()).select_related("position")
     return render(request, "legal/team.html", {"form": form, "members": members, "invitations": invitations, "invite_url": invite_url, "page_title": "Equipe e acessos", "active_nav": "team"})
 
 
@@ -215,7 +220,16 @@ def accept_invitation(request, token):
                 user = form.save(commit=False)
                 user.email = invitation.email.lower()
                 user.save()
-            Membership.objects.update_or_create(organization=invitation.organization, user=user, defaults={"role": invitation.role, "is_active": True})
+            Membership.objects.update_or_create(
+                organization=invitation.organization,
+                user=user,
+                defaults={
+                    "role": invitation.role,
+                    "position": invitation.position,
+                    "permissions": invitation.permissions or [],
+                    "is_active": True,
+                },
+            )
             invitation.accepted_at = timezone.now()
             invitation.save(update_fields=["accepted_at"])
             from apps.legal.services import audit
@@ -276,6 +290,64 @@ def customization(request):
         "page_title": "Personalização do escritório", "active_nav": "customization",
         "form": form, "field_groups": form.field_groups(), "navigation_order": [(key, dict(NAV_CHOICES)[key]) for key in keys],
     })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def edit_member(request, pk):
+    _manager(request)
+    member = get_object_or_404(Membership.objects.select_related("user", "position"), pk=pk, organization=request.organization)
+    if member.role == "owner" and request.membership.role != "owner":
+        raise PermissionDenied("Somente a direção pode editar um acesso de direção.")
+    form = MemberEditForm(
+        request.POST if request.method == "POST" else None,
+        target_member=member,
+        actor_membership=request.membership,
+        organization=request.organization,
+    )
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        with transaction.atomic():
+            member.role = data["role"]
+            member.position = data.get("position")
+            member.permissions = data.get("permissions") or []
+            # Prevent self-deactivation or removing the last active owner
+            if member.user_id == request.user.pk and not data["is_active"]:
+                form.add_error("is_active", "Você não pode desativar seu próprio acesso.")
+            elif member.role == "owner" and not data["is_active"] and not Membership.objects.filter(organization=request.organization, role="owner", is_active=True).exclude(pk=member.pk).exists():
+                form.add_error("is_active", "O escritório precisa manter pelo menos um responsável da direção ativo.")
+            else:
+                member.is_active = data["is_active"]
+                member.save()
+                from apps.legal.services import audit
+                audit(organization=request.organization, actor=request.user, action="team.member_updated", description=f"Acesso de {member.user.email} atualizado: {member.get_role_display()}, cargo {member.position.name if member.position else 'Padrão'}.")
+                messages.success(request, f"Acesso e permissões de {member.user.get_full_name() or member.user.email} atualizados com sucesso.")
+                return redirect("core:team")
+    return render(request, "legal/member_edit.html", {
+        "page_title": f"Editar acesso · {member.user.get_full_name() or member.user.email}",
+        "active_nav": "team",
+        "member": member,
+        "form": form,
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def reset_system(request):
+    if not (request.membership and request.membership.role == "owner") and not request.user.is_superuser:
+        raise PermissionDenied("Apenas o administrador / proprietário do escritório pode resetar o sistema.")
+    form = ResetSystemForm(request.POST if request.method == "POST" else None, user=request.user)
+    if request.method == "POST" and form.is_valid():
+        from apps.legal.services import reset_organization_operational_data
+        reset_organization_operational_data(organization=request.organization, actor=request.user)
+        messages.success(request, "O sistema do escritório foi resetado com sucesso. Todos os dados operacionais foram limpos e o ambiente está pronto para um novo ciclo.")
+        return redirect("legal:dashboard")
+    return render(request, "legal/reset_system.html", {
+        "page_title": "Resetar sistema do escritório",
+        "active_nav": "customization",
+        "form": form,
+    })
+
 
 
 

@@ -1,0 +1,110 @@
+{% extends 'legal/base.html' %}{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/jumbi-sections.css' %}">{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'core:customization' %}"><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg>Voltar às configurações</a>
+
+<div class="page-heading">
+  <div>
+    <div class="eyebrow" style="color:var(--danger,#f87171);">ZONA DE SEGURANÇA MÁXIMA <span class="eyebrow-divider">/</span> ADMINISTRAÇÃO</div>
+    <h1 style="color:var(--danger,#f87171);">Resetar dados operacionais do escritório</h1>
+    <p>Limpeza completa de cadastros, pastas, prazos e documentos. Exclusivo para administradores e protegido por senha.</p>
+  </div>
+</div>
+
+<div style="max-width: 760px; margin: 0 auto;">
+  <section class="panel" style="border-left: 4px solid var(--danger, #ef4444); padding: 28px;">
+    
+    <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+      <h2 style="font-size: 1.15rem; color: #fca5a5; margin-top: 0; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+        <svg class="icon" style="width:20px;height:20px;fill:currentColor;"><use href="#i-shield"/></svg>
+        Atenção: Ação irreversível
+      </h2>
+      <p style="margin: 0; font-size: 0.95rem; line-height: 1.6; color: #fecaca;">
+        O reset do sistema foi desenvolvido para reiniciar o fluxo operacional do escritório (por exemplo, após testes ou ao iniciar um novo ciclo). Todos os dados cadastrados serão permanentemente limpos.
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+      <div style="background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.15); border-radius: 8px; padding: 16px;">
+        <h3 style="color:#f87171; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0; margin-bottom: 10px;">
+          ✕ O que será excluído:
+        </h3>
+        <ul style="margin: 0; padding-left: 18px; font-size: 0.88rem; line-height: 1.6; color: rgba(255,255,255,0.85);">
+          <li>Todos os <strong>clientes e contatos</strong></li>
+          <li>Todas as <strong>pastas jurídicas</strong></li>
+          <li>Todos os <strong>processos e audiências</strong></li>
+          <li>Todas as <strong>tarefas e Kanban</strong></li>
+          <li>Todos os <strong>prazos e agenda</strong></li>
+          <li>Todos os <strong>documentos e arquivos</strong></li>
+          <li>Todos os <strong>lançamentos financeiros e recibos</strong></li>
+          <li>Demandas <strong>previdenciárias e rotinas</strong></li>
+        </ul>
+      </div>
+
+      <div style="background: rgba(16,185,129,0.04); border: 1px solid rgba(16,185,129,0.15); border-radius: 8px; padding: 16px;">
+        <h3 style="color:#34d399; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0; margin-bottom: 10px;">
+          ✓ O que permanece seguro:
+        </h3>
+        <ul style="margin: 0; padding-left: 18px; font-size: 0.88rem; line-height: 1.6; color: rgba(255,255,255,0.85);">
+          <li>Sua <strong>conta de acesso</strong></li>
+          <li>A <strong>conta do escritório</strong> (empresa)</li>
+          <li>O seu <strong>plano e assinatura JUMBI</strong></li>
+          <li>As <strong>contas da equipe e permissões</strong></li>
+          <li>Logos e <strong>personalizações visuais</strong></li>
+          <li>Histórico de <strong>auditoria do reset</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <form method="post" class="record-form" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px;">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-error" role="alert" style="margin-bottom: 16px;">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div style="margin-bottom: 20px;">
+        <label for="{{ form.password.id_for_label }}" style="display:block; font-weight: 600; margin-bottom: 6px;">
+          {{ form.password.label }} <span style="color:#f87171;">*</span>
+        </label>
+        <p class="muted small" style="margin-top:0; margin-bottom: 8px;">{{ form.password.help_text }}</p>
+        {{ form.password }}
+        {% if form.password.errors %}
+          <div class="form-error" style="color:#f87171; font-size: 0.85rem; margin-top: 4px;">{{ form.password.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label for="{{ form.confirmation_text.id_for_label }}" style="display:block; font-weight: 600; margin-bottom: 6px;">
+          {{ form.confirmation_text.label }} <span style="color:#f87171;">*</span>
+        </label>
+        <p class="muted small" style="margin-top:0; margin-bottom: 8px;">{{ form.confirmation_text.help_text }}</p>
+        {{ form.confirmation_text }}
+        {% if form.confirmation_text.errors %}
+          <div class="form-error" style="color:#f87171; font-size: 0.85rem; margin-top: 4px;">{{ form.confirmation_text.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div style="margin-bottom: 24px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+        <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.9rem; line-height: 1.4;">
+          {{ form.confirm_checkbox }}
+          <span>{{ form.confirm_checkbox.label }}</span>
+        </label>
+        {% if form.confirm_checkbox.errors %}
+          <div class="form-error" style="color:#f87171; font-size: 0.85rem; margin-top: 4px;">{{ form.confirm_checkbox.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
+        <a class="button button-secondary" href="{% url 'core:customization' %}">Cancelar</a>
+        <button class="button button-danger" type="submit" style="background: #dc2626; color: #fff; border: 1px solid #b91c1c; font-weight: 600; padding: 10px 20px;" onclick="return confirm('Tem certeza absoluta que deseja resetar todo o escritório? Esta operação é definitiva e apagará todos os dados operacionais.');">
+          Confirmar e resetar escritório
+        </button>
+      </div>
+    </form>
+
+  </section>
+</div>
+{% endblock %}

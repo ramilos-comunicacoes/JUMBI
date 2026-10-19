@@ -43,8 +43,12 @@ def authorize(actor, organization, *, lock=False):
     memberships = Membership.objects.filter(organization=organization, user=actor, is_active=True, user__is_active=True, role__in=["owner", "manager"])
     if lock:
         memberships = memberships.select_for_update()
-    if not memberships.first():
+    member = memberships.first()
+    if not member:
         raise PermissionDenied("Somente a direção e a gestão podem importar cadastros.")
+    from apps.core.services import member_has_module
+    if not member_has_module(member, "intake"):
+        raise PermissionDenied("Seu acesso à importação de planilhas foi restringido.")
     require_access(organization)
 
 

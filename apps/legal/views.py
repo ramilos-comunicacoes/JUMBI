@@ -91,6 +91,9 @@ def can_edit(request):
 def get_module(request, module, *, write=False):
     if module not in MODULES:
         raise Http404("Módulo não encontrado.")
+    from apps.core.services import member_has_module
+    if hasattr(request, "membership") and not member_has_module(request.membership, module):
+        raise PermissionDenied("Seu perfil de acesso não tem permissão para este módulo.")
     if module == "finance" and not can_manage_finance(request):
         raise PermissionDenied("O financeiro está disponível aos perfis de direção e gestão.")
     if write and not can_edit(request):
