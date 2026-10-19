@@ -1,0 +1,167 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-marketing.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="marketing-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Ferramenta de Rastreamento</span>
+      <h1>Gerador de Links UTM</h1>
+      <p>Crie links rastreados para anúncios no Instagram, Google Ads, posts de blog e botões de WhatsApp.</p>
+    </div>
+  </div>
+
+  {% include 'marketing/includes/marketing_subtabs.html' with active_tab='utm' %}
+
+  <div class="utm-tool-grid">
+    <!-- Configurator -->
+    <section class="marketing-panel">
+      <header class="marketing-panel-header">
+        <h2>
+          <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-connectors"/></svg>
+          Parâmetros do Link
+        </h2>
+      </header>
+      <div class="marketing-panel-body">
+        <form id="utm-form" style="display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label for="utm-base-url" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">URL de Destino / Site *</label>
+            <input type="url" id="utm-base-url" placeholder="https://seuescritorio.com.br/aposentadoria" required class="input" style="width:100%;" value="https://jumbi.nabio.pro/">
+          </div>
+
+          <div>
+            <label for="select-preset" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Preencher com Campanha Existente</label>
+            <select id="select-preset" class="select" style="width:100%;">
+              <option value="">— Personalizado —</option>
+              {% for c in campaigns %}
+                <option value="{{ c.id }}"
+                        data-source="{{ c.utm_source|default:c.channel }}"
+                        data-medium="{{ c.utm_medium|default:'cpc' }}"
+                        data-campaign="{{ c.utm_campaign|default:c.name|slugify }}"
+                        data-content="{{ c.utm_content }}">
+                  {{ c.name }} ({{ c.get_channel_display }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label for="utm-source" style="font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:2px;">Origem (utm_source) *</label>
+              <input type="text" id="utm-source" placeholder="instagram, google, whatsapp" required class="input" style="width:100%;font-size:11px;" value="instagram">
+            </div>
+            <div>
+              <label for="utm-medium" style="font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:2px;">Mídia (utm_medium) *</label>
+              <input type="text" id="utm-medium" placeholder="stories, bio, feed, cpc" required class="input" style="width:100%;font-size:11px;" value="bio">
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label for="utm-campaign" style="font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:2px;">Campanha (utm_campaign) *</label>
+              <input type="text" id="utm-campaign" placeholder="previdenciario_inss" required class="input" style="width:100%;font-size:11px;" value="previdenciario_2026">
+            </div>
+            <div>
+              <label for="utm-content" style="font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:2px;">Conteúdo / Criativo (utm_content)</label>
+              <input type="text" id="utm-content" placeholder="video_explicativo" class="input" style="width:100%;font-size:11px;">
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Result Box -->
+    <section class="marketing-panel">
+      <header class="marketing-panel-header">
+        <h2>
+          <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:#10b981;"><use href="#i-check"/></svg>
+          Link Rastreado Pronto
+        </h2>
+      </header>
+      <div class="marketing-panel-body" style="display:flex;flex-direction:column;gap:14px;">
+        <p style="font-size:11px;color:var(--muted);margin:0;">
+          Use este link final em seus anúncios ou na bio do Instagram. Cada clique e lead gerado será creditado automaticamente à campanha correspondente.
+        </p>
+
+        <div class="utm-result-box">
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);">URL Gerada:</span>
+          <div class="utm-url-display" id="final-utm-url">https://jumbi.nabio.pro/?utm_source=instagram&amp;utm_medium=bio&amp;utm_campaign=previdenciario_2026</div>
+        </div>
+
+        <div>
+          <button type="button" class="button button-primary" id="btn-copy-url" style="width:100%;justify-content:center;">
+            <svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+            <span id="copy-btn-text">Copiar Link Rastreado</span>
+          </button>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:6px;padding:12px;font-size:11px;color:var(--muted);line-height:1.5;">
+          <strong style="color:#e2e8f0;display:block;margin-bottom:4px;">Dica Estratégica para Escritórios:</strong>
+          Para links de WhatsApp, utilize <code>utm_source=whatsapp</code> e <code>utm_medium=direto</code>. Desta forma, o cálculo do CAC e ROAS no JUMBI saberá exatamente qual investimento gerou cada atendimento.
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const baseUrlInput = document.getElementById('utm-base-url');
+    const sourceInput = document.getElementById('utm-source');
+    const mediumInput = document.getElementById('utm-medium');
+    const campaignInput = document.getElementById('utm-campaign');
+    const contentInput = document.getElementById('utm-content');
+    const presetSelect = document.getElementById('select-preset');
+    const resultBox = document.getElementById('final-utm-url');
+    const copyBtn = document.getElementById('btn-copy-url');
+    const copyText = document.getElementById('copy-btn-text');
+
+    function updateUrl() {
+      let base = (baseUrlInput.value || '').trim();
+      if (!base) return;
+      if (!base.startsWith('http://') && !base.startsWith('https://')) {
+        base = 'https://' + base;
+      }
+      try {
+        const url = new URL(base);
+        if (sourceInput.value.trim()) url.searchParams.set('utm_source', sourceInput.value.trim());
+        if (mediumInput.value.trim()) url.searchParams.set('utm_medium', mediumInput.value.trim());
+        if (campaignInput.value.trim()) url.searchParams.set('utm_campaign', campaignInput.value.trim());
+        if (contentInput.value.trim()) url.searchParams.set('utm_content', contentInput.value.trim());
+        resultBox.textContent = url.toString();
+      } catch (e) {
+        resultBox.textContent = base + '?utm_source=' + encodeURIComponent(sourceInput.value.trim());
+      }
+    }
+
+    [baseUrlInput, sourceInput, mediumInput, campaignInput, contentInput].forEach(inp => {
+      inp.addEventListener('input', updateUrl);
+    });
+
+    presetSelect.addEventListener('change', function () {
+      const opt = this.options[this.selectedIndex];
+      if (opt && opt.dataset.source) {
+        sourceInput.value = opt.dataset.source;
+        mediumInput.value = opt.dataset.medium || 'cpc';
+        campaignInput.value = opt.dataset.campaign || '';
+        contentInput.value = opt.dataset.content || '';
+        updateUrl();
+      }
+    });
+
+    copyBtn.addEventListener('click', function () {
+      const text = resultBox.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        copyText.textContent = 'Link Copiado com Sucesso!';
+        setTimeout(() => { copyText.textContent = 'Copiar Link Rastreado'; }, 2000);
+      });
+    });
+
+    updateUrl();
+  });
+</script>
+{% endblock %}

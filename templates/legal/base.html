@@ -17,14 +17,16 @@
   <script src="{% static 'js/jumbi-scroll.js' %}" defer></script>
   <link rel="stylesheet" href="{% static 'css/jumbi-branding.css' %}">
   <script src="{% static 'js/jumbi-branding.js' %}" defer></script>
+  <script src="{% static 'vendor/htmx.min.js' %}"></script>
   <script src="{% static 'js/jumbi.js' %}" defer></script>
+  <meta name="htmx-config" content='{"allowScriptTags":true,"historyCacheSize":15,"defaultSwapStyle":"innerHTML"}'>
 </head>
-<body class="app-body j-glass-app j-office-shell">
+<body class="app-body j-glass-app j-office-shell" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
   {% include 'legal/includes/icons.html' %}
   <div class="sidebar-backdrop" data-sidebar-close hidden></div>
   <aside class="sidebar" id="main-sidebar" aria-label="Menu principal">
-    <div class="sidebar-brand"><a href="{% url 'legal:dashboard' %}" aria-label="{{ organization.system_title|default:'JUMBI' }} — visão geral"><img data-adaptive-logo src="{{ organization.logo_url|default:'/static/brand/logo.png' }}" alt="{{ organization.system_title|default:"JUMBI" }}" class="brand-logo"><img data-adaptive-logo src="{{ organization.collapsed_logo_url|default:'/static/brand/favicon.png' }}" alt="" aria-hidden="true" class="brand-symbol"></a><button class="icon-button mobile-only" data-sidebar-close aria-label="Fechar menu"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <div class="sidebar-brand"><a href="{% url 'legal:dashboard' %}" aria-label="{{ organization.system_title|default:'JUMBI' }} — visão geral"><img data-adaptive-logo src="{{ organization.logo_url|default:'/static/brand/logo.png' }}" alt="{{ organization.system_title|default:"JUMBI" }}" class="brand-logo"><img data-adaptive-logo src="{{ organization.collapsed_logo_url|default:'/static/brand/symbol.png' }}" alt="" aria-hidden="true" class="brand-symbol"></a><button class="icon-button mobile-only" data-sidebar-close aria-label="Fechar menu"><svg class="icon"><use href="#i-close"/></svg></button></div>
     <div class="workspace"><span class="workspace-mark">{{ organization.name|default:"J"|slice:":1"|upper }}</span><div class="workspace-copy"><strong>{{ organization.name|default:"Meu escritório" }}</strong><span>Espaço de trabalho</span></div><span class="workspace-dot" aria-label="Conectado"></span></div>
     {% if workspace_memberships|length > 1 %}<form class="workspace-switch" action="{% url 'core:switch_organization' %}" method="post">{% csrf_token %}<label for="workspace-select">Trocar escritório</label><div><select id="workspace-select" name="organization_id">{% for item in workspace_memberships %}<option value="{{ item.organization_id }}" {% if item.organization_id == organization.pk %}selected{% endif %}>{{ item.organization.name }}</option>{% endfor %}</select><button type="submit" class="icon-button" aria-label="Acessar escritório selecionado"><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div></form>{% endif %}
     <nav class="main-nav" aria-label="Principal">

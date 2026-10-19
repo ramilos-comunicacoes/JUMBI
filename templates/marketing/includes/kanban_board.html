@@ -1,0 +1,63 @@
+<div class="kanban-board" id="kanban-board">
+  {% for stage_key, stage_label in stages %}
+    <div class="kanban-column" id="col-{{ stage_key }}">
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">
+          {{ stage_label }}
+        </span>
+        <span class="kanban-column-badge">
+          {% with leads=leads_by_stage|dictsort:stage_key %}
+            {# We retrieve list via key in template #}
+          {% endwith %}
+          {% if stage_key == 'novo' %}{{ leads_by_stage.novo|length }}
+          {% elif stage_key == 'contato' %}{{ leads_by_stage.contato|length }}
+          {% elif stage_key == 'qualificado' %}{{ leads_by_stage.qualificado|length }}
+          {% elif stage_key == 'proposta' %}{{ leads_by_stage.proposta|length }}
+          {% elif stage_key == 'convertido' %}{{ leads_by_stage.convertido|length }}
+          {% elif stage_key == 'perdido' %}{{ leads_by_stage.perdido|length }}
+          {% else %}0{% endif %}
+        </span>
+      </div>
+
+      <div class="kanban-cards-container">
+        {% if stage_key == 'novo' %}
+          {% for lead in leads_by_stage.novo %}
+            {% include 'marketing/includes/lead_card.html' with lead=lead %}
+          {% empty %}
+            <p style="font-size:10px;color:var(--faint,#64748b);text-align:center;padding:16px 0;">Nenhum lead</p>
+          {% endfor %}
+        {% elif stage_key == 'contato' %}
+          {% for lead in leads_by_stage.contato %}
+            {% include 'marketing/includes/lead_card.html' with lead=lead %}
+          {% empty %}
+            <p style="font-size:10px;color:var(--faint,#64748b);text-align:center;padding:16px 0;">Nenhum lead</p>
+          {% endfor %}
+        {% elif stage_key == 'qualificado' %}
+          {% for lead in leads_by_stage.qualificado %}
+            {% include 'marketing/includes/lead_card.html' with lead=lead %}
+          {% empty %}
+            <p style="font-size:10px;color:var(--faint,#64748b);text-align:center;padding:16px 0;">Nenhum lead</p>
+          {% endfor %}
+        {% elif stage_key == 'proposta' %}
+          {% for lead in leads_by_stage.proposta %}
+            {% include 'marketing/includes/lead_card.html' with lead=lead %}
+          {% empty %}
+            <p style="font-size:10px;color:var(--faint,#64748b);text-align:center;padding:16px 0;">Nenhum lead</p>
+          {% endfor %}
+        {% elif stage_key == 'convertido' %}
+          {% for lead in leads_by_stage.convertido %}
+            {% include 'marketing/includes/lead_card.html' with lead=lead %}
+          {% empty %}
+            <p style="font-size:10px;color:var(--faint,#64748b);text-align:center;padding:16px 0;">Nenhum contrato</p>
+          {% endfor %}
+        {% elif stage_key == 'perdido' %}
+          {% for lead in leads_by_stage.perdido %}
+            {% include 'marketing/includes/lead_card.html' with lead=lead %}
+          {% empty %}
+            <p style="font-size:10px;color:var(--faint,#64748b);text-align:center;padding:16px 0;">Nenhum lead</p>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>

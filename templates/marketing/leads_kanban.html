@@ -1,0 +1,73 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-marketing.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="marketing-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Pipeline Comercial</span>
+      <h1>Funil de Vendas &amp; Leads</h1>
+      <p>Gerencie o avanço de negociações, agende consultas e converta leads em clientes com 1 clique.</p>
+    </div>
+    <div class="heading-actions">
+      <a href="{% url 'marketing:lead_create' %}" class="button button-primary">
+        <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+        Novo Lead
+      </a>
+    </div>
+  </div>
+
+  {% include 'marketing/includes/marketing_subtabs.html' with active_tab='kanban' %}
+
+  <!-- HTMX Live Filter Bar -->
+  <form method="get" class="module-filters" role="search"
+        hx-get="{% url 'marketing:leads_kanban' %}"
+        hx-target="#kanban-board-container"
+        hx-select="#kanban-board"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        style="margin-bottom: 12px;">
+    <div class="module-search" style="flex:1;min-width:200px;">
+      <label for="kanban-search">Buscar Lead</label>
+      <input type="search" id="kanban-search" name="q" value="{{ q }}"
+             placeholder="Nome, telefone, e-mail..."
+             autocomplete="off"
+             hx-trigger="keyup changed delay:350ms, search">
+    </div>
+
+    <div>
+      <label for="channel-select">Canal</label>
+      <select id="channel-select" name="channel" hx-trigger="change">
+        <option value="">Todos os canais</option>
+        {% for code, label in channels %}
+          <option value="{{ code }}" {% if channel_filter == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label for="campaign-select">Campanha</label>
+      <select id="campaign-select" name="campaign" hx-trigger="change">
+        <option value="">Todas as campanhas</option>
+        {% for c in campaigns %}
+          <option value="{{ c.id }}" {% if campaign_filter == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="button button-secondary">Filtrar</button>
+    {% if q or channel_filter or campaign_filter %}
+      <a href="{% url 'marketing:leads_kanban' %}" class="text-link">Limpar filtros</a>
+    {% endif %}
+  </form>
+
+  <!-- Kanban Container -->
+  <div id="kanban-board-container">
+    {% include 'marketing/includes/kanban_board.html' %}
+  </div>
+</div>
+{% endblock %}

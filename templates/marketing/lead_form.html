@@ -1,0 +1,115 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-marketing.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="marketing-workspace" style="max-width:860px;margin:0 auto;">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Gestão de Lead</span>
+      <h1>{{ page_title }}</h1>
+      <p>Cadastre dados de contato, estimativa de honorários e atribua um responsável do escritório.</p>
+    </div>
+    <div class="heading-actions">
+      <a href="{% url 'marketing:leads_kanban' %}" class="button button-secondary">
+        &larr; Voltar ao Funil
+      </a>
+    </div>
+  </div>
+
+  <section class="marketing-panel">
+    <div class="marketing-panel-body">
+      <form method="post" style="display:flex;flex-direction:column;gap:16px;">
+        {% csrf_token %}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <label for="{{ form.name.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Nome do Interessado *</label>
+            <input type="text" name="name" id="{{ form.name.id_for_label }}" value="{{ form.name.value|default:'' }}" required class="input" style="width:100%;">
+            {% for err in form.name.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+          </div>
+          <div>
+            <label for="{{ form.phone.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">WhatsApp / Telefone *</label>
+            <input type="text" name="phone" id="{{ form.phone.id_for_label }}" value="{{ form.phone.value|default:'' }}" required class="input" placeholder="(00) 00000-0000" style="width:100%;">
+            {% for err in form.phone.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <label for="{{ form.email.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">E-mail</label>
+            <input type="email" name="email" id="{{ form.email.id_for_label }}" value="{{ form.email.value|default:'' }}" class="input" style="width:100%;">
+            {% for err in form.email.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+          </div>
+          <div>
+            <label for="{{ form.legal_area.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Área do Direito / Assunto</label>
+            <select name="legal_area" id="{{ form.legal_area.id_for_label }}" class="select" style="width:100%;">
+              <option value="previdenciario" {% if form.legal_area.value == 'previdenciario' %}selected{% endif %}>Previdenciário (Aposentadoria / INSS)</option>
+              <option value="trabalhista" {% if form.legal_area.value == 'trabalhista' %}selected{% endif %}>Trabalhista</option>
+              <option value="civel" {% if form.legal_area.value == 'civel' %}selected{% endif %}>Cível Geral</option>
+              <option value="familia" {% if form.legal_area.value == 'familia' %}selected{% endif %}>Família &amp; Sucessões</option>
+              <option value="tributario" {% if form.legal_area.value == 'tributario' %}selected{% endif %}>Tributário</option>
+              <option value="penal" {% if form.legal_area.value == 'penal' %}selected{% endif %}>Criminal / Penal</option>
+              <option value="empresarial" {% if form.legal_area.value == 'empresarial' %}selected{% endif %}>Empresarial</option>
+            </select>
+            {% for err in form.legal_area.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <label for="{{ form.channel.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Canal de Origem</label>
+            {{ form.channel }}
+            {% for err in form.channel.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+          </div>
+          <div>
+            <label for="{{ form.campaign.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Campanha Vinculada</label>
+            {{ form.campaign }}
+            {% for err in form.campaign.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+          <div>
+            <label for="{{ form.stage.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Etapa do Funil</label>
+            {{ form.stage }}
+            {% for err in form.stage.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+          </div>
+          <div>
+            <label for="{{ form.estimated_value.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Honorários Estimados (R$)</label>
+            <input type="number" step="0.01" name="estimated_value" id="{{ form.estimated_value.id_for_label }}" value="{{ form.estimated_value.value|default:'0.00' }}" class="input" style="width:100%;">
+            {% for err in form.estimated_value.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+          </div>
+          <div>
+            <label for="{{ form.closed_value.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Honorários Fechados (R$)</label>
+            <input type="number" step="0.01" name="closed_value" id="{{ form.closed_value.id_for_label }}" value="{{ form.closed_value.value|default:'0.00' }}" class="input" style="width:100%;">
+            {% for err in form.closed_value.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <label for="{{ form.assigned_to.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Responsável Comercial / Advogado</label>
+          {{ form.assigned_to }}
+          {% for err in form.assigned_to.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+        </div>
+
+        <div>
+          <label for="{{ form.notes.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Histórico de Atendimento &amp; Anotações</label>
+          {{ form.notes }}
+          {% for err in form.notes.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:12px;padding-top:14px;border-top:1px solid var(--border-soft,#202b3d);">
+          <a href="{% url 'marketing:leads_kanban' %}" class="button button-secondary">Cancelar</a>
+          <button type="submit" class="button button-primary">
+            {% if is_create %}Cadastrar Lead{% else %}Salvar Alterações{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

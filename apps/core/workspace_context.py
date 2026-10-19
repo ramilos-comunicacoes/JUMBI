@@ -45,6 +45,7 @@ def workspace_context(request):
         elif item["key"] == "appointments":
             item.update(label="Calendário e agenda", url=reverse("legal:calendar"))
 
+    nav.append({"key": "marketing", "label": "Marketing & Captação", "url": reverse("marketing:dashboard"), "icon": "marketing"})
     nav.append({"key": "goals", "label": "Metas", "url": reverse("performance:list"), "icon": "target"})
     nav.append({"key": "ranking", "label": "Ranking da equipe", "url": reverse("performance:ranking"), "icon": "ranking"})
     nav.append({"key": "contact_messages", "label": "Contatos e WhatsApp", "url": reverse("legal:contact_messages_list"), "icon": "contact_messages"})
@@ -80,7 +81,7 @@ def workspace_context(request):
         ("Dia a dia", ["my_routine", "dashboard", "tasks", "deadlines", "appointments", "djen"]),
         ("Módulos Especializados", ["demands", "trabalhista"]),
         ("Acervo jurídico", ["matters", "contacts", "cases", "documents", "contact_messages", "client_map", "contracts", "portal"]),
-        ("Gestão do escritório", ["ranking", "goals", "crm", "fees", "finance", "inventory", "tutorials"]),
+        ("Gestão do escritório", ["marketing", "ranking", "goals", "crm", "fees", "finance", "inventory", "tutorials"]),
         ("Administração", ["team", "intake", "audit", "subscription", "guide", "security", "connectors", "customization", "platform"]),
     ]
 

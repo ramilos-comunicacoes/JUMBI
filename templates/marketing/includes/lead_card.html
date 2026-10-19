@@ -1,0 +1,51 @@
+<article class="lead-card" id="lead-card-{{ lead.id }}">
+  <div class="lead-card-header">
+    <a href="{% url 'marketing:lead_edit' lead.id %}" class="lead-card-title">{{ lead.name }}</a>
+    <span class="lead-badge channel-{{ lead.channel }}">{{ lead.get_channel_display|truncatechars:18 }}</span>
+  </div>
+
+  <div class="lead-card-meta">
+    <span class="lead-badge area-{{ lead.legal_area }}">{{ lead.legal_area|title }}</span>
+    {% if lead.campaign %}
+      <span class="lead-badge" title="Campanha: {{ lead.campaign.name }}">{{ lead.campaign.name|truncatechars:16 }}</span>
+    {% endif %}
+    {% if lead.assigned_to %}
+      <span class="lead-badge" title="Responsável">{{ lead.assigned_to.get_short_name|default:lead.assigned_to.username }}</span>
+    {% endif %}
+  </div>
+
+  <div class="lead-card-value">
+    <span>
+      {% if lead.stage == 'convertido' %}
+        <strong style="color:#10b981;">R$ {{ lead.closed_value|floatformat:2 }}</strong>
+      {% else %}
+        R$ {{ lead.estimated_value|floatformat:2 }}
+      {% endif %}
+    </span>
+    <small style="color:var(--faint,#64748b);">{{ lead.created_at|date:"d/m" }}</small>
+  </div>
+
+  <div class="lead-card-actions">
+    {% if lead.phone %}
+      <a href="https://wa.me/55{{ lead.phone|slugify }}?text=Ol%C3%A1%20{{ lead.name|urlencode }}%2C%20tudo%20bem%3F%20Falamos%20do%20escrit%C3%B3rio%20de%20advocacia."
+         target="_blank" rel="noopener noreferrer" class="btn-lead-action whatsapp" title="Conversar no WhatsApp">
+        <svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#i-contact_messages"/></svg>
+        WhatsApp
+      </a>
+    {% endif %}
+
+    {% if lead.stage != 'convertido' %}
+      <a href="{% url 'marketing:lead_convert' lead.id %}" class="btn-lead-action convert" title="Converter em Cliente e abrir Pasta">
+        <svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#i-check"/></svg>
+        Converter
+      </a>
+    {% else %}
+      {% if lead.converted_matter %}
+        <a href="{% url 'legal:matter_detail' lead.converted_matter.pk %}" class="btn-lead-action convert" style="color:#10b981;border-color:rgba(16,185,129,0.3);" title="Ver Pasta Jurídica">
+          <svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#i-matters"/></svg>
+          Pasta {{ lead.converted_matter.folder_code|default:"Aberta" }}
+        </a>
+      {% endif %}
+    {% endif %}
+  </div>
+</article>

@@ -1,0 +1,94 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-marketing.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="marketing-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Mídia &amp; Aquisição</span>
+      <h1>Campanhas de Marketing</h1>
+      <p>Gerenciamento de orçamento, anúncios pagos e canais de atração de novos clientes.</p>
+    </div>
+    <div class="heading-actions">
+      <a href="{% url 'marketing:campaign_create' %}" class="button button-primary">
+        <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+        Nova Campanha
+      </a>
+      <a href="{% url 'marketing:utm_builder' %}" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-connectors"/></svg>
+        Gerar Link UTM
+      </a>
+    </div>
+  </div>
+
+  {% include 'marketing/includes/marketing_subtabs.html' with active_tab='campaigns' %}
+
+  <section class="marketing-panel">
+    <div class="marketing-panel-body" style="padding:0;">
+      <table class="marketing-table">
+        <thead>
+          <tr>
+            <th>Nome da Campanha</th>
+            <th>Canal</th>
+            <th>Status</th>
+            <th style="text-align:right;">Orçado</th>
+            <th style="text-align:right;">Investido</th>
+            <th style="text-align:right;">Leads</th>
+            <th style="text-align:right;">Conv.</th>
+            <th style="text-align:right;">CPL</th>
+            <th style="text-align:right;">CAC</th>
+            <th style="text-align:right;">Receita</th>
+            <th style="text-align:right;">ROAS</th>
+            <th style="text-align:center;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in campaigns %}
+            <tr>
+              <td>
+                <a href="{% url 'marketing:campaign_edit' c.id %}" style="color:#fff;font-weight:700;text-decoration:none;">{{ c.name }}</a>
+                {% if c.utm_campaign %}
+                  <div style="font-size:9px;color:var(--faint,#64748b);font-family:monospace;">utm: {{ c.utm_campaign }}</div>
+                {% endif %}
+              </td>
+              <td><span class="lead-badge channel-{{ c.channel }}">{{ c.get_channel_display|truncatechars:18 }}</span></td>
+              <td>
+                <span class="kpi-badge {% if c.status == 'ativa' %}{% elif c.status == 'pausada' %}warn{% else %}{% endif %}">
+                  {{ c.get_status_display }}
+                </span>
+              </td>
+              <td style="text-align:right;">R$ {{ c.budget|floatformat:2 }}</td>
+              <td style="text-align:right;font-weight:600;">R$ {{ c.spent|floatformat:2 }}</td>
+              <td style="text-align:right;">{{ c.total_leads_count }}</td>
+              <td style="text-align:right;color:#10b981;font-weight:700;">{{ c.converted_leads_count }}</td>
+              <td style="text-align:right;">
+                {% if c.cost_per_lead > 0 %}R$ {{ c.cost_per_lead|floatformat:2 }}{% else %}—{% endif %}
+              </td>
+              <td style="text-align:right;">
+                {% if c.cost_per_acquisition > 0 %}R$ {{ c.cost_per_acquisition|floatformat:2 }}{% else %}—{% endif %}
+              </td>
+              <td style="text-align:right;color:#56caa7;font-weight:700;">R$ {{ c.total_revenue|floatformat:2 }}</td>
+              <td style="text-align:right;font-weight:700;">
+                {% if c.roas > 0 %}{{ c.roas }}x{% else %}—{% endif %}
+              </td>
+              <td style="text-align:center;">
+                <a href="{% url 'marketing:campaign_edit' c.id %}" class="btn-lead-action convert" style="padding:2px 8px;font-size:10px;">Editar</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="12" style="text-align:center;padding:28px;color:var(--muted);">
+                Nenhuma campanha cadastrada. Clique em "Nova Campanha" para iniciar o rastreamento.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

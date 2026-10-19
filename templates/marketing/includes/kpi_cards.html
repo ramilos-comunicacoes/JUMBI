@@ -1,0 +1,55 @@
+<div class="marketing-kpi-grid" id="marketing-kpi-container">
+  <div class="marketing-kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-label">CAC Médio</span>
+      <span class="kpi-badge">Eficiência</span>
+    </div>
+    <div class="kpi-value">R$ {{ kpis.cac|floatformat:2 }}</div>
+    <div class="kpi-subtext">Custo por cliente conquistado</div>
+  </div>
+
+  <div class="marketing-kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Investimento Total</span>
+      <span class="kpi-badge warn">Mídia &amp; Ações</span>
+    </div>
+    <div class="kpi-value">R$ {{ kpis.total_spent|floatformat:2 }}</div>
+    <div class="kpi-subtext">{{ kpis.active_campaigns_count }} campanhas ativas</div>
+  </div>
+
+  <div class="marketing-kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-label">ROAS Jurídico</span>
+      <span class="kpi-badge">Retorno</span>
+    </div>
+    <div class="kpi-value">{{ kpis.roas }}x</div>
+    <div class="kpi-subtext">Receita gerada por R$ gasto</div>
+  </div>
+
+  <div class="marketing-kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Contratos Fechados</span>
+      <span class="kpi-badge">Conversão</span>
+    </div>
+    <div class="kpi-value">{{ kpis.converted_leads }}</div>
+    <div class="kpi-subtext">Taxa geral: {{ kpis.conversion_rate }}%</div>
+  </div>
+
+  <div class="marketing-kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Faturamento Fechado</span>
+      <span class="kpi-badge">Honorários</span>
+    </div>
+    <div class="kpi-value">R$ {{ kpis.total_revenue|floatformat:2 }}</div>
+    <div class="kpi-subtext">Ticket médio: R$ {{ kpis.avg_ticket|floatformat:0 }}</div>
+  </div>
+
+  <div class="marketing-kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Pipeline em Aberto</span>
+      <span class="kpi-badge warn">{{ kpis.active_pipeline_leads }} leads</span>
+    </div>
+    <div class="kpi-value">R$ {{ kpis.pipeline_value|floatformat:2 }}</div>
+    <div class="kpi-subtext">Potencial em negociação</div>
+  </div>
+</div>

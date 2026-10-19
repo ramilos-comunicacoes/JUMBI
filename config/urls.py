@@ -13,6 +13,7 @@ urlpatterns = [
     path('honorarios/', include('apps.fees.urls')),
     path('portal/', include('apps.portal.urls')),
     path('admin/', admin.site.urls),
+    path('juridico/marketing/', include('apps.marketing.urls')),
     path('juridico/', include('apps.legal.urls')),
     path('metas/', include('apps.performance.urls')),
     path('contratos/', include('apps.contracts.urls')),

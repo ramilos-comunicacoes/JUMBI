@@ -1,0 +1,22 @@
+<nav class="marketing-subtabs" aria-label="Navegação de Marketing">
+  <a href="{% url 'marketing:dashboard' %}" class="marketing-tab-btn {% if active_tab == 'dashboard' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-dashboard"/></svg>
+    Dashboard &amp; Métricas
+  </a>
+  <a href="{% url 'marketing:leads_kanban' %}" class="marketing-tab-btn {% if active_tab == 'kanban' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-tasks"/></svg>
+    Funil &amp; Leads (Kanban)
+  </a>
+  <a href="{% url 'marketing:campaign_list' %}" class="marketing-tab-btn {% if active_tab == 'campaigns' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-marketing"/></svg>
+    Campanhas &amp; Tráfego
+  </a>
+  <a href="{% url 'marketing:utm_builder' %}" class="marketing-tab-btn {% if active_tab == 'utm' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-connectors"/></svg>
+    Gerador de Links UTM
+  </a>
+  <a href="{% url 'marketing:expense_list' %}" class="marketing-tab-btn {% if active_tab == 'expenses' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-finance"/></svg>
+    Despesas &amp; ROI
+  </a>
+</nav>

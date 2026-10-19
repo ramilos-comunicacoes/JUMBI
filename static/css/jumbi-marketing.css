@@ -1,0 +1,409 @@
+/* JUMBI - Marketing Jurídico & Captação Module Styles
+   Executive high-density layout, glassmorphic accents, anti-infinite-scroll contained frames */
+
+.marketing-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Nav Subtabs */
+.marketing-subtabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-soft, #202b3d);
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.marketing-subtabs::-webkit-scrollbar { display: none; }
+.marketing-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted, #94a3b8);
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all .15s ease;
+  white-space: nowrap;
+}
+.marketing-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
+}
+.marketing-tab-btn.is-active {
+  color: var(--primary, #f5a000);
+  background: rgba(245, 160, 0, 0.1);
+  border-color: rgba(245, 160, 0, 0.22);
+}
+
+/* Marketing KPI Row */
+.marketing-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+@media (max-width: 1200px) {
+  .marketing-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 680px) {
+  .marketing-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.marketing-kpi-card {
+  background: var(--surface, #111a28);
+  border: 1px solid var(--border-soft, #202b3d);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 94px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+.marketing-kpi-card .kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.marketing-kpi-card .kpi-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted, #8ea1b9);
+}
+.marketing-kpi-card .kpi-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(86, 202, 167, 0.12);
+  color: #56caa7;
+  border: 1px solid rgba(86, 202, 167, 0.25);
+}
+.marketing-kpi-card .kpi-badge.warn {
+  background: rgba(245, 160, 0, 0.12);
+  color: #f5a000;
+  border-color: rgba(245, 160, 0, 0.25);
+}
+.marketing-kpi-card .kpi-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 4px 0 2px;
+}
+.marketing-kpi-card .kpi-subtext {
+  font-size: 10px;
+  color: var(--faint, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Executive 2-Column Symmetrical Layout */
+.marketing-executive-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .marketing-executive-grid { grid-template-columns: 1fr; }
+}
+
+.marketing-panel {
+  background: var(--surface, #111a28);
+  border: 1px solid var(--border-soft, #202b3d);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.marketing-panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-soft, #202b3d);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.015);
+}
+.marketing-panel-header h2 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.marketing-panel-header .panel-sub {
+  font-size: 11px;
+  color: var(--muted, #8ea1b9);
+}
+.marketing-panel-body {
+  padding: 14px 16px;
+}
+.marketing-scroll-container {
+  max-height: 380px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Funnel Visual Bars */
+.funnel-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.funnel-step {
+  display: grid;
+  grid-template-columns: 120px 1fr 110px 90px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.funnel-step-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+.funnel-bar-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.funnel-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f5a000, #ffb833);
+  transition: width .4s ease;
+}
+.funnel-bar-fill.converted {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+.funnel-bar-fill.lost {
+  background: #64748b;
+}
+.funnel-step-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-align: right;
+}
+.funnel-step-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: #56caa7;
+  text-align: right;
+}
+
+/* Channel Performance Compact Table */
+.marketing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.marketing-table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--faint, #64748b);
+  border-bottom: 1px solid var(--border-soft, #202b3d);
+}
+.marketing-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: #cbd5e1;
+}
+.marketing-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Marketing Kanban Board */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(240px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  min-height: calc(100vh - 230px);
+}
+@media (max-width: 1400px) {
+  .kanban-board { grid-template-columns: repeat(6, 260px); }
+}
+
+.kanban-column {
+  background: var(--surface, #111a28);
+  border: 1px solid var(--border-soft, #202b3d);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 240px);
+}
+.kanban-column-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-soft, #202b3d);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.kanban-column-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kanban-column-badge {
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+.kanban-cards-container {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+}
+
+/* Kanban Card */
+.lead-card {
+  background: #172233;
+  border: 1px solid #23334a;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.lead-card:hover {
+  border-color: rgba(245, 160, 0, 0.4);
+  transform: translateY(-1px);
+}
+.lead-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+.lead-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  line-height: 1.25;
+}
+.lead-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.lead-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+}
+.lead-badge.channel-meta_ads { color: #60a5fa; background: rgba(96, 165, 250, 0.1); }
+.lead-badge.channel-google_ads { color: #f87171; background: rgba(248, 113, 113, 0.1); }
+.lead-badge.channel-whatsapp { color: #4ade80; background: rgba(74, 222, 128, 0.1); }
+.lead-badge.channel-indicacao { color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
+.lead-badge.area-previdenciario { color: #a78bfa; background: rgba(167, 139, 250, 0.1); }
+
+.lead-card-value {
+  font-size: 11px;
+  font-weight: 700;
+  color: #56caa7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+.lead-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+.btn-lead-action {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 4px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-lead-action.whatsapp {
+  background: rgba(37, 211, 102, 0.15);
+  color: #25d366;
+  border-color: rgba(37, 211, 102, 0.3);
+}
+.btn-lead-action.convert {
+  background: rgba(245, 160, 0, 0.15);
+  color: #f5a000;
+  border-color: rgba(245, 160, 0, 0.3);
+}
+
+/* UTM Generator Tool Styles */
+.utm-tool-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 900px) {
+  .utm-tool-grid { grid-template-columns: 1fr; }
+}
+.utm-result-box {
+  background: #0d1624;
+  border: 1px solid #202b3d;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.utm-url-display {
+  background: #060b13;
+  border: 1px solid #1a2436;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 11px;
+  color: #38bdf8;
+  word-break: break-all;
+  user-select: all;
+}

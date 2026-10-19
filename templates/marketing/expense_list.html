@@ -1,0 +1,119 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-marketing.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="marketing-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Custos &amp; Investimentos</span>
+      <h1>Despesas &amp; Custos de Marketing</h1>
+      <p>Lance custos de tráfego pago, softwares, agências e eventos para compor com precisão o CAC e ROAS.</p>
+    </div>
+  </div>
+
+  {% include 'marketing/includes/marketing_subtabs.html' with active_tab='expenses' %}
+
+  <div class="marketing-executive-grid">
+    <!-- Expense Form -->
+    <section class="marketing-panel">
+      <header class="marketing-panel-header">
+        <h2>
+          <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-plus"/></svg>
+          Registrar Novo Custo de Marketing
+        </h2>
+      </header>
+      <div class="marketing-panel-body">
+        <form method="post" style="display:flex;flex-direction:column;gap:12px;">
+          {% csrf_token %}
+          <div>
+            <label for="{{ form.title.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Descrição do Gasto *</label>
+            <input type="text" name="title" id="{{ form.title.id_for_label }}" required class="input" placeholder="Ex: Anúncios Meta Ads - Semana 3" style="width:100%;">
+            {% for err in form.title.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label for="{{ form.category.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Categoria</label>
+              {{ form.category }}
+              {% for err in form.category.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+            </div>
+            <div>
+              <label for="{{ form.campaign.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Campanha Vinculada</label>
+              {{ form.campaign }}
+              {% for err in form.campaign.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label for="{{ form.amount.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Valor (R$) *</label>
+              <input type="number" step="0.01" name="amount" id="{{ form.amount.id_for_label }}" required class="input" placeholder="0.00" style="width:100%;">
+              {% for err in form.amount.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+            </div>
+            <div>
+              <label for="{{ form.date.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Data *</label>
+              {{ form.date }}
+              {% for err in form.date.errors %}<p class="text-danger" style="font-size:10px;">{{ err }}</p>{% endfor %}
+            </div>
+          </div>
+
+          <div>
+            <label for="{{ form.notes.id_for_label }}" style="font-size:11px;font-weight:700;color:#cbd5e1;display:block;margin-bottom:4px;">Observações</label>
+            {{ form.notes }}
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+            <button type="submit" class="button button-primary">Salvar Custo</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Expenses History Table -->
+    <section class="marketing-panel">
+      <header class="marketing-panel-header">
+        <h2>
+          <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-finance"/></svg>
+          Histórico de Lançamentos
+        </h2>
+        <span class="panel-sub">{{ expenses.count }} registros</span>
+      </header>
+      <div class="marketing-panel-body marketing-scroll-container" style="padding:0;">
+        <table class="marketing-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th style="text-align:right;">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for exp in expenses %}
+              <tr>
+                <td>{{ exp.date|date:"d/m/Y" }}</td>
+                <td>
+                  <strong>{{ exp.title }}</strong>
+                  {% if exp.campaign %}
+                    <div style="font-size:9px;color:var(--muted);">{{ exp.campaign.name }}</div>
+                  {% endif %}
+                </td>
+                <td><span class="lead-badge">{{ exp.get_category_display }}</span></td>
+                <td style="text-align:right;font-weight:700;color:#f87171;">R$ {{ exp.amount|floatformat:2 }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" style="text-align:center;padding:24px;color:var(--muted);">Nenhum custo registrado ainda.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

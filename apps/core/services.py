@@ -196,6 +196,7 @@ AVAILABLE_MODULE_PERMISSIONS = [
     ("finance", "Financeiro"),
     ("fees", "Honorários"),
     ("crm", "Relacionamento e CRM"),
+    ("marketing", "Marketing & Captação"),
     ("demands", "Previdenciário e INSS"),
     ("trabalhista", "Trabalhista e Audiências"),
     ("contracts", "Montar Contratos"),

@@ -1,0 +1,181 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-marketing.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="marketing-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Gestão Comercial &amp; Mídia</span>
+      <h1>Marketing Jurídico &amp; Captação</h1>
+      <p>Acompanhamento de CAC, ROAS, funil de prospecção e conversão de clientes em tempo real.</p>
+    </div>
+    <div class="heading-actions">
+      <a href="{% url 'marketing:lead_create' %}" class="button button-primary">
+        <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+        Novo Lead
+      </a>
+      <a href="{% url 'marketing:campaign_create' %}" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-marketing"/></svg>
+        Nova Campanha
+      </a>
+      <a href="{% url 'marketing:utm_builder' %}" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-connectors"/></svg>
+        Gerar Link UTM
+      </a>
+    </div>
+  </div>
+
+  {% include 'marketing/includes/marketing_subtabs.html' with active_tab='dashboard' %}
+
+  <!-- Executive KPI Row -->
+  {% include 'marketing/includes/kpi_cards.html' %}
+
+  <!-- 2-Column Symmetrical Layout -->
+  <div class="marketing-executive-grid">
+    <!-- Left Column: Commercial Funnel & Channel Breakdown -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <!-- Commercial Conversion Funnel -->
+      <section class="marketing-panel">
+        <header class="marketing-panel-header">
+          <h2>
+            <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-tasks"/></svg>
+            Funil de Conversão Comercial
+          </h2>
+          <span class="panel-sub">{{ kpis.total_leads }} leads captados</span>
+        </header>
+        <div class="marketing-panel-body">
+          <div class="funnel-container">
+            {% for step in funnel %}
+              <div class="funnel-step">
+                <div class="funnel-step-name">{{ step.label }}</div>
+                <div class="funnel-bar-track" title="{{ step.pct_of_total }}% dos leads">
+                  <div class="funnel-bar-fill {% if step.stage == 'convertido' %}converted{% elif step.stage == 'perdido' %}lost{% endif %}"
+                       style="width: {% if step.pct_of_total > 0 %}{{ step.pct_of_total }}%{% else %}2%{% endif %};"></div>
+                </div>
+                <div class="funnel-step-count">
+                  {{ step.count }} lead{{ step.count|pluralize }} ({{ step.pct_of_total }}%)
+                </div>
+                <div class="funnel-step-val">
+                  R$ {{ step.value|floatformat:0 }}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Channel Acquisition Breakdown -->
+      <section class="marketing-panel">
+        <header class="marketing-panel-header">
+          <h2>
+            <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-finance"/></svg>
+            Desempenho por Canal de Aquisição
+          </h2>
+          <span class="panel-sub">CAC &amp; ROAS Calculados</span>
+        </header>
+        <div class="marketing-panel-body" style="padding:0;">
+          <table class="marketing-table">
+            <thead>
+              <tr>
+                <th>Canal</th>
+                <th style="text-align:right;">Leads</th>
+                <th style="text-align:right;">Conv.</th>
+                <th style="text-align:right;">Investido</th>
+                <th style="text-align:right;">Receita</th>
+                <th style="text-align:right;">CAC</th>
+                <th style="text-align:right;">ROAS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ch in channels %}
+                <tr>
+                  <td><strong>{{ ch.label }}</strong></td>
+                  <td style="text-align:right;">{{ ch.leads_count }}</td>
+                  <td style="text-align:right;color:#10b981;font-weight:700;">{{ ch.converted_count }}</td>
+                  <td style="text-align:right;">R$ {{ ch.spent|floatformat:2 }}</td>
+                  <td style="text-align:right;color:#56caa7;font-weight:700;">R$ {{ ch.revenue|floatformat:2 }}</td>
+                  <td style="text-align:right;">
+                    {% if ch.cac > 0 %}R$ {{ ch.cac|floatformat:2 }}{% else %}—{% endif %}
+                  </td>
+                  <td style="text-align:right;font-weight:700;">
+                    {% if ch.roas > 0 %}{{ ch.roas }}x{% else %}—{% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" style="text-align:center;padding:16px;color:var(--muted);">Nenhum canal registrado ainda.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Column: Active Campaigns & Inbound Leads Stream -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <!-- Active Campaigns -->
+      <section class="marketing-panel">
+        <header class="marketing-panel-header">
+          <h2>
+            <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-marketing"/></svg>
+            Campanhas em Andamento
+          </h2>
+          <a href="{% url 'marketing:campaign_list' %}" class="panel-sub text-link" style="font-weight:600;">Ver todas &rarr;</a>
+        </header>
+        <div class="marketing-panel-body marketing-scroll-container">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            {% for camp in active_campaigns %}
+              <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:6px;padding:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                  <a href="{% url 'marketing:campaign_edit' camp.id %}" style="font-size:12px;font-weight:700;color:#fff;text-decoration:none;">{{ camp.name }}</a>
+                  <span class="lead-badge channel-{{ camp.channel }}">{{ camp.get_channel_display|truncatechars:18 }}</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px;">
+                  <span>Gasto: <strong>R$ {{ camp.spent|floatformat:2 }}</strong> de R$ {{ camp.budget|floatformat:2 }}</span>
+                  <span style="color:#56caa7;font-weight:700;">{{ camp.total_leads_count }} leads ({{ camp.converted_leads_count }} conv.)</span>
+                </div>
+                <div class="funnel-bar-track">
+                  <div class="funnel-bar-fill" style="width:{% if camp.budget > 0 %}{% widthratio camp.spent camp.budget 100 %}%{% else %}0%{% endif %};"></div>
+                </div>
+              </div>
+            {% empty %}
+              <div style="text-align:center;padding:24px 0;color:var(--muted);">
+                <p style="font-size:11px;margin-bottom:8px;">Nenhuma campanha ativa no momento.</p>
+                <a href="{% url 'marketing:campaign_create' %}" class="button button-secondary" style="padding:4px 10px;font-size:11px;">Criar Campanha</a>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Inbound Leads Stream -->
+      <section class="marketing-panel">
+        <header class="marketing-panel-header">
+          <h2>
+            <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-contacts"/></svg>
+            Leads Recentes
+          </h2>
+          <a href="{% url 'marketing:leads_kanban' %}" class="panel-sub text-link" style="font-weight:600;">Abrir Funil Kanban &rarr;</a>
+        </header>
+        <div class="marketing-panel-body marketing-scroll-container">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            {% for lead in recent_leads %}
+              {% include 'marketing/includes/lead_card.html' with lead=lead %}
+            {% empty %}
+              <div style="text-align:center;padding:24px 0;color:var(--muted);">
+                <p style="font-size:11px;margin-bottom:8px;">Nenhum lead cadastrado ainda.</p>
+                <a href="{% url 'marketing:lead_create' %}" class="button button-primary" style="padding:4px 10px;font-size:11px;">Cadastrar Primeiro Lead</a>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}
