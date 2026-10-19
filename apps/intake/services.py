@@ -287,6 +287,9 @@ def commit_import(*, actor, organization, batch_id):
             # database constraint; roll the entire batch back on collision.
             raise ValidationError("Não foi possível criar o lote com os dados atuais. Nenhuma linha foi importada; confira a prévia e tente novamente.") from exc
         audit(organization=organization, actor=actor, action="record.imported", obj=obj, description="Cadastro criado por importação assistida conferida.")
+        if batch.kind == "contacts" and isinstance(obj, Contact):
+            from apps.legal.services import ensure_client_matter
+            ensure_client_matter(contact=obj, actor=actor)
     batch.created_count = len(forms)
     batch.committed_at = timezone.now()
     batch.rows = []  # Imported data now exists in the regular permission-controlled records.

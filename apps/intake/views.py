@@ -78,7 +78,10 @@ def confirm(request, pk):
         form.add_error(None, exc)
         return _render_preview(request, batch, confirmation=form, status=400)
     suffix = "s" if batch.created_count != 1 else ""
-    messages.success(request, f"{batch.created_count} registro{suffix} importado{suffix} com sucesso." if created else "Este lote já foi importado. Nenhum registro foi duplicado.")
+    if batch.kind == "contacts":
+        messages.success(request, f"{batch.created_count} pessoa{suffix} importada{suffix} com sucesso e suas pastas jurídicas vinculadas criadas automaticamente." if created else "Este lote já foi importado. Nenhum registro foi duplicado.")
+    else:
+        messages.success(request, f"{batch.created_count} registro{suffix} importado{suffix} com sucesso." if created else "Este lote já foi importado. Nenhum registro foi duplicado.")
     return redirect("intake:preview", pk=batch.pk)
 
 

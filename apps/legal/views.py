@@ -35,8 +35,8 @@ from .models import (
 )
 from .services import (
     add_document_version, audit, complete_task, confirm_deadline,
-    fulfill_deadline, record_payment, reverse_payment, revise_deadline,
-    visible_matters,
+    ensure_client_matter, fulfill_deadline, record_payment, reverse_payment,
+    revise_deadline, visible_matters,
 )
 
 
@@ -398,6 +398,12 @@ def record_form(request, module, pk=None):
         except (TypeError, ValueError):
             raise Http404("Pasta não encontrada.") from None
         initial["matter"] = get_object_or_404(visible_matters(request.user, request.organization), pk=matter_id).pk
+    if module == "matters" and request.GET.get("client"):
+        try:
+            client_id = int(request.GET["client"])
+        except (TypeError, ValueError):
+            raise Http404("Cliente não encontrado.") from None
+        initial["client"] = get_object_or_404(scoped_queryset(request.user, request.organization, Contact), pk=client_id).pk
     form = MODULE_FORMS[module](
         request.POST if request.method == "POST" else None,
         request.FILES if request.method == "POST" else None,
@@ -439,6 +445,8 @@ def record_form(request, module, pk=None):
                 else:
                     obj.save()
                 form.save_m2m()
+                if module == "contacts" and not pk and isinstance(obj, Contact):
+                    ensure_client_matter(contact=obj, actor=request.user)
                 if isinstance(obj, Task) and not pk and form.cleaned_data.get("initial_status") not in {None, "", "todo"}:
                     from .services import move_task
                     obj = move_task(task=obj, actor=request.user, destination=form.cleaned_data["initial_status"],
@@ -450,7 +458,10 @@ def record_form(request, module, pk=None):
                     add_document_version(document=obj, actor=request.user, file=form.cleaned_data["file"])
             if module == "tasks" and request.headers.get("Accept") == "application/json":
                 return JsonResponse({"ok": True, "id": obj.pk})
-            messages.success(request, "Alterações salvas." if pk else "Registro criado.")
+            if module == "contacts" and not pk:
+                messages.success(request, f"Pessoa cadastrada com sucesso e Pasta Geral criada automaticamente.")
+            else:
+                messages.success(request, "Alterações salvas." if pk else "Registro criado.")
             if isinstance(obj, Matter):
                 return redirect("legal:detail", pk=obj.pk)
             return redirect("legal:list", module=module)

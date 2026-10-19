@@ -304,3 +304,71 @@ def add_document_version(*, document, actor, file):
         if version is not None and version.file and version.file._committed:
             version.file.storage.delete(version.file.name)
         raise
+
+
+def ensure_client_matter(*, contact, actor=None, area=None, title=None):
+    """Ensures a Contact has an active Matter (Pasta jurídica).
+
+    Creates a default active matter if none exists, linking it to the client.
+    """
+    from apps.core.niches import PRACTICE_AREA_LABELS
+    from apps.core.models import Membership
+    from apps.billing.services import check_capacity
+
+    if not contact or not getattr(contact, "pk", None):
+        return None
+
+    existing = Matter.objects.filter(organization=contact.organization, client=contact).first()
+    if existing:
+        return existing
+
+    org = contact.organization
+    owner = actor if (actor and getattr(actor, "is_authenticated", False)) else None
+    if not owner:
+        owner_member = Membership.objects.filter(
+            organization=org, role__in=["owner", "manager"], is_active=True, user__is_active=True
+        ).select_related("user").first()
+        owner = owner_member.user if owner_member else None
+
+    if not owner:
+        member = Membership.objects.filter(
+            organization=org, is_active=True, user__is_active=True
+        ).select_related("user").first()
+        owner = member.user if member else None
+
+    if not owner:
+        return None
+
+    matter_area = area or ""
+    if not matter_area and getattr(org, "practice_areas", None):
+        primary_code = org.practice_areas[0]
+        matter_area = PRACTICE_AREA_LABELS.get(primary_code, primary_code)
+    if not matter_area:
+        matter_area = "Geral"
+
+    matter_title = title or f"Pasta Geral · {contact.name}"
+
+    matter = Matter(
+        organization=org,
+        client=contact,
+        title=matter_title[:240],
+        owner=owner,
+        nature=Matter.Nature.ADVISORY,
+        area=matter_area,
+        status=Matter.Status.ACTIVE,
+        description=f"Pasta jurídica criada automaticamente para {contact.name}.",
+        confidential=False,
+    )
+    check_capacity(org, "matters", instance=matter)
+    matter.full_clean()
+    matter.save()
+
+    audit(
+        organization=org,
+        actor=owner,
+        action="record.created",
+        obj=matter,
+        description=f"Pasta jurídica '{matter.title}' criada automaticamente para o cliente {contact.name}.",
+    )
+    return matter
+
