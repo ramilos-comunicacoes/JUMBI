@@ -8,13 +8,13 @@
 .section-workspace .table-scroll{max-width:100%}
 
 /* Overview places the operational queue before calendar and analytical reporting. */
-.section-overview .overview-priority-heading{margin-top:30px}
+.section-overview .overview-priority-heading{margin-top:14px}
 .section-overview .dashboard-bottom-grid{align-items:start}
-.section-overview .overview-records{margin-top:24px}
-.section-overview .overview-reporting{border-top:1px solid var(--border-soft);padding-top:24px}
+.section-overview .overview-records{margin-top:14px}
+.section-overview .overview-reporting{border-top:1px solid var(--border-soft);padding-top:14px;margin-top:14px}
 .section-overview .dashboard-attention{align-items:center}
 .section-overview .dashboard-attention p{margin-bottom:0}
-.section-overview .dashboard-bottom-grid .deadline-item,.section-overview .dashboard-bottom-grid .task-item{padding:16px 22px}
+.section-overview .dashboard-bottom-grid .deadline-item,.section-overview .dashboard-bottom-grid .task-item{padding:10px 14px}
 
 /* Calendar remains a date-first surface; the board remains a stage-first surface. */
 .section-calendar .calendar-reading-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:18px 0;color:var(--muted);font-size:12px}
