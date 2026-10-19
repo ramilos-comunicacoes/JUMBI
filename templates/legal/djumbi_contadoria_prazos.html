@@ -1,0 +1,273 @@
+{% extends "legal/base.html" %}
+{% block content %}
+<div class="page-head" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+  <div>
+    <span class="eyebrow">Motor Determinístico DJUMBI · CPC/2015 &amp; STJ</span>
+    <h1 style="margin:2px 0 4px;font-size:1.35rem;">Contadoria Judicial, Prazos CPC &amp; Prescrição</h1>
+    <p style="margin:0;color:var(--muted);font-size:0.86rem;">Cálculo determinístico de prazos processuais (Art. 219, 220 e 224 CPC + Lei 11.419/06), atualização SELIC/IPCA-E/INPC e prescrição intercorrente.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{% url 'legal:pecas_minutas' %}" class="btn btn-secondary">Banco de Peças &amp; SHA-256</a>
+    <a href="{% url 'legal:correicao_ia' %}" class="btn btn-secondary">Correição &amp; Validador CNJ</a>
+  </div>
+</div>
+
+<!-- KPIs Resumo Instantâneo dos 3 Motores -->
+<div class="kpi-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));gap:10px;margin-bottom:14px;">
+  <div class="card" style="padding:12px 14px;">
+    <span class="eyebrow" style="font-size:0.7rem;">Vencimento Fatal (CPC)</span>
+    <div style="font-size:1.25rem;font-weight:800;color:var(--brand-strong, #d97706);margin-top:2px;">
+      {{ resultado_prazo.data_fatal|date:"d/m/Y" }}
+    </div>
+    <small style="color:var(--muted);font-size:0.76rem;">Prazo Interno: <strong>{{ resultado_prazo.prazo_interno|date:"d/m/Y" }}</strong> ({{ resultado_prazo.quantidade_dias_efetivos }}d)</small>
+  </div>
+  <div class="card" style="padding:12px 14px;">
+    <span class="eyebrow" style="font-size:0.7rem;">Limite Ciência PJe (10d)</span>
+    <div style="font-size:1.25rem;font-weight:800;margin-top:2px;">
+      {{ resultado_prazo.limite_ciencia_pje|date:"d/m/Y" }}
+    </div>
+    <small style="color:var(--muted);font-size:0.76rem;">Termo Inicial: <strong>{{ resultado_prazo.termo_inicial|date:"d/m/Y" }}</strong> (Art. 224 CPC)</small>
+  </div>
+  <div class="card" style="padding:12px 14px;">
+    <span class="eyebrow" style="font-size:0.7rem;">Débito Atualizado ({{ resultado_contadoria.indexador }})</span>
+    <div style="font-size:1.25rem;font-weight:800;color:#16a34a;margin-top:2px;">
+      R$ {{ resultado_contadoria.valor_total|floatformat:2 }}
+    </div>
+    <small style="color:var(--muted);font-size:0.76rem;">Principal: R$ {{ resultado_contadoria.valor_original|floatformat:2 }} ({{ resultado_contadoria.meses }} meses)</small>
+  </div>
+  <div class="card" style="padding:12px 14px;">
+    <span class="eyebrow" style="font-size:0.7rem;">Termo Final Prescricional</span>
+    <div style="font-size:1.25rem;font-weight:800;margin-top:2px;">
+      {{ resultado_prescricao.termo_final_prescricao|date:"d/m/Y" }}
+    </div>
+    <small style="color:var(--muted);font-size:0.76rem;">{{ resultado_prescricao.status }}</small>
+  </div>
+</div>
+
+<!-- Layout Simétrico de Alta Densidade (2 Colunas) -->
+<div class="split" style="display:grid;grid-template-columns:1.05fr 0.95fr;gap:14px;align-items:start;">
+
+  <!-- COLUNA ESQUERDA: MOTOR DE PRAZOS CPC/2015 + MEMÓRIA DIA A DIA + AGENDAR NA PASTA -->
+  <div class="card" style="padding:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div>
+        <span class="eyebrow">Art. 219, 220 (Recesso) e 224 CPC + Lei 11.419/2006</span>
+        <h2 style="margin:2px 0 0;font-size:1.05rem;">1. Calculadora Determinística de Prazos Processuais</h2>
+      </div>
+      <span class="badge">Auditável Dia a Dia</span>
+    </div>
+
+    <form method="post" action="{% url 'legal:contadoria_prazos' %}" hx-post="{% url 'legal:contadoria_prazos' %}" hx-target="#main-content" hx-select="#main-content" hx-swap="outerHTML" style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:10px;margin-bottom:12px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="calcular_prazo">
+      <div>
+        <label style="display:block;font-size:0.76rem;font-weight:600;margin-bottom:4px;">Publicação DJe / Expedição PJe</label>
+        <input type="date" name="data_publicacao" value="{{ resultado_prazo.data_publicacao_ou_expedicao|date:'Y-m-d' }}" class="input" style="width:100%;">
+      </div>
+      <div>
+        <label style="display:block;font-size:0.76rem;font-weight:600;margin-bottom:4px;">Prazo Legal (Dias)</label>
+        <input type="number" name="quantidade_dias" value="{{ resultado_prazo.quantidade_dias_base }}" min="1" max="365" class="input" style="width:100%;">
+      </div>
+      <div>
+        <label style="display:block;font-size:0.76rem;font-weight:600;margin-bottom:4px;">Regra de Contagem</label>
+        <select name="tipo_contagem" class="input" style="width:100%;">
+          <option value="DIAS_UTEIS" {% if resultado_prazo.tipo_contagem == "DIAS_UTEIS" %}selected{% endif %}>Dias Úteis (Art. 219 CPC)</option>
+          <option value="DIAS_CORRIDOS" {% if resultado_prazo.tipo_contagem == "DIAS_CORRIDOS" %}selected{% endif %}>Dias Corridos (Material/Penal)</option>
+        </select>
+      </div>
+
+      <div style="grid-column:span 3;display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:8px 10px;background:var(--surface-2, rgba(148,163,184,0.08));border-radius:8px;font-size:0.8rem;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="checkbox" name="usar_janela_ciencia_pje" value="1" {% if request.POST.usar_janela_ciencia_pje or request.GET.usar_janela_ciencia_pje %}checked{% endif %}>
+          Aplicar 10 dias corridos de leitura PJe (Lei 11.419/06)
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="checkbox" name="suspender_recesso_cpc" value="1" checked>
+          Suspender Recesso Forense 20/12 a 20/01 (Art. 220 CPC)
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="checkbox" name="em_dobro" value="1" {% if resultado_prazo.em_dobro %}checked{% endif %}>
+          Prazo em Dobro (Art. 180/183/229 CPC)
+        </label>
+      </div>
+
+      <div style="grid-column:span 3;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:0.75rem;color:var(--muted);align-self:center;">Atalhos CPC/CLT:</span>
+          <button type="submit" name="quantidade_dias" value="5" class="btn btn-secondary" style="padding:4px 8px;font-size:0.75rem;">5d (Embargos)</button>
+          <button type="submit" name="quantidade_dias" value="8" class="btn btn-secondary" style="padding:4px 8px;font-size:0.75rem;">8d (Recurso CLT)</button>
+          <button type="submit" name="quantidade_dias" value="10" class="btn btn-secondary" style="padding:4px 8px;font-size:0.75rem;">10d (Juizados)</button>
+          <button type="submit" name="quantidade_dias" value="15" class="btn btn-secondary" style="padding:4px 8px;font-size:0.75rem;">15d (Contestação/Apelação)</button>
+        </div>
+        <button type="submit" class="btn btn-primary">Simular Prazo CPC</button>
+      </div>
+    </form>
+
+    <!-- Agendar Direto na Pasta Jurídica -->
+    {% if can_edit and matters %}
+    <form method="post" action="{% url 'legal:contadoria_prazos' %}" style="padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:12px;background:var(--surface-2, rgba(148,163,184,0.05));">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="agendar_prazo_pasta">
+      <input type="hidden" name="data_publicacao" value="{{ resultado_prazo.data_publicacao_ou_expedicao|date:'Y-m-d' }}">
+      <input type="hidden" name="quantidade_dias" value="{{ resultado_prazo.quantidade_dias_base }}">
+      <input type="hidden" name="tipo_contagem" value="{{ resultado_prazo.tipo_contagem }}">
+      {% if resultado_prazo.em_dobro %}<input type="hidden" name="em_dobro" value="1">{% endif %}
+      <div style="font-size:0.78rem;font-weight:700;margin-bottom:6px;">Vincular este Prazo Fatal ({{ resultado_prazo.data_fatal|date:"d/m/Y" }}) a uma Pasta Jurídica:</div>
+      <div style="display:grid;grid-template-columns:1.1fr 1fr auto;gap:8px;align-items:center;">
+        <select name="matter_id" class="input" required style="width:100%;font-size:0.82rem;">
+          {% for m in matters %}
+          <option value="{{ m.pk }}">{{ m.title }}{% if m.client %} — {{ m.client.name }}{% endif %}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="titulo_prazo" placeholder="Ex.: Contestação / Apelação ({{ resultado_prazo.quantidade_dias_efetivos }}d)" value="Prazo Processual ({{ resultado_prazo.quantidade_dias_efetivos }} dias — CPC)" class="input" style="width:100%;font-size:0.82rem;">
+        <button type="submit" class="btn btn-primary" style="white-space:nowrap;">Salvar na Pasta</button>
+      </div>
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:0.76rem;margin-top:6px;cursor:pointer;color:var(--muted);">
+        <input type="checkbox" name="criar_tarefa_vinculada" value="1" checked>
+        Criar automaticamente Tarefa no Kanban para o Prazo Interno ({{ resultado_prazo.prazo_interno|date:"d/m/Y" }})
+      </label>
+    </form>
+    {% endif %}
+
+    <!-- Memória de Cálculo Auditável Dia a Dia (Compacta com Rolagem Interna) -->
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <strong style="font-size:0.82rem;">Memória de Cálculo Auditável ({{ resultado_prazo.memoria_calculo|length }} registros)</strong>
+        <span style="font-size:0.74rem;color:var(--muted);">{{ resultado_prazo.modo_ciencia }}</span>
+      </div>
+      <div style="max-height:250px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <table class="data-table" style="width:100%;font-size:0.78rem;margin:0;">
+          <thead>
+            <tr>
+              <th style="padding:6px 10px;">Data</th>
+              <th style="padding:6px 10px;">Dia / Etapa</th>
+              <th style="padding:6px 10px;">Status</th>
+              <th style="padding:6px 10px;">Fundamentação Forense</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in resultado_prazo.memoria_calculo %}
+            <tr>
+              <td style="padding:5px 10px;font-weight:600;white-space:nowrap;">{{ item.data }}</td>
+              <td style="padding:5px 10px;white-space:nowrap;">{{ item.etapa }}</td>
+              <td style="padding:5px 10px;">
+                <span class="badge" style="font-size:0.68rem;">{{ item.status }}</span>
+              </td>
+              <td style="padding:5px 10px;color:var(--muted);">{{ item.detalhe }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUNA DIREITA: CONTADORIA JUDICIAL (SELIC / IPCA-E / INPC) + MOTOR DE PRESCRIÇÃO -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- 2. CONTADORIA JUDICIAL -->
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div>
+          <span class="eyebrow">STJ Tema 1.076 (SELIC) · IPCA-E · INPC · Art. 523 CPC</span>
+          <h2 style="margin:2px 0 0;font-size:1.05rem;">2. Calculadora de Contadoria Judicial &amp; Liquidação</h2>
+        </div>
+        <span class="badge">Planilha CSV</span>
+      </div>
+
+      <form method="post" action="{% url 'legal:contadoria_prazos' %}" hx-post="{% url 'legal:contadoria_prazos' %}" hx-target="#main-content" hx-select="#main-content" hx-swap="outerHTML" style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:8px;margin-bottom:12px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="calcular_contadoria">
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Valor Originário (R$)</label>
+          <input type="text" name="valor_original" value="{{ resultado_contadoria.valor_original|floatformat:2 }}" class="input" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Termo Inicial</label>
+          <input type="date" name="data_inicio_cont" value="{{ resultado_contadoria.data_inicio|date:'Y-m-d' }}" class="input" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Data da Atualização</label>
+          <input type="date" name="data_fim_cont" value="{{ resultado_contadoria.data_fim|date:'Y-m-d' }}" class="input" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Indexador Oficial</label>
+          <select name="indexador" class="input" style="width:100%;">
+            <option value="SELIC" {% if resultado_contadoria.indexador == "SELIC" %}selected{% endif %}>SELIC (STJ Tema 1.076)</option>
+            <option value="IPCA_E" {% if resultado_contadoria.indexador == "IPCA_E" %}selected{% endif %}>IPCA-E (Justiça Federal)</option>
+            <option value="INPC" {% if resultado_contadoria.indexador == "INPC" %}selected{% endif %}>INPC (Previdenciário/Cível)</option>
+            <option value="IGPM" {% if resultado_contadoria.indexador == "IGPM" %}selected{% endif %}>IGP-M (Contratual)</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Multa Art. 523 (%)</label>
+          <input type="text" name="multa_percent" value="{{ resultado_contadoria.multa_percent }}" class="input" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Honorários (%)</label>
+          <input type="text" name="honorarios_percent" value="{{ resultado_contadoria.honorarios_percent }}" class="input" style="width:100%;">
+        </div>
+        <div style="grid-column:span 3;display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+          <a href="{% url 'legal:contadoria_prazos' %}?exportar_csv=1&amp;valor_original={{ resultado_contadoria.valor_original }}&amp;data_inicio_cont={{ resultado_contadoria.data_inicio|date:'Y-m-d' }}&amp;data_fim_cont={{ resultado_contadoria.data_fim|date:'Y-m-d' }}&amp;indexador={{ resultado_contadoria.indexador }}&amp;multa_percent={{ resultado_contadoria.multa_percent }}&amp;honorarios_percent={{ resultado_contadoria.honorarios_percent }}" class="btn btn-secondary" style="font-size:0.78rem;">
+            Exportar Planilha CSV
+          </a>
+          <button type="submit" class="btn btn-primary">Atualizar Memória Contábil</button>
+        </div>
+      </form>
+
+      <div style="padding:10px 12px;border-radius:8px;background:var(--surface-2, rgba(148,163,184,0.08));font-size:0.8rem;">
+        {% for linha in resultado_contadoria.memoria_linhas %}
+        <div style="padding:3px 0;{% if forloop.last %}font-weight:800;color:var(--brand-strong, #d97706);border-top:1px solid var(--border);margin-top:4px;padding-top:6px;{% endif %}">
+          {{ linha }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 3. MOTOR DE PRESCRIÇÃO & DECADÊNCIA (TEMA 566 STJ / ART. 40 LEF / ART. 103 LEI 8.213) -->
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div>
+          <span class="eyebrow">STJ Tema 566 · Art. 921 §4º CPC · Art. 103 Lei 8.213/91</span>
+          <h2 style="margin:2px 0 0;font-size:1.05rem;">3. Motor de Prescrição Intercorrente &amp; Decadência</h2>
+        </div>
+        <span class="badge">{{ resultado_prescricao.status }}</span>
+      </div>
+
+      <form method="post" action="{% url 'legal:contadoria_prazos' %}" hx-post="{% url 'legal:contadoria_prazos' %}" hx-target="#main-content" hx-select="#main-content" hx-swap="outerHTML" style="display:grid;grid-template-columns:1.2fr 0.9fr 0.9fr;gap:8px;margin-bottom:10px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="calcular_prescricao">
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Regime Prescricional / Decadencial</label>
+          <select name="modalidade_prescricao" class="input" style="width:100%;">
+            <option value="INTERCORRENTE_LEF_CPC" {% if resultado_prescricao.modalidade == "INTERCORRENTE_LEF_CPC" %}selected{% endif %}>Intercorrente (1a Susp. + 5a — Art. 921 CPC / LEF)</option>
+            <option value="DECADENCIA_PREVIDENCIARIA" {% if resultado_prescricao.modalidade == "DECADENCIA_PREVIDENCIARIA" %}selected{% endif %}>Decadência Previdenciária (10 anos — Art. 103 Lei 8.213)</option>
+            <option value="QUINQUENAL" {% if resultado_prescricao.modalidade == "QUINQUENAL" %}selected{% endif %}>Quinquenal (5 anos — Fazenda / Tributário / CLT)</option>
+            <option value="TRIENAL_CIVIL" {% if resultado_prescricao.modalidade == "TRIENAL_CIVIL" %}selected{% endif %}>Trienal Cível (3 anos — Reparação Civil Art. 206 CC)</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Marco Inicial / Ciência</label>
+          <input type="date" name="data_marco_prescricao" value="{{ resultado_prescricao.data_marco_inicial|date:'Y-m-d' }}" class="input" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Última Constrição (Opcional)</label>
+          <input type="date" name="data_interrupcao_prescricao" value="{% if resultado_prescricao.data_ultima_interrupcao %}{{ resultado_prescricao.data_ultima_interrupcao|date:'Y-m-d' }}{% endif %}" class="input" style="width:100%;">
+        </div>
+        <div style="grid-column:span 3;display:flex;justify-content:flex-end;">
+          <button type="submit" class="btn btn-primary" style="font-size:0.8rem;">Auditar Prescrição</button>
+        </div>
+      </form>
+
+      <div style="padding:10px 12px;border-radius:8px;background:var(--surface-2, rgba(148,163,184,0.08));font-size:0.8rem;">
+        {% if resultado_prescricao.fim_suspensao_anual %}
+        <div><strong>Fim da Suspensão Anual (1 ano):</strong> {{ resultado_prescricao.fim_suspensao_anual|date:"d/m/Y" }}</div>
+        {% endif %}
+        <div><strong>Termo Final Fatal da Prescrição/Decadência:</strong> {{ resultado_prescricao.termo_final_prescricao|date:"d/m/Y" }} ({{ resultado_prescricao.dias_restantes }} dias)</div>
+        <div style="margin-top:4px;color:var(--muted);font-size:0.76rem;">{{ resultado_prescricao.fundamento }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

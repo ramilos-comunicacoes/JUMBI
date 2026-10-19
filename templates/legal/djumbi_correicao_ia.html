@@ -1,0 +1,300 @@
+{% extends "legal/base.html" %}
+{% block content %}
+<div class="page-head" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+  <div>
+    <span class="eyebrow">Controladoria &amp; Inteligência Jurídica DJUMBI · Resolução CNJ nº 65/2008</span>
+    <h1 style="margin:2px 0 4px;font-size:1.35rem;">Correição Interna do Acervo, Validador CNJ &amp; Triagem IA</h1>
+    <p style="margin:0;color:var(--muted);font-size:0.86rem;">Inspeção automatizada de conformidade, validação Módulo 97 Base 10 do CNJ, detecção de litispendência/prevenção e classificação de intimações.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{% url 'legal:contadoria_prazos' %}" class="btn btn-secondary">Contadoria &amp; Prazos CPC</a>
+    <a href="{% url 'legal:pecas_minutas' %}" class="btn btn-secondary">Banco de Peças &amp; SHA-256</a>
+  </div>
+</div>
+
+<!-- KPIs do Painel de Correição Interna -->
+<div class="kpi-grid" style="grid-template-columns:repeat(6, minmax(0, 1fr));gap:10px;margin-bottom:14px;">
+  <div class="card" style="padding:12px 14px;">
+    <span class="eyebrow" style="font-size:0.68rem;">Score de Conformidade</span>
+    <div style="font-size:1.35rem;font-weight:800;color:{% if correicao.indice_conformidade >= 85 %}#16a34a{% elif correicao.indice_conformidade >= 65 %}#d97706{% else %}#dc2626{% endif %};margin-top:2px;">
+      {{ correicao.indice_conformidade }}%
+    </div>
+    <small style="color:var(--muted);font-size:0.72rem;">Saúde da Controladoria</small>
+  </div>
+  <div class="card" style="padding:12px 14px;">
+    <span class="eyebrow" style="font-size:0.68rem;">Prazos Vencidos</span>
+    <div style="font-size:1.35rem;font-weight:800;color:{% if correicao.prazos_vencidos %}#dc2626{% else %}#16a34a{% endif %};margin-top:2px;">
+      {{ correicao.prazos_vencidos|length }}
+    </div>
+    <small style="color:var(--muted);font-size:0.72rem;">Em aberto no acervo</small>
+  </div>
+  <div class="card" style="padding:12px 14px;">
+    <span class="eyebrow" style="font-size:0.68rem;">Urgentes (48h)</span>
+    <div style="font-size:1.35rem;font-weight:800;color:#d97706;margin-top:2px;">
+      {{ correicao.prazos_48h|length }}
+    </div>
+    <small style="color:var(--muted);font-size:0.72rem;">Vencendo em até 2 dias</small>
+  </div>
+  <div class="card" style="padding:12px 14px;">
+    <span class="eyebrow" style="font-size:0.68rem;">CNJs Inválidos</span>
+    <div style="font-size:1.35rem;font-weight:800;color:{% if correicao.processos_invalidos %}#dc2626{% else %}#16a34a{% endif %};margin-top:2px;">
+      {{ correicao.processos_invalidos|length }}
+    </div>
+    <small style="color:var(--muted);font-size:0.72rem;">De {{ correicao.total_processos }} processos</small>
+  </div>
+  <div class="card" style="padding:12px 14px;">
+    <span class="eyebrow" style="font-size:0.68rem;">Pastas sem Impulso</span>
+    <div style="font-size:1.35rem;font-weight:800;margin-top:2px;">
+      {{ correicao.pastas_sem_impulso|length }}
+    </div>
+    <small style="color:var(--muted);font-size:0.72rem;">Sem tarefa/prazo ativo</small>
+  </div>
+  <div class="card" style="padding:12px 14px;">
+    <span class="eyebrow" style="font-size:0.68rem;">Cadastros Incompletos</span>
+    <div style="font-size:1.35rem;font-weight:800;margin-top:2px;">
+      {{ correicao.contatos_incompletos|length }}
+    </div>
+    <small style="color:var(--muted);font-size:0.72rem;">Sem CPF/CNPJ ou telefone</small>
+  </div>
+</div>
+
+<!-- Layout Simétrico 2 Colunas -->
+<div class="split" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
+
+  <!-- COLUNA ESQUERDA: TRIAGEM HEURÍSTICA IA + VALIDADOR CNJ MÓDULO 97 & LITISPENDÊNCIA -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- 1. CLASSIFICADOR HEURÍSTICO IA DE PUBLICAÇÕES E INTIMAÇÕES -->
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <span class="eyebrow">Motor NLP Heurístico DJUMBI</span>
+          <h2 style="margin:2px 0 0;font-size:1.05rem;">1. Triagem Inteligente de Intimações &amp; Publicações</h2>
+        </div>
+        <span class="badge">Confiança: {{ resultado_ia.confianca }}%</span>
+      </div>
+
+      <form method="post" action="{% url 'legal:correicao_ia' %}" hx-post="{% url 'legal:correicao_ia' %}" hx-target="#main-content" hx-select="#main-content" hx-swap="outerHTML" style="display:grid;gap:8px;margin-bottom:10px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="classificar_ia">
+        <label style="font-size:0.76rem;font-weight:600;">Cole o teor da publicação DJe / intimação PJe ou resumo do caso:</label>
+        <textarea name="texto_intimacao" rows="3" class="input" style="width:100%;font-size:0.82rem;">{{ texto_ia }}</textarea>
+        <div style="display:flex;justify-content:flex-end;">
+          <button type="submit" class="btn btn-primary" style="font-size:0.8rem;">Analisar Publicação &amp; Sugerir Prazo</button>
+        </div>
+      </form>
+
+      <div style="padding:12px;border-radius:10px;background:var(--surface-2, rgba(148,163,184,0.08));font-size:0.81rem;display:grid;gap:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+          <div><strong>Ramo / Área Identificada:</strong> <span style="color:var(--brand-strong, #d97706);font-weight:700;">{{ resultado_ia.categoria }}</span></div>
+          <div><strong>Prazo Recomendado:</strong> <span class="badge">{{ resultado_ia.prazo_sugerido_dias }} dias úteis</span></div>
+        </div>
+        <div><strong>Peça / Providência Sugerida:</strong> {{ resultado_ia.peca_sugerida }}</div>
+        <div><strong>Fundamento Legal:</strong> {{ resultado_ia.fundamento_legal }}</div>
+        <div style="color:var(--muted);font-size:0.76rem;">{{ resultado_ia.explicacao }}</div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <a href="{% url 'legal:contadoria_prazos' %}?quantidade_dias={{ resultado_ia.prazo_sugerido_dias }}" class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;">
+            Calcular Vencimento Fatal ({{ resultado_ia.prazo_sugerido_dias }}d CPC)
+          </a>
+          <a href="{% url 'legal:pecas_minutas' %}" class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;">
+            Abrir Minuta Recomendada
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. VALIDADOR OFICIAL CNJ (MÓDULO 97 BASE 10) & DETECTOR DE LITISPENDÊNCIA -->
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <span class="eyebrow">Resolução CNJ nº 65/2008 + Art. 337 §3º CPC</span>
+          <h2 style="margin:2px 0 0;font-size:1.05rem;">2. Validador Oficial CNJ &amp; Detector de Litispendência</h2>
+        </div>
+        {% if resultado_cnj.is_valid %}
+        <span class="badge" style="background:rgba(22,163,74,0.15);color:#16a34a;">CNJ Válido (Módulo 97)</span>
+        {% else %}
+        <span class="badge" style="background:rgba(220,38,38,0.15);color:#dc2626;">Dígito CNJ Inválido</span>
+        {% endif %}
+      </div>
+
+      <form method="post" action="{% url 'legal:correicao_ia' %}" hx-post="{% url 'legal:correicao_ia' %}" hx-target="#main-content" hx-select="#main-content" hx-swap="outerHTML" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="validar_cnj_litispendencia">
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Número Único CNJ (20 dígitos)</label>
+          <input type="text" name="numero_cnj" value="{{ numero_cnj_input }}" placeholder="0000000-00.2026.8.06.0001" class="input" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">CPF / CNPJ para Litispendência</label>
+          <input type="text" name="documento_busca" value="{{ documento_busca }}" placeholder="000.000.000-00" class="input" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Nome da Parte (Opcional)</label>
+          <input type="text" name="cliente_busca" value="{{ cliente_busca }}" placeholder="Nome do autor/réu" class="input" style="width:100%;">
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Validar CNJ &amp; Checar Conflito</button>
+        </div>
+      </form>
+
+      <div style="padding:10px 12px;border-radius:8px;background:var(--surface-2, rgba(148,163,184,0.08));font-size:0.8rem;margin-bottom:10px;">
+        <div><strong>Formatado:</strong> <code>{{ resultado_cnj.formatted }}</code></div>
+        {% if resultado_cnj.is_valid %}
+        <div><strong>Tribunal / Ramo Deduzido:</strong> {{ resultado_cnj.tribunal }} — {{ resultado_cnj.branch }} (Ano: {{ resultado_cnj.year }} · Origem: {{ resultado_cnj.origin_code }})</div>
+        {% else %}
+        <div style="color:#dc2626;font-weight:600;">{{ resultado_cnj.error }}</div>
+        {% endif %}
+      </div>
+
+      {% if alertas_litispendencia %}
+      <div style="border-top:1px solid var(--border);padding-top:8px;">
+        <strong style="font-size:0.78rem;color:#d97706;">Alertas de Litispendência / Prevenção Encontrados ({{ alertas_litispendencia|length }}):</strong>
+        <div style="max-height:140px;overflow-y:auto;margin-top:6px;display:grid;gap:6px;">
+          {% for alerta in alertas_litispendencia %}
+          <div style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.76rem;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div>
+              <strong>[{{ alerta.nivel }}] {{ alerta.tipo }}</strong><br>
+              <span>{{ alerta.detalhe }}</span>
+            </div>
+            <a href="{% url 'legal:detail' alerta.pasta_id %}" class="btn btn-secondary" style="padding:3px 8px;font-size:0.72rem;white-space:nowrap;">Ver Pasta</a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- COLUNA DIREITA: AUDITORIA DE CORREIÇÃO DO ACERVO -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- 3. AUDITORIA DE PROCESSOS COM CNJ INVÁLIDO OU DÍGITO DIVERGENTE -->
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <span class="eyebrow">Auditoria de Numeração Única</span>
+          <h2 style="margin:2px 0 0;font-size:1.02rem;">3. Processos com Alerta de Numeração CNJ ({{ correicao.processos_invalidos|length }})</h2>
+        </div>
+        <a href="{% url 'legal:list' 'cases' %}" class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;">Ver Todos Processos</a>
+      </div>
+
+      {% if correicao.processos_invalidos %}
+      <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <table class="data-table" style="width:100%;font-size:0.77rem;margin:0;">
+          <thead>
+            <tr>
+              <th style="padding:6px 8px;">Número Cadastrado</th>
+              <th style="padding:6px 8px;">Pasta</th>
+              <th style="padding:6px 8px;">Diagnóstico Módulo 97</th>
+              <th style="padding:6px 8px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in correicao.processos_invalidos %}
+            <tr>
+              <td style="padding:5px 8px;font-family:monospace;font-weight:700;">{{ item.case.number }}</td>
+              <td style="padding:5px 8px;">{{ item.case.matter.title }}</td>
+              <td style="padding:5px 8px;color:#dc2626;">{{ item.info.error }}</td>
+              <td style="padding:5px 8px;text-align:right;">
+                <a href="{% url 'legal:edit' 'cases' item.case.pk %}" class="btn btn-secondary" style="padding:2px 7px;font-size:0.7rem;">Corrigir</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p style="margin:0;font-size:0.82rem;color:#16a34a;font-weight:600;">
+        ✓ Todos os {{ correicao.total_processos }} processos cadastrados possuem numeração CNJ válida pelo Módulo 97 Base 10.
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- 4. PASTAS ATIVAS SEM IMPULSO (SEM TAREFA OU PRAZO EM ABERTO) -->
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <span class="eyebrow">Prevenção de Paralisação Processual</span>
+          <h2 style="margin:2px 0 0;font-size:1.02rem;">4. Pastas Ativas sem Tarefa ou Prazo Futuro ({{ correicao.pastas_sem_impulso|length }})</h2>
+        </div>
+        <a href="{% url 'legal:list' 'matters' %}" class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;">Ver Pastas</a>
+      </div>
+
+      {% if correicao.pastas_sem_impulso %}
+      <div style="max-height:210px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <table class="data-table" style="width:100%;font-size:0.77rem;margin:0;">
+          <thead>
+            <tr>
+              <th style="padding:6px 8px;">Pasta Jurídica</th>
+              <th style="padding:6px 8px;">Cliente</th>
+              <th style="padding:6px 8px;">Responsável</th>
+              <th style="padding:6px 8px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in correicao.pastas_sem_impulso|slice:":25" %}
+            <tr>
+              <td style="padding:5px 8px;font-weight:600;"><a href="{% url 'legal:detail' m.pk %}">{{ m.title }}</a></td>
+              <td style="padding:5px 8px;">{{ m.client.name|default:"—" }}</td>
+              <td style="padding:5px 8px;">{{ m.owner.get_full_name|default:m.owner.email }}</td>
+              <td style="padding:5px 8px;text-align:right;">
+                <a href="{% url 'legal:create' 'tasks' %}?matter={{ m.pk }}" class="btn btn-secondary" style="padding:2px 7px;font-size:0.7rem;">+ Impulso</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p style="margin:0;font-size:0.82rem;color:#16a34a;font-weight:600;">
+        ✓ Todas as pastas ativas possuem tarefas ou prazos futuros vinculados.
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- 5. CADASTROS DE PESSOAS COM DADOS PENDENTES -->
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <span class="eyebrow">Higienização de Base (Qualificação CPC Art. 319)</span>
+          <h2 style="margin:2px 0 0;font-size:1.02rem;">5. Clientes sem CPF/CNPJ ou Telefone ({{ correicao.contatos_incompletos|length }})</h2>
+        </div>
+        <a href="{% url 'legal:list' 'contacts' %}" class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;">Ver Pessoas</a>
+      </div>
+
+      {% if correicao.contatos_incompletos %}
+      <div style="max-height:170px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <table class="data-table" style="width:100%;font-size:0.77rem;margin:0;">
+          <thead>
+            <tr>
+              <th style="padding:6px 8px;">Nome</th>
+              <th style="padding:6px 8px;">CPF/CNPJ</th>
+              <th style="padding:6px 8px;">Telefone</th>
+              <th style="padding:6px 8px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in correicao.contatos_incompletos|slice:":20" %}
+            <tr>
+              <td style="padding:5px 8px;font-weight:600;">{{ c.name }}</td>
+              <td style="padding:5px 8px;">{{ c.document|default:"Pendente" }}</td>
+              <td style="padding:5px 8px;">{{ c.phone|default:"Pendente" }}</td>
+              <td style="padding:5px 8px;text-align:right;">
+                <a href="{% url 'legal:edit' 'contacts' c.pk %}" class="btn btn-secondary" style="padding:2px 7px;font-size:0.7rem;">Completar</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p style="margin:0;font-size:0.82rem;color:#16a34a;font-weight:600;">
+        ✓ Todos os clientes ativos possuem documento (CPF/CNPJ) e telefone preenchidos.
+      </p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

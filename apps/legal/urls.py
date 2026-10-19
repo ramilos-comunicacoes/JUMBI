@@ -3,13 +3,16 @@ from django.urls import path
 from . import (
     views, calendar_views, kanban_views, profile_views, client_map_views,
     guide_views, my_routine_views, contact_views, djen_views, receipt_views,
-    niche_views,
+    niche_views, djumbi_views,
 )
 
 app_name = "legal"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
+    path("contadoria-prazos/", djumbi_views.contadoria_prazos_hub, name="contadoria_prazos"),
+    path("pecas-minutas/", djumbi_views.pecas_minutas_hub, name="pecas_minutas"),
+    path("correicao-ia/", djumbi_views.correicao_ia_hub, name="correicao_ia"),
     path("previdenciario/", niche_views.previdenciario_hub, name="previdenciario_hub"),
     path("demandas/<int:pk>/<slug:action>/", niche_views.demand_action, name="demand_action"),
     path("trabalhista/", niche_views.trabalhista_hub, name="trabalhista_hub"),

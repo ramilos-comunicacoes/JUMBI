@@ -1,0 +1,191 @@
+{% extends "legal/base.html" %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'vendor/quill.snow.css' %}">
+
+<div class="page-head" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+  <div>
+    <span class="eyebrow">Motor de Automação Documental DJUMBI · Lei 14.063/2020</span>
+    <h1 style="margin:2px 0 4px;font-size:1.35rem;">Banco de Peças, Interpolação Dinâmica &amp; Assinatura SHA-256</h1>
+    <p style="margin:0;color:var(--muted);font-size:0.86rem;">Preenchimento automático com dados da Pasta Jurídica, editor rico Quill e chancela criptográfica SHA-256 com versionamento no cofre da pasta.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{% url 'legal:contadoria_prazos' %}" class="btn btn-secondary">Contadoria &amp; Prazos CPC</a>
+    <a href="{% url 'legal:correicao_ia' %}" class="btn btn-secondary">Correição &amp; Validador CNJ</a>
+  </div>
+</div>
+
+{% if recibo_assinatura %}
+<div class="card" style="padding:14px 16px;margin-bottom:14px;border-left:4px solid #16a34a;">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+    <div>
+      <span class="eyebrow" style="color:#16a34a;">Chancela Criptográfica Emitida com Sucesso (Padrão SHA-256 — Lei 14.063/2020)</span>
+      <div style="font-size:0.95rem;font-weight:700;margin-top:2px;">
+        Código de Autenticidade: <code>{{ recibo_assinatura.codigo_verificacao }}</code>
+      </div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">
+        Hash SHA-256: <code>{{ recibo_assinatura.hash_sha256 }}</code> · Signatário: <strong>{{ recibo_assinatura.signatario }}</strong> ({{ recibo_assinatura.timestamp }})
+      </div>
+    </div>
+    {% if documento_salvo %}
+    <div style="display:flex;gap:8px;">
+      <a href="{% url 'legal:document_download' documento_salvo.version.pk %}" class="btn btn-primary" style="font-size:0.8rem;">Baixar Peça Assinada (v{{ documento_salvo.version.number }})</a>
+      <a href="{% url 'legal:detail' selected_matter.pk %}" class="btn btn-secondary" style="font-size:0.8rem;">Abrir Pasta Jurídica</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="split" style="display:grid;grid-template-columns:0.85fr 1.15fr;gap:14px;align-items:start;">
+
+  <!-- COLUNA ESQUERDA: SELEÇÃO DE PASTA, MODELO E VARIÁVEIS INTERPOLADAS -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="card" style="padding:16px;">
+      <span class="eyebrow">1. Contexto Processual &amp; Modelo</span>
+      <h2 style="margin:2px 0 10px;font-size:1.02rem;">Selecionar Pasta Jurídica &amp; Peça Base</h2>
+
+      <form method="get" action="{% url 'legal:pecas_minutas' %}" style="display:grid;gap:10px;">
+        <input type="hidden" name="action" value="interpolar">
+        <div>
+          <label style="display:block;font-size:0.76rem;font-weight:600;margin-bottom:4px;">Pasta Jurídica (Fonte de Dados do Cliente e Processo)</label>
+          <select name="matter_id" class="input" style="width:100%;">
+            {% for m in matters %}
+            <option value="{{ m.pk }}" {% if selected_matter and m.pk == selected_matter.pk %}selected{% endif %}>
+              {{ m.title }}{% if m.client %} — {{ m.client.name }}{% endif %}
+            </option>
+            {% empty %}
+            <option value="">Nenhuma pasta cadastrada</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label style="display:block;font-size:0.76rem;font-weight:600;margin-bottom:4px;">Modelo Oficial do Banco de Peças</label>
+          <select name="modelo_key" class="input" style="width:100%;">
+            {% for k, mod in modelos.items %}
+            <option value="{{ k }}" {% if k == modelo_key %}selected{% endif %}>
+              [{{ mod.categoria }}] {{ mod.titulo }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+          Interpolar Variáveis da Pasta no Editor
+        </button>
+      </form>
+    </div>
+
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <span class="eyebrow">2. Dicionário de Dados Extraído</span>
+          <h2 style="margin:2px 0 0;font-size:1rem;">Variáveis Dinâmicas da Pasta</h2>
+        </div>
+        <span class="badge">Clique para inserir</span>
+      </div>
+
+      <div style="max-height:310px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <table class="data-table" style="width:100%;font-size:0.76rem;margin:0;">
+          <thead>
+            <tr>
+              <th style="padding:6px 8px;">Tag</th>
+              <th style="padding:6px 8px;">Valor Extraído da Pasta</th>
+              <th style="padding:6px 8px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for chave, valor in variaveis.items %}
+            <tr>
+              <td style="padding:5px 8px;font-family:monospace;font-weight:700;">&#123;&#123;{{ chave }}&#125;&#125;</td>
+              <td style="padding:5px 8px;">{{ valor }}</td>
+              <td style="padding:5px 8px;text-align:right;">
+                <button type="button" class="btn btn-secondary" style="padding:2px 7px;font-size:0.7rem;" onclick="inserirValorNoEditor('{{ valor|escapejs }}')">+ Inserir</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUNA DIREITA: EDITOR RICO QUILL + ASSINATURA DIGITAL SHA-256 -->
+  <div class="card" style="padding:16px;">
+    <form method="post" action="{% url 'legal:pecas_minutas' %}" id="form-peca-sha256" onsubmit="sincronizarQuillAntesDeEnviar()">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="assinar_salvar">
+      {% if selected_matter %}
+      <input type="hidden" name="matter_id" value="{{ selected_matter.pk }}">
+      {% endif %}
+      <input type="hidden" name="modelo_key" value="{{ modelo_key }}">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <div style="flex:1;min-width:240px;">
+          <label style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:3px;">Título do Documento para Arquivamento e Chancela</label>
+          <input type="text" name="titulo_peca" value="{{ modelo_atual.titulo }}" class="input" style="width:100%;font-weight:600;">
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="window.print()">Imprimir / PDF</button>
+          {% if can_edit %}
+          <button type="submit" class="btn btn-primary">Assinar (SHA-256) &amp; Salvar</button>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if selected_matter and can_edit %}
+      <div style="margin-bottom:10px;padding:6px 10px;border-radius:8px;background:var(--surface-2, rgba(148,163,184,0.08));font-size:0.78rem;display:flex;justify-content:space-between;align-items:center;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="checkbox" name="arquivar_na_pasta" value="1" checked>
+          Arquivar automaticamente nova versão imutável (com checksum SHA-256) na pasta <strong>{{ selected_matter.title }}</strong>
+        </label>
+        <span style="color:var(--muted);">Lei 14.063/2020</span>
+      </div>
+      {% endif %}
+
+      <div id="quill-editor-container" style="height:410px;background:#ffffff;color:#0f172a;border-radius:0 0 8px 8px;">
+        {{ conteudo_editor|safe }}
+      </div>
+      <textarea name="conteudo_html" id="conteudo-html-hidden" style="display:none;">{{ conteudo_editor }}</textarea>
+    </form>
+  </div>
+
+</div>
+
+<script src="{% static 'vendor/quill.min.js' %}"></script>
+<script>
+  var quillInstance = null;
+  function initDjumbiQuill() {
+    var container = document.getElementById('quill-editor-container');
+    if (!container || container.classList.contains('ql-container')) return;
+    if (typeof Quill !== 'undefined') {
+      quillInstance = new Quill('#quill-editor-container', {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            [{ 'header': [2, 3, 4, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'align': [] }],
+            ['clean']
+          ]
+        }
+      });
+    }
+  }
+  function sincronizarQuillAntesDeEnviar() {
+    var hidden = document.getElementById('conteudo-html-hidden');
+    if (quillInstance && hidden) {
+      hidden.value = quillInstance.root.innerHTML;
+    }
+  }
+  function inserirValorNoEditor(texto) {
+    if (!quillInstance) return;
+    var range = quillInstance.getSelection(true);
+    quillInstance.insertText(range ? range.index : quillInstance.getLength(), texto);
+  }
+  document.addEventListener('DOMContentLoaded', initDjumbiQuill);
+  initDjumbiQuill();
+</script>
+{% endblock %}

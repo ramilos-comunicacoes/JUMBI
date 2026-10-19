@@ -201,6 +201,9 @@ AVAILABLE_MODULE_PERMISSIONS = [
     ("trabalhista", "Trabalhista e Audiências"),
     ("contracts", "Montar Contratos"),
     ("djen", "Comunica PJe / DJEN"),
+    ("contadoria_prazos", "Contadoria Judicial & Prazos CPC"),
+    ("pecas_minutas", "Banco de Peças & Assinatura SHA-256"),
+    ("correicao_ia", "Correição Interna, CNJ & Triagem IA"),
     ("goals", "Metas"),
     ("ranking", "Ranking da Equipe"),
     ("tutorials", "Tutoriais e Treinamentos"),
@@ -235,6 +238,12 @@ def member_has_module(membership, module_key):
     # If custom permissions are set, check explicit list
     # Always allow basic essentials
     if module_key in {"dashboard", "my_routine", "security", "guide"}:
+        return True
+    if module_key == "contadoria_prazos" and "deadlines" in perms:
+        return True
+    if module_key == "pecas_minutas" and "documents" in perms:
+        return True
+    if module_key == "correicao_ia" and "cases" in perms:
         return True
     return module_key in perms
 
