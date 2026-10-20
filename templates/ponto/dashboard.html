@@ -1,0 +1,354 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-ponto.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ponto-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Gestão de Pessoas &amp; Frequência</span>
+      <h1>Ponto Eletrônico &amp; Jornada</h1>
+      <p>Controle de frequência com reconhecimento facial (Google MediaPipe), espelho de ponto digital e conformidade com a Portaria 671 MTP.</p>
+    </div>
+    <div class="heading-actions">
+      <a href="{% url 'ponto:clock_in' %}" class="button button-primary">
+        <svg class="icon" aria-hidden="true"><use href="#i-ponto"/></svg>
+        Bater Ponto Facial
+      </a>
+      <a href="{% url 'ponto:my_timesheet' %}" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-tasks"/></svg>
+        Meu Espelho
+      </a>
+      {% if can_manage_ponto %}
+      <a href="{% url 'ponto:team_timesheet' %}" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-team"/></svg>
+        Folha da Equipe
+      </a>
+      <a href="{% url 'ponto:manual_punch_create' %}" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+        Batida Manual
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% include 'ponto/includes/ponto_subtabs.html' with active_tab='dashboard' %}
+
+  <!-- KPI Cards Row -->
+  <div class="ponto-kpi-grid">
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Meu Status Hoje</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-ponto"/></svg>
+      </div>
+      <div class="ponto-kpi-value" style="font-size:16px;">
+        <span class="ponto-status-badge {{ today_summary.status_badge_class }}">
+          {{ today_summary.status_label }}
+        </span>
+      </div>
+      <div class="ponto-kpi-sub">
+        {{ today_punches|length }} batida{{ today_punches|length|pluralize }} registrada{{ today_punches|length|pluralize }}
+      </div>
+    </div>
+
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Horas Hoje</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-tasks"/></svg>
+      </div>
+      <div class="ponto-kpi-value">{{ today_summary.worked_str|default:"00:00" }}</div>
+      <div class="ponto-kpi-sub">
+        Previsto: {{ user_schedule.daily_expected_hours|default:"8.0" }}h
+      </div>
+    </div>
+
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Saldo Hoje</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-goals"/></svg>
+      </div>
+      <div class="ponto-kpi-value">
+        <span class="ponto-balance-badge {% if today_summary.balance_minutes > 0 %}positive{% elif today_summary.balance_minutes < 0 %}negative{% else %}neutral{% endif %}" style="font-size:16px;padding:4px 10px;">
+          {{ today_summary.balance_str|default:"00:00" }}
+        </span>
+      </div>
+      <div class="ponto-kpi-sub {% if today_summary.balance_minutes > 0 %}positive{% elif today_summary.balance_minutes < 0 %}negative{% else %}neutral{% endif %}">
+        {% if today_summary.balance_minutes > 0 %}Horas extras creditadas{% elif today_summary.balance_minutes < 0 %}Horas a compensar{% else %}Jornada pontual{% endif %}
+      </div>
+    </div>
+
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Ajustes &amp; Atestados</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-documents"/></svg>
+      </div>
+      <div class="ponto-kpi-value">{{ pending_adjustments_count|default:"0" }}</div>
+      <div class="ponto-kpi-sub">
+        {% if pending_adjustments_count %}Aguardando revisão{% else %}Nenhuma solicitação pendente{% endif %}
+      </div>
+    </div>
+
+    {% if can_manage_ponto %}
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Equipe Presente</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-team"/></svg>
+      </div>
+      <div class="ponto-kpi-value" style="color:#10b981;">
+        {{ team_summary.working|length }} <span style="font-size:14px;color:var(--muted);font-weight:400;">/ {{ team_summary.total_members|default:"0" }}</span>
+      </div>
+      <div class="ponto-kpi-sub">
+        {{ team_summary.lunch|length }} no almoço · {{ team_summary.finished|length }} encerrados
+      </div>
+    </div>
+    {% else %}
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Escala de Trabalho</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-customization"/></svg>
+      </div>
+      <div class="ponto-kpi-value" style="font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        {{ user_schedule.name|default:"Padrão 44h" }}
+      </div>
+      <div class="ponto-kpi-sub">
+        Tolerância: {{ user_schedule.tolerance_minutes|default:10 }} min
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Symmetrical 2-Column Grid -->
+  <div class="ponto-grid-2col">
+    
+    <!-- Left Column: Minhas Batidas & Equipe em Tempo Real -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      
+      <!-- Card Meu Dia -->
+      <section class="ponto-panel">
+        <header class="ponto-panel-header">
+          <h2>
+            <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-ponto"/></svg>
+            Minhas Batidas de Hoje ({% now "d/m/Y" %})
+          </h2>
+          <a href="{% url 'ponto:clock_in' %}" class="button button-primary" style="font-size:11px;padding:4px 10px;">
+            <svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#i-ponto"/></svg>
+            Bater Agora
+          </a>
+        </header>
+        <div class="ponto-panel-body">
+          <div class="ponto-today-timeline">
+            <div class="ponto-punch-slot {% if today_summary.entry_1 %}filled{% elif next_record_type == 'entry_1' %}current{% endif %}">
+              <div class="ponto-slot-label">Entrada 1</div>
+              <div class="ponto-slot-time">{{ today_summary.entry_1|default:"--:--" }}</div>
+              <div class="ponto-slot-source">{% if today_summary.entry_1 %}Registrado{% else %}Pendente{% endif %}</div>
+            </div>
+            <div class="ponto-punch-slot {% if today_summary.exit_1 %}filled{% elif next_record_type == 'exit_1' %}current{% endif %}">
+              <div class="ponto-slot-label">Saída Almoço</div>
+              <div class="ponto-slot-time">{{ today_summary.exit_1|default:"--:--" }}</div>
+              <div class="ponto-slot-source">{% if today_summary.exit_1 %}Registrado{% else %}Pendente{% endif %}</div>
+            </div>
+            <div class="ponto-punch-slot {% if today_summary.entry_2 %}filled{% elif next_record_type == 'entry_2' %}current{% endif %}">
+              <div class="ponto-slot-label">Retorno Almoço</div>
+              <div class="ponto-slot-time">{{ today_summary.entry_2|default:"--:--" }}</div>
+              <div class="ponto-slot-source">{% if today_summary.entry_2 %}Registrado{% else %}Pendente{% endif %}</div>
+            </div>
+            <div class="ponto-punch-slot {% if today_summary.exit_2 %}filled{% elif next_record_type == 'exit_2' %}current{% endif %}">
+              <div class="ponto-slot-label">Saída 2</div>
+              <div class="ponto-slot-time">{{ today_summary.exit_2|default:"--:--" }}</div>
+              <div class="ponto-slot-source">{% if today_summary.exit_2 %}Registrado{% else %}Pendente{% endif %}</div>
+            </div>
+          </div>
+
+          {% if today_punches %}
+          <div style="margin-top:14px;border-top:1px solid var(--border-soft);padding-top:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">
+              Histórico Detalhado do Dia (Auditoria Portaria 671)
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              {% for p in today_punches %}
+              <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid var(--border-soft);border-radius:8px;padding:8px 12px;font-size:11px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  {% if p.photo_snapshot %}
+                  <img src="{{ p.photo_snapshot }}" alt="Foto" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--primary);">
+                  {% else %}
+                  <div class="ponto-avatar" style="width:28px;height:28px;font-size:11px;">{{ p.get_record_type_display|slice:":1" }}</div>
+                  {% endif %}
+                  <div>
+                    <strong style="color:#fff;">{{ p.get_record_type_display }}</strong>
+                    <div style="font-size:10px;color:var(--muted);">
+                      {{ p.get_source_display }} · Hash: <span style="font-family:monospace;">{{ p.hash_sha256|slice:":10" }}...</span>
+                    </div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <strong style="color:var(--primary);font-size:13px;font-variant-numeric:tabular-nums;">{{ p.timestamp|date:"H:i:s" }}</strong>
+                  {% if p.face_detected %}
+                  <div style="font-size:10px;color:#10b981;">Facial {{ p.face_confidence }}%</div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- Se For Gestor: Painel de Presença da Equipe em Tempo Real -->
+      {% if can_manage_ponto and team_summary %}
+      <section class="ponto-panel">
+        <header class="ponto-panel-header">
+          <h2>
+            <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-team"/></svg>
+            Quadro de Presença em Tempo Real (Equipe)
+          </h2>
+          <a href="{% url 'ponto:team_timesheet' %}" class="button button-secondary" style="font-size:11px;padding:4px 10px;">
+            Ver Folha Completa
+          </a>
+        </header>
+        <div class="ponto-panel-body">
+          <div class="ponto-team-grid">
+            {% for item in team_summary.members %}
+            <div class="ponto-member-card">
+              <div class="ponto-member-header">
+                <div class="ponto-member-info">
+                  <div class="ponto-avatar">
+                    {{ item.membership.user.first_name|default:item.membership.user.email|slice:":1"|upper }}
+                  </div>
+                  <div>
+                    <strong style="font-size:12px;color:#fff;">{{ item.membership.user.get_full_name|default:item.membership.user.email }}</strong>
+                    <div style="font-size:10px;color:var(--muted);">{{ item.membership.job_title|default:item.membership.get_role_display }}</div>
+                  </div>
+                </div>
+                <span class="ponto-status-badge {{ item.status_class }}" style="font-size:10px;padding:2px 8px;">
+                  {{ item.status_label }}
+                </span>
+              </div>
+              
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;background:rgba(0,0,0,0.18);padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.03);">
+                <span style="color:var(--muted);">Hoje: <strong>{{ item.worked_str|default:"00:00" }}</strong></span>
+                <span style="color:var(--muted);">Última batida: <strong style="color:var(--primary);">{{ item.last_punch_time|default:"-" }}</strong></span>
+              </div>
+            </div>
+            {% empty %}
+            <p style="font-size:12px;color:var(--muted);text-align:center;padding:16px;">Nenhum colaborador alocado neste escritório.</p>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+    </div>
+
+    <!-- Right Column: Feriados, Solicitações & Atalhos -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      
+      <!-- Solicitações de Ajuste / Atestados -->
+      <section class="ponto-panel">
+        <header class="ponto-panel-header">
+          <h2>
+            <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-documents"/></svg>
+            Atestados &amp; Solicitações de Ajuste
+          </h2>
+          <a href="{% url 'ponto:adjustment_create' %}" class="button button-secondary" style="font-size:11px;padding:4px 10px;">
+            <svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#i-plus"/></svg>
+            Nova Solicitação
+          </a>
+        </header>
+        <div class="ponto-panel-body">
+          {% if recent_adjustments %}
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            {% for req in recent_adjustments %}
+            <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;font-size:11px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <strong style="color:#fff;">{{ req.membership.user.get_full_name|default:req.membership.user.email }}</strong>
+                <span class="ponto-balance-badge {% if req.status == 'approved' %}positive{% elif req.status == 'rejected' %}negative{% else %}neutral{% endif %}" style="font-size:10px;">
+                  {{ req.get_status_display }}
+                </span>
+              </div>
+              <div style="color:var(--muted);font-size:11px;">
+                <strong>{{ req.get_request_type_display }}</strong> para o dia {{ req.date|date:"d/m/Y" }}
+              </div>
+              <div style="color:#cbd5e1;font-size:10px;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                "{{ req.reason }}"
+              </div>
+              {% if can_manage_ponto and req.status == 'pending' %}
+              <div style="display:flex;gap:6px;margin-top:8px;">
+                <form action="{% url 'ponto:adjustment_decide' req.id %}" method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="approve">
+                  <button type="submit" class="button button-primary" style="font-size:10px;padding:2px 8px;background:#10b981;border-color:#10b981;">Aprovar</button>
+                </form>
+                <form action="{% url 'ponto:adjustment_decide' req.id %}" method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="reject">
+                  <button type="submit" class="button button-secondary" style="font-size:10px;padding:2px 8px;color:#f43f5e;border-color:rgba(244,63,94,0.4);">Rejeitar</button>
+                </form>
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p style="font-size:12px;color:var(--muted);text-align:center;padding:16px 0;">
+            Nenhum atestado médico ou solicitação de ajuste pendente.
+          </p>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- Feriados & Folgas do Escritório -->
+      <section class="ponto-panel">
+        <header class="ponto-panel-header">
+          <h2>
+            <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-appointments"/></svg>
+            Próximos Feriados &amp; Folgas
+          </h2>
+          {% if can_manage_ponto %}
+          <a href="{% url 'ponto:holidays_manage' %}" class="button button-secondary" style="font-size:11px;padding:4px 10px;">
+            Gerenciar
+          </a>
+          {% endif %}
+        </header>
+        <div class="ponto-panel-body">
+          {% if holidays_upcoming %}
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            {% for h in holidays_upcoming %}
+            <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid var(--border-soft);border-radius:8px;padding:8px 12px;font-size:11px;">
+              <div>
+                <strong style="color:#fff;">{{ h.name }}</strong>
+                <div style="font-size:10px;color:var(--muted);">{{ h.get_kind_display }}</div>
+              </div>
+              <div style="text-align:right;">
+                <span style="color:var(--primary);font-weight:700;">{{ h.date|date:"d/m/Y" }}</span>
+                <div style="font-size:10px;color:var(--muted);">{{ h.date|date:"l" }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p style="font-size:12px;color:var(--muted);text-align:center;padding:16px 0;">
+            Nenhum feriado programado para os próximos 45 dias.
+          </p>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- Normativas & Conformidade -->
+      <div class="ponto-panel" style="padding:16px;border-left:3px solid var(--primary);">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--primary);margin-bottom:6px;">
+          Legislação &amp; Portaria 671 MTP
+        </div>
+        <p style="font-size:11px;color:var(--muted);line-height:1.5;margin:0;">
+          O módulo opera sob as exigências do <strong>REP-P</strong> (Registrador Eletrônico de Ponto via Programa), gerando hashes criptográficos de 256 bits para assegurar imutabilidade, além de espelho de ponto assinado e relatório para auditorias do Ministério do Trabalho.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}

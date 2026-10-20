@@ -1,0 +1,86 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-ponto.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ponto-workspace" style="max-width: 600px; margin: 0 auto; width: 100%;">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Configurações de Ponto</span>
+      <h1>{% if schedule %}Editar Escala{% else %}Nova Escala de Trabalho{% endif %}</h1>
+      <p>Configure a carga horária diária, tolerância e regras de horário de trabalho da equipe.</p>
+    </div>
+  </div>
+
+  <div class="ponto-panel">
+    <div class="ponto-panel-header">
+      <h2>
+        <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-customization"/></svg>
+        Parâmetros da Escala
+      </h2>
+    </div>
+    <div class="ponto-panel-body">
+      <form method="post" style="display:flex;flex-direction:column;gap:14px;">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="alert alert-error" style="font-size:12px;">
+          Por favor, verifique os campos destacados abaixo.
+        </div>
+        {% endif %}
+
+        <div>
+          <label for="{{ form.name.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+            Nome da Escala *
+          </label>
+          {{ form.name }}
+          <span style="font-size:10px;color:var(--muted);display:block;margin-top:2px;">
+            Ex: "Padrão 44h Semanais", "Jornada 40h de Segunda a Sexta", "Estagiários 6h"
+          </span>
+          {% if form.name.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.name.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label for="{{ form.daily_expected_hours.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+              Carga Diária Prevista (horas) *
+            </label>
+            {{ form.daily_expected_hours }}
+            {% if form.daily_expected_hours.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.daily_expected_hours.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <label for="{{ form.tolerance_minutes.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+              Tolerância Geral (minutos) *
+            </label>
+            {{ form.tolerance_minutes }}
+            {% if form.tolerance_minutes.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.tolerance_minutes.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;border:1px solid var(--border-soft);">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+            {{ form.is_default }}
+            <span>Definir como escala padrão para novos colaboradores</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+            {{ form.is_active }}
+            <span>Escala ativa para uso imediato</span>
+          </label>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px;border-top:1px solid var(--border-soft);padding-top:14px;">
+          <a href="{% url 'ponto:schedules_manage' %}" class="button button-secondary">
+            Cancelar
+          </a>
+          <button type="submit" class="button button-primary">
+            Salvar Escala
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

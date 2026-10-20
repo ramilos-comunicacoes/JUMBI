@@ -237,7 +237,7 @@ def member_has_module(membership, module_key):
         return True
     # If custom permissions are set, check explicit list
     # Always allow basic essentials
-    if module_key in {"dashboard", "my_routine", "security", "guide"}:
+    if module_key in {"dashboard", "my_routine", "security", "guide", "ponto"}:
         return True
     if module_key == "contadoria_prazos" and "deadlines" in perms:
         return True

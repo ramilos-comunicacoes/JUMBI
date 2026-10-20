@@ -1,0 +1,87 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-ponto.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ponto-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Configurações de Jornada</span>
+      <h1>Escalas &amp; Horários de Trabalho</h1>
+      <p>Defina as escalas horárias do escritório (44h, 40h, 12x36, etc.), limites de tolerância e jornadas por dia da semana.</p>
+    </div>
+    <div class="heading-actions">
+      <a href="{% url 'ponto:schedule_create' %}" class="button button-primary">
+        <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+        Nova Escala
+      </a>
+    </div>
+  </div>
+
+  {% include 'ponto/includes/ponto_subtabs.html' with active_tab='schedules' %}
+
+  <div class="ponto-panel">
+    <div class="ponto-panel-header">
+      <h2>
+        <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-customization"/></svg>
+        Escalas Cadastradas
+      </h2>
+      <span style="font-size:11px;color:var(--muted);">{{ schedules|length }} escala{{ schedules|length|pluralize }} ativa{{ schedules|length|pluralize }}</span>
+    </div>
+
+    <div class="ponto-table-wrap">
+      <table class="ponto-table">
+        <thead>
+          <tr>
+            <th>Nome da Escala</th>
+            <th>Carga Diária Média</th>
+            <th>Tolerância (min)</th>
+            <th>Padrão do Escritório?</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in schedules %}
+          <tr>
+            <td>
+              <strong style="color:#fff;">{{ s.name }}</strong>
+            </td>
+            <td>{{ s.daily_expected_hours }} horas/dia</td>
+            <td>{{ s.tolerance_minutes }} minutos</td>
+            <td>
+              {% if s.is_default %}
+              <span class="ponto-balance-badge positive">Sim (Principal)</span>
+              {% else %}
+              <span style="color:var(--muted);font-size:11px;">Não</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.is_active %}
+              <span class="ponto-status-badge ponto-status-working" style="font-size:10px;">Ativa</span>
+              {% else %}
+              <span class="ponto-status-badge ponto-status-dayoff" style="font-size:10px;">Inativa</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'ponto:schedule_edit' s.id %}" class="button button-secondary" style="font-size:10px;padding:3px 8px;">
+                Editar Escala
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" style="text-align:center;padding:24px;color:var(--muted);">
+              Nenhuma escala personalizada cadastrada. A escala padrão de 44h é aplicada automaticamente.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

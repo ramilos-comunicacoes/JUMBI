@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Espelho de Ponto Eletrônico · {{ membership.user.get_full_name|default:membership.user.email }} · {{ month_name }}/{{ year }}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm 15mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      color: #000;
+      background: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    .print-header {
+      border-bottom: 2px solid #000;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .print-header h1 {
+      font-size: 14px;
+      margin: 0 0 4px;
+      text-transform: uppercase;
+    }
+    .print-header p {
+      margin: 2px 0;
+      font-size: 9px;
+      color: #333;
+    }
+    .meta-box {
+      border: 1px solid #000;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 8px;
+    }
+    .meta-col { display: flex; flex-direction: column; gap: 3px; }
+    .kpi-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .kpi-item {
+      flex: 1;
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+      background: #f9f9f9;
+    }
+    .kpi-label { font-size: 8px; text-transform: uppercase; color: #555; }
+    .kpi-val { font-size: 13px; font-weight: bold; margin-top: 2px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 4px 5px;
+      text-align: center;
+      font-size: 8.5px;
+    }
+    th {
+      background: #eee;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    tr.weekend { background: #f2f2f2; color: #666; }
+    .signature-section {
+      margin-top: 30px;
+      page-break-inside: avoid;
+    }
+    .signature-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 40px;
+      margin-top: 50px;
+    }
+    .signature-line {
+      flex: 1;
+      border-top: 1px solid #000;
+      text-align: center;
+      padding-top: 4px;
+      font-size: 9px;
+    }
+    .legal-notice {
+      font-size: 8px;
+      color: #555;
+      text-align: justify;
+      margin-top: 15px;
+      line-height: 1.3;
+    }
+    @media screen {
+      body { background: #525659; padding: 20px; }
+      .sheet { background: #fff; max-width: 210mm; margin: 0 auto; padding: 15mm; box-shadow: 0 0 15px rgba(0,0,0,0.4); }
+      .no-print-bar { max-width: 210mm; margin: 0 auto 15px; display: flex; justify-content: flex-end; }
+      .btn-print { background: #f5a000; color: #000; padding: 8px 16px; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print-bar">
+    <button class="btn-print" onclick="window.print()">Imprimir Espelho de Ponto (PDF)</button>
+  </div>
+
+  <div class="sheet">
+    <div class="print-header">
+      <div>
+        <h1>ESPELHO DE PONTO ELETRÔNICO (REP-P)</h1>
+        <p><strong>Empregador:</strong> {{ organization.name|default:"JUMBI - SISTEMA JURÍDICO" }}</p>
+        <p><strong>Conformidade Legal:</strong> Portaria MTP nº 671/2021 · Registrador Eletrônico de Ponto via Programa</p>
+      </div>
+      <div style="text-align: right;">
+        <p><strong>Período de Apuração:</strong></p>
+        <p style="font-size: 13px; font-weight: bold;">01/{{ month|stringformat:"02d" }}/{{ year }} a {{ timesheet.days|length }}/{{ month|stringformat:"02d" }}/{{ year }}</p>
+        <p>Emissão: {% now "d/m/Y H:i:s" %}</p>
+      </div>
+    </div>
+
+    <div class="meta-box">
+      <div class="meta-col">
+        <div><strong>Empregado(a):</strong> {{ membership.user.get_full_name|default:membership.user.email }}</div>
+        <div><strong>Cargo / Função:</strong> {{ membership.job_title|default:membership.get_role_display }}</div>
+        <div><strong>E-mail / Identificador:</strong> {{ membership.user.email }}</div>
+      </div>
+      <div class="meta-col">
+        <div><strong>Escala:</strong> {{ timesheet.schedule.name|default:"Padrão 44h" }}</div>
+        <div><strong>Carga Diária:</strong> {{ timesheet.schedule.daily_expected_hours|default:"8.0" }}h</div>
+        <div><strong>Tolerância:</strong> {{ timesheet.schedule.tolerance_minutes|default:10 }} min</div>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi-item">
+        <div class="kpi-label">Horas Trabalhadas</div>
+        <div class="kpi-val">{{ timesheet.total_worked_str }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Horas Previstas</div>
+        <div class="kpi-val">{{ timesheet.total_expected_str }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Saldo / Banco de Horas</div>
+        <div class="kpi-val">{{ timesheet.total_balance_str }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Dias Trabalhados</div>
+        <div class="kpi-val">{{ timesheet.days_worked_count }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Faltas</div>
+        <div class="kpi-val">{{ timesheet.absences_count }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Atrasos</div>
+        <div class="kpi-val">{{ timesheet.delays_count }}</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Dia</th>
+          <th>Semana</th>
+          <th>Entrada 1</th>
+          <th>Saída 1</th>
+          <th>Entrada 2</th>
+          <th>Saída 2</th>
+          <th>Horas Trab.</th>
+          <th>Previsto</th>
+          <th>Saldo (+/-)</th>
+          <th>Ocorrência / Situação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for day in timesheet.days %}
+        <tr class="{% if day.is_weekend %}weekend{% endif %}">
+          <td>{{ day.date|date:"d/m/Y" }}</td>
+          <td>{{ day.weekday_name }}</td>
+          <td>{{ day.entry_1|default:"-" }}</td>
+          <td>{{ day.exit_1|default:"-" }}</td>
+          <td>{{ day.entry_2|default:"-" }}</td>
+          <td>{{ day.exit_2|default:"-" }}</td>
+          <td><strong>{{ day.worked_str|default:"00:00" }}</strong></td>
+          <td>{{ day.expected_str|default:"00:00" }}</td>
+          <td>{{ day.balance_str }}</td>
+          <td>{{ day.status_label }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="signature-section">
+      <p class="legal-notice">
+        Reconheço a exatidão das marcações de ponto acima descritas referentes ao mês indicado, em cumprimento às disposições do artigo 74 da CLT e da Portaria MTP nº 671/2021, nada tendo a opor quanto aos horários e saldos nele consignados.
+      </p>
+
+      <div class="signature-grid">
+        <div class="signature-line">
+          <strong>{{ membership.user.get_full_name|default:membership.user.email }}</strong><br>
+          Assinatura do(a) Empregado(a)
+        </div>
+        <div class="signature-line">
+          <strong>{{ organization.name|default:"JUMBI - SISTEMA JURÍDICO" }}</strong><br>
+          Assinatura do Empregador / Responsável RH
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

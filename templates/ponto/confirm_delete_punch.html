@@ -1,0 +1,44 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-ponto.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ponto-workspace" style="max-width: 520px; margin: 40px auto; width: 100%;">
+  <div class="ponto-panel" style="border-color: rgba(244,63,94,0.4);">
+    <div class="ponto-panel-header" style="background: rgba(244,63,94,0.06);">
+      <h2 style="color: #f43f5e;">
+        <svg class="icon" aria-hidden="true" style="width:16px;height:16px;"><use href="#i-close"/></svg>
+        Confirmar Exclusão de Batida Manual
+      </h2>
+    </div>
+    <div class="ponto-panel-body" style="display:flex;flex-direction:column;gap:14px;">
+      <p style="font-size:13px;color:#e2e8f0;line-height:1.5;margin:0;">
+        Você está prestes a excluir a marcação manual do colaborador <strong>{{ punch.membership.user.get_full_name|default:punch.membership.user.email }}</strong>:
+      </p>
+
+      <div style="background:rgba(0,0,0,0.25);border:1px solid var(--border-soft);border-radius:8px;padding:12px;font-size:12px;">
+        <div>Data: <strong>{{ punch.recorded_date|date:"d/m/Y" }}</strong> às <strong>{{ punch.timestamp|date:"H:i:s" }}</strong></div>
+        <div>Tipo: <strong>{{ punch.get_record_type_display }}</strong></div>
+        <div>Motivo registrado: <em>"{{ punch.adjustment_reason }}"</em></div>
+      </div>
+
+      <div class="alert alert-warning" style="font-size:11px;margin:0;">
+        Atenção: Apenas marcações manuais podem ser removidas pelo administrador. Registros com reconhecimento facial são imutáveis e auditados pelo MTP.
+      </div>
+
+      <form method="post" style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px;">
+        {% csrf_token %}
+        <a href="{% url 'ponto:team_timesheet' %}" class="button button-secondary">
+          Cancelar
+        </a>
+        <button type="submit" class="button button-primary" style="background:#f43f5e;border-color:#f43f5e;">
+          Sim, Excluir Registro
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

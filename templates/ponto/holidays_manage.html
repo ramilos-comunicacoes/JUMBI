@@ -1,0 +1,131 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-ponto.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ponto-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Calendário &amp; Frequência</span>
+      <h1>Feriados &amp; Folgas do Escritório</h1>
+      <p>Gerencie feriados nacionais, municipais e dias de folga/recesso interno para cálculo correto do espelho de ponto.</p>
+    </div>
+  </div>
+
+  {% include 'ponto/includes/ponto_subtabs.html' with active_tab='holidays' %}
+
+  <div class="ponto-grid-2col">
+    <!-- Formulário de Novo Feriado -->
+    <div class="ponto-panel">
+      <div class="ponto-panel-header">
+        <h2>
+          <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-plus"/></svg>
+          Cadastrar Novo Feriado / Folga
+        </h2>
+      </div>
+      <div class="ponto-panel-body">
+        <form method="post" style="display:flex;flex-direction:column;gap:14px;">
+          {% csrf_token %}
+
+          {% if form.errors %}
+          <div class="alert alert-error" style="font-size:12px;">
+            Por favor, verifique os campos destacados abaixo.
+          </div>
+          {% endif %}
+
+          <div>
+            <label for="{{ form.name.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+              Nome do Feriado / Folga *
+            </label>
+            {{ form.name }}
+            {% if form.name.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.name.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label for="{{ form.date.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+                Data *
+              </label>
+              {{ form.date }}
+              {% if form.date.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.date.errors.0 }}</div>{% endif %}
+            </div>
+            <div>
+              <label for="{{ form.kind.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+                Classificação *
+              </label>
+              {{ form.kind }}
+              {% if form.kind.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.kind.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.02);padding:10px 12px;border-radius:8px;border:1px solid var(--border-soft);">
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+              {{ form.repeats_yearly }}
+              <span>Repete anualmente nesta mesma data</span>
+            </label>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+            <button type="submit" class="button button-primary">
+              Cadastrar Feriado
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Lista de Feriados Cadastrados -->
+    <div class="ponto-panel">
+      <div class="ponto-panel-header">
+        <h2>
+          <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-appointments"/></svg>
+          Calendário de Feriados &amp; Recessos
+        </h2>
+        <span style="font-size:11px;color:var(--muted);">{{ holidays|length }} data{{ holidays|length|pluralize }}</span>
+      </div>
+      <div class="ponto-panel-body" style="padding:0;">
+        <div class="ponto-table-wrap" style="border:none;">
+          <table class="ponto-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Nome</th>
+                <th>Tipo</th>
+                <th>Anual?</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for h in holidays %}
+              <tr>
+                <td><strong>{{ h.date|date:"d/m/Y" }}</strong></td>
+                <td><strong style="color:#fff;">{{ h.name }}</strong></td>
+                <td><span class="ponto-status-badge ponto-status-dayoff" style="font-size:10px;">{{ h.get_kind_display }}</span></td>
+                <td>{% if h.repeats_yearly %}&#10003; Sim{% else %}Não{% endif %}</td>
+                <td>
+                  <form action="{% url 'ponto:holiday_delete' h.id %}" method="post" style="display:inline;" onsubmit="return confirm('Deseja excluir este feriado?');">
+                    {% csrf_token %}
+                    <button type="submit" class="button button-secondary" style="font-size:10px;padding:2px 6px;color:#f43f5e;" title="Excluir">
+                      Excluir
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" style="text-align:center;padding:24px;color:var(--muted);">
+                  Nenhum feriado cadastrado. Os feriados cadastrados abonam as faltas dos colaboradores automaticamente.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

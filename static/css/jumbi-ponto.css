@@ -1,0 +1,517 @@
+/* JUMBI - Ponto Eletrônico & Reconhecimento Facial
+   Inspirado nos padrões IfPonto / Fractal / Portaria 671 MTP
+   Design System: Glassmorphism escuro de alta precisão, sem rolagem horizontal */
+
+.ponto-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Subtabs de Navegação */
+.ponto-subtabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-soft, #202b3d);
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ponto-subtabs::-webkit-scrollbar { display: none; }
+
+.ponto-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted, #94a3b8);
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all .15s ease;
+  white-space: nowrap;
+}
+.ponto-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
+}
+.ponto-tab-btn.is-active {
+  color: var(--primary, #f5a000);
+  background: rgba(245, 160, 0, 0.12);
+  border-color: rgba(245, 160, 0, 0.28);
+}
+
+/* KPI Banner / Cards */
+.ponto-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+@media (max-width: 1200px) {
+  .ponto-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 680px) {
+  .ponto-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.ponto-kpi-card {
+  background: var(--surface, rgba(17, 24, 39, 0.7));
+  border: 1px solid var(--border-soft, #202b3d);
+  border-radius: 12px;
+  padding: 14px 16px;
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+  transition: border-color .15s ease, transform .15s ease;
+}
+.ponto-kpi-card:hover {
+  border-color: rgba(245, 160, 0, 0.3);
+  transform: translateY(-1px);
+}
+.ponto-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ponto-kpi-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.ponto-kpi-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--primary, #f5a000);
+  opacity: 0.85;
+}
+.ponto-kpi-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+.ponto-kpi-sub {
+  font-size: 11px;
+  color: var(--muted, #94a3b8);
+  margin-top: 4px;
+}
+.ponto-kpi-sub.positive { color: #10b981; }
+.ponto-kpi-sub.negative { color: #f43f5e; }
+.ponto-kpi-sub.neutral { color: var(--muted, #94a3b8); }
+
+/* Layout Grid */
+.ponto-grid-2col {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 16px;
+}
+@media (max-width: 980px) {
+  .ponto-grid-2col { grid-template-columns: 1fr; }
+}
+
+/* Painel padrão */
+.ponto-panel {
+  background: var(--surface, rgba(17, 24, 39, 0.7));
+  border: 1px solid var(--border-soft, #202b3d);
+  border-radius: 14px;
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+.ponto-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-soft, #202b3d);
+  background: rgba(255, 255, 255, 0.015);
+}
+.ponto-panel-header h2, .ponto-panel-header h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ponto-panel-body {
+  padding: 16px 18px;
+}
+
+/* Kiosk / Câmera de Reconhecimento Facial */
+.ponto-camera-box {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  border: 2px solid rgba(245, 160, 0, 0.35);
+  box-shadow: 0 0 25px rgba(245, 160, 0, 0.12);
+  aspect-ratio: 4 / 3;
+}
+.ponto-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* espelhado como selfie */
+  display: block;
+}
+.ponto-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: scaleX(-1);
+}
+
+/* Retículo HUD Facial */
+.ponto-hud-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ponto-face-oval {
+  width: 200px;
+  height: 260px;
+  border-radius: 50% / 45%;
+  border: 2px dashed rgba(245, 160, 0, 0.7);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.38);
+  position: relative;
+  transition: all .25s ease;
+}
+.ponto-face-oval.detected {
+  border-color: #10b981;
+  border-style: solid;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.28), 0 0 24px rgba(16, 185, 129, 0.45);
+}
+.ponto-face-oval.scanning::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #f5a000, transparent);
+  box-shadow: 0 0 10px #f5a000;
+  animation: scan-line 2.2s infinite ease-in-out;
+}
+@keyframes scan-line {
+  0% { top: 0%; opacity: 0.8; }
+  50% { top: 96%; opacity: 1; }
+  100% { top: 0%; opacity: 0.8; }
+}
+
+.ponto-hud-badge {
+  position: absolute;
+  bottom: 12px;
+  background: rgba(11, 19, 32, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ponto-hud-badge.success {
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #10b981;
+}
+.ponto-hud-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f5a000;
+  animation: pulse-dot 1.4s infinite;
+}
+.ponto-hud-badge.success .dot {
+  background: #10b981;
+  animation: none;
+}
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+/* Relógio Digital em tempo real */
+.ponto-digital-clock {
+  text-align: center;
+  margin: 12px 0 18px;
+}
+.ponto-digital-time {
+  font-size: 42px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 0 15px rgba(245, 160, 0, 0.2);
+}
+.ponto-digital-date {
+  font-size: 13px;
+  color: var(--muted, #94a3b8);
+  margin-top: 4px;
+  text-transform: capitalize;
+}
+
+/* Indicadores de Batidas Diárias */
+.ponto-today-timeline {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+@media (max-width: 600px) {
+  .ponto-today-timeline { grid-template-columns: repeat(2, 1fr); }
+}
+.ponto-punch-slot {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-soft, #202b3d);
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: center;
+  transition: all .15s ease;
+}
+.ponto-punch-slot.filled {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+.ponto-punch-slot.current {
+  background: rgba(245, 160, 0, 0.08);
+  border: 1px solid rgba(245, 160, 0, 0.45);
+  box-shadow: 0 0 12px rgba(245, 160, 0, 0.15);
+}
+.ponto-slot-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted, #94a3b8);
+}
+.ponto-slot-time {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.ponto-slot-source {
+  font-size: 9px;
+  color: var(--muted, #94a3b8);
+  margin-top: 2px;
+}
+
+/* Badges de Status de Presença */
+.ponto-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ponto-status-working {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.ponto-status-working::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+.ponto-status-lunch {
+  background: rgba(245, 160, 0, 0.15);
+  color: #f5a000;
+  border: 1px solid rgba(245, 160, 0, 0.3);
+}
+.ponto-status-finished {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+.ponto-status-absent {
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+.ponto-status-dayoff {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* Saldo de Horas Badge */
+.ponto-balance-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ponto-balance-badge.positive {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.ponto-balance-badge.negative {
+  background: rgba(244, 63, 94, 0.15);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+.ponto-balance-badge.neutral {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted, #94a3b8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Tabela Espelho de Ponto */
+.ponto-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft, #202b3d);
+}
+.ponto-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+.ponto-table th {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 12px;
+  color: var(--muted, #94a3b8);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-soft, #202b3d);
+  white-space: nowrap;
+}
+.ponto-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+.ponto-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+.ponto-table tr.is-today td {
+  background: rgba(245, 160, 0, 0.05);
+  font-weight: 600;
+}
+.ponto-table tr.is-weekend td {
+  color: #64748b;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Modal de Comprovante Digital (Portaria 671 MTP) */
+.ponto-receipt-card {
+  background: #0d1522;
+  border: 1px solid #29384d;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 420px;
+  margin: 0 auto;
+  font-family: monospace;
+  font-size: 11px;
+  color: #cbd5e1;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.ponto-receipt-header {
+  text-align: center;
+  border-bottom: 1px dashed #334155;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.ponto-receipt-header h4 {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 4px;
+}
+.ponto-receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ponto-receipt-hash {
+  word-break: break-all;
+  font-size: 9px;
+  background: #060b13;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #1e293b;
+  color: #94a3b8;
+  margin-top: 10px;
+}
+
+/* Equipe Board (Grid de Presença) */
+.ponto-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.ponto-member-card {
+  background: var(--surface, rgba(17, 24, 39, 0.6));
+  border: 1px solid var(--border-soft, #202b3d);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color .15s ease;
+}
+.ponto-member-card:hover {
+  border-color: rgba(245, 160, 0, 0.35);
+}
+.ponto-member-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ponto-member-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ponto-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(245, 160, 0, 0.2);
+  color: #f5a000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  border: 1px solid rgba(245, 160, 0, 0.3);
+}

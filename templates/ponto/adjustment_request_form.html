@@ -1,0 +1,96 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-ponto.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ponto-workspace" style="max-width: 620px; margin: 0 auto; width: 100%;">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Ponto &amp; Frequência</span>
+      <h1>Solicitação de Ajuste / Atestado Médico</h1>
+      <p>Envie justificativas de ausência, atestados de saúde ou solicitação de inclusão de batida esquecida.</p>
+    </div>
+  </div>
+
+  <div class="ponto-panel">
+    <div class="ponto-panel-header">
+      <h2>
+        <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-documents"/></svg>
+        Formulário de Justificativa
+      </h2>
+    </div>
+    <div class="ponto-panel-body">
+      <form method="post" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:14px;">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="alert alert-error" style="font-size:12px;">
+          Por favor, verifique os campos destacados abaixo.
+        </div>
+        {% endif %}
+
+        <div>
+          <label for="{{ form.request_type.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+            Tipo de Solicitação *
+          </label>
+          {{ form.request_type }}
+          {% if form.request_type.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.request_type.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label for="{{ form.date.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+              Data Ocorrida *
+            </label>
+            {{ form.date }}
+            {% if form.date.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.date.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <label for="{{ form.suggested_time.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+              Horário (se aplicável)
+            </label>
+            {{ form.suggested_time }}
+            {% if form.suggested_time.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.suggested_time.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div>
+          <label for="{{ form.suggested_record_type.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+            Tipo de Batida a Incluir (se aplicável)
+          </label>
+          {{ form.suggested_record_type }}
+          {% if form.suggested_record_type.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.suggested_record_type.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label for="{{ form.reason.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+            Motivo / Detalhamento *
+          </label>
+          {{ form.reason }}
+          {% if form.reason.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.reason.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label for="{{ form.attachment.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+            Comprovante / Foto do Atestado (PDF, PNG, JPG)
+          </label>
+          {{ form.attachment }}
+          {% if form.attachment.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.attachment.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px;border-top:1px solid var(--border-soft);padding-top:14px;">
+          <a href="{% url 'ponto:adjustments_list' %}" class="button button-secondary">
+            Cancelar
+          </a>
+          <button type="submit" class="button button-primary">
+            Enviar para Aprovação
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

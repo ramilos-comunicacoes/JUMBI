@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.worklog",
     "apps.integrations",
     "apps.marketing",
+    "apps.ponto",
 ]
 
 MIDDLEWARE = [

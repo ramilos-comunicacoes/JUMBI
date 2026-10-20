@@ -1,0 +1,37 @@
+<nav class="ponto-subtabs" aria-label="Navegação do Ponto Eletrônico">
+  <a href="{% url 'ponto:dashboard' %}" class="ponto-tab-btn {% if active_tab == 'dashboard' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-dashboard"/></svg>
+    Painel Geral
+  </a>
+  <a href="{% url 'ponto:clock_in' %}" class="ponto-tab-btn {% if active_tab == 'clock_in' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-ponto"/></svg>
+    Bater Ponto Facial
+  </a>
+  <a href="{% url 'ponto:my_timesheet' %}" class="ponto-tab-btn {% if active_tab == 'my_timesheet' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-tasks"/></svg>
+    Meu Espelho de Ponto
+  </a>
+  {% if can_manage_ponto %}
+  <a href="{% url 'ponto:team_timesheet' %}" class="ponto-tab-btn {% if active_tab == 'team_timesheet' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-team"/></svg>
+    Folha da Equipe
+  </a>
+  {% endif %}
+  <a href="{% url 'ponto:adjustments_list' %}" class="ponto-tab-btn {% if active_tab == 'adjustments' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-documents"/></svg>
+    Atestados &amp; Ajustes
+    {% if pending_adjustments_count %}
+    <span style="background:var(--primary);color:#000;font-size:10px;font-weight:800;border-radius:10px;padding:1px 6px;margin-left:4px;">{{ pending_adjustments_count }}</span>
+    {% endif %}
+  </a>
+  {% if can_manage_ponto %}
+  <a href="{% url 'ponto:schedules_manage' %}" class="ponto-tab-btn {% if active_tab == 'schedules' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-customization"/></svg>
+    Escalas &amp; Horários
+  </a>
+  <a href="{% url 'ponto:holidays_manage' %}" class="ponto-tab-btn {% if active_tab == 'holidays' %}is-active{% endif %}">
+    <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-appointments"/></svg>
+    Feriados &amp; Folgas
+  </a>
+  {% endif %}
+</nav>

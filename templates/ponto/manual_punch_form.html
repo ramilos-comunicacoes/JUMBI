@@ -1,0 +1,91 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-ponto.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ponto-workspace" style="max-width: 600px; margin: 0 auto; width: 100%;">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Gestão de Ponto &amp; Frequência</span>
+      <h1>Lançamento de Batida Manual</h1>
+      <p>Inclusão ou retificação de registro de ponto por administrador ou gestor com justificativa obrigatória.</p>
+    </div>
+  </div>
+
+  <div class="ponto-panel">
+    <div class="ponto-panel-header">
+      <h2>
+        <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-plus"/></svg>
+        Registro Manual / Retificação (Portaria 671 MTP)
+      </h2>
+    </div>
+    <div class="ponto-panel-body">
+      <form method="post" style="display:flex;flex-direction:column;gap:14px;">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="alert alert-error" style="font-size:12px;">
+          Por favor, verifique os campos destacados abaixo.
+        </div>
+        {% endif %}
+
+        <div>
+          <label for="{{ form.membership.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+            Colaborador *
+          </label>
+          {{ form.membership }}
+          {% if form.membership.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.membership.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label for="{{ form.recorded_date.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+              Data do Ponto *
+            </label>
+            {{ form.recorded_date }}
+            {% if form.recorded_date.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.recorded_date.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <label for="{{ form.punch_time.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+              Horário (HH:MM) *
+            </label>
+            {{ form.punch_time }}
+            {% if form.punch_time.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.punch_time.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div>
+          <label for="{{ form.record_type.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+            Tipo de Marcação *
+          </label>
+          {{ form.record_type }}
+          {% if form.record_type.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.record_type.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label for="{{ form.adjustment_reason.id_for_label }}" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+            Justificativa da Inclusão / Retificação (Auditoria Obrigatória) *
+          </label>
+          {{ form.adjustment_reason }}
+          <span style="font-size:10px;color:var(--muted);display:block;margin-top:2px;">
+            Exigência legal da Portaria 671 MTP: toda batida manual deve conter o motivo explícito.
+          </span>
+          {% if form.adjustment_reason.errors %}<div style="color:#f43f5e;font-size:11px;margin-top:2px;">{{ form.adjustment_reason.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px;border-top:1px solid var(--border-soft);padding-top:14px;">
+          <a href="{% url 'ponto:team_timesheet' %}" class="button button-secondary">
+            Cancelar
+          </a>
+          <button type="submit" class="button button-primary">
+            Salvar Marcação
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

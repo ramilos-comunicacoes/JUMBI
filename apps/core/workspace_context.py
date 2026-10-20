@@ -48,6 +48,7 @@ def workspace_context(request):
     nav.append({"key": "contadoria_prazos", "label": "Contadoria & Prazos CPC", "url": reverse("legal:contadoria_prazos"), "icon": "clock"})
     nav.append({"key": "pecas_minutas", "label": "Peças & Assinatura SHA-256", "url": reverse("legal:pecas_minutas"), "icon": "file"})
     nav.append({"key": "correicao_ia", "label": "Correição, CNJ & IA", "url": reverse("legal:correicao_ia"), "icon": "shield"})
+    nav.append({"key": "ponto", "label": "Ponto Eletrônico", "url": reverse("ponto:dashboard"), "icon": "ponto"})
     nav.append({"key": "marketing", "label": "Marketing & Captação", "url": reverse("marketing:dashboard"), "icon": "marketing"})
     nav.append({"key": "goals", "label": "Metas", "url": reverse("performance:list"), "icon": "target"})
     nav.append({"key": "ranking", "label": "Ranking da equipe", "url": reverse("performance:ranking"), "icon": "ranking"})
@@ -81,7 +82,7 @@ def workspace_context(request):
             {'key': 'security', 'label': 'Segurança da conta', 'url': reverse('security:account'), 'icon': 'shield'},
         ]
     navigation_groups = [
-        ("Dia a dia", ["my_routine", "dashboard", "tasks", "deadlines", "contadoria_prazos", "appointments", "djen"]),
+        ("Dia a dia", ["my_routine", "dashboard", "ponto", "tasks", "deadlines", "contadoria_prazos", "appointments", "djen"]),
         ("Módulos Especializados", ["demands", "trabalhista", "pecas_minutas", "correicao_ia"]),
         ("Acervo jurídico", ["matters", "contacts", "cases", "documents", "contact_messages", "client_map", "contracts", "portal"]),
         ("Gestão do escritório", ["marketing", "ranking", "goals", "crm", "fees", "finance", "inventory", "tutorials"]),

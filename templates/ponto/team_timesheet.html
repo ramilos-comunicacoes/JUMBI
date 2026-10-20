@@ -1,0 +1,200 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-ponto.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ponto-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Gestão de Equipe &amp; Frequência</span>
+      <h1>Folha de Ponto da Equipe</h1>
+      <p>Supervisão gerencial de jornadas, espelho individual de cada colaborador e auditoria de batidas.</p>
+    </div>
+    <div class="heading-actions">
+      <a href="{% url 'ponto:manual_punch_create' %}?member_id={{ selected_member.id }}" class="button button-primary">
+        <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+        Lançar Batida Manual
+      </a>
+      <a href="{% url 'ponto:export_print' selected_member.id %}" target="_blank" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-documents"/></svg>
+        Imprimir Espelho Oficial
+      </a>
+      <a href="{% url 'ponto:export_csv' %}?member_id={{ selected_member.id }}" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+        Exportar CSV
+      </a>
+    </div>
+  </div>
+
+  {% include 'ponto/includes/ponto_subtabs.html' with active_tab='team_timesheet' %}
+
+  <!-- Barra de Filtros: Colaborador e Mês -->
+  <form method="get" class="ponto-panel" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div>
+        <label for="member_select" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+          Colaborador:
+        </label>
+        <select id="member_select" name="member_id" class="input" onchange="this.form.submit()" style="font-weight:600;min-width:240px;">
+          {% for m in team_members %}
+          <option value="{{ m.id }}" {% if m.id == selected_member.id %}selected{% endif %}>
+            {{ m.user.get_full_name|default:m.user.email }} ({{ m.job_title|default:m.get_role_display }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="month_select" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:block;">
+          Mês / Ano:
+        </label>
+        <div style="display:flex;gap:6px;">
+          <select id="month_select" name="month" class="input" onchange="this.form.submit()" style="font-weight:600;">
+            <option value="1" {% if month == 1 %}selected{% endif %}>Janeiro</option>
+            <option value="2" {% if month == 2 %}selected{% endif %}>Fevereiro</option>
+            <option value="3" {% if month == 3 %}selected{% endif %}>Março</option>
+            <option value="4" {% if month == 4 %}selected{% endif %}>Abril</option>
+            <option value="5" {% if month == 5 %}selected{% endif %}>Maio</option>
+            <option value="6" {% if month == 6 %}selected{% endif %}>Junho</option>
+            <option value="7" {% if month == 7 %}selected{% endif %}>Julho</option>
+            <option value="8" {% if month == 8 %}selected{% endif %}>Agosto</option>
+            <option value="9" {% if month == 9 %}selected{% endif %}>Setembro</option>
+            <option value="10" {% if month == 10 %}selected{% endif %}>Outubro</option>
+            <option value="11" {% if month == 11 %}selected{% endif %}>Novembro</option>
+            <option value="12" {% if month == 12 %}selected{% endif %}>Dezembro</option>
+          </select>
+          <input type="number" name="year" value="{{ year }}" class="input" style="width:90px;" min="2020" max="2035" onchange="this.form.submit()">
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:right;">
+      <span style="font-size:11px;color:var(--muted);">Escala Atribuída:</span><br>
+      <strong style="color:var(--primary);font-size:13px;">{{ timesheet.schedule.name|default:"Padrão 44h Semanais" }}</strong>
+    </div>
+  </form>
+
+  <!-- Cards de Totais Mensais -->
+  <div class="ponto-kpi-grid">
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Horas Trabalhadas</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-tasks"/></svg>
+      </div>
+      <div class="ponto-kpi-value">{{ timesheet.total_worked_str }}</div>
+      <div class="ponto-kpi-sub">Total apurado no mês</div>
+    </div>
+
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Horas Previstas</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-goals"/></svg>
+      </div>
+      <div class="ponto-kpi-value">{{ timesheet.total_expected_str }}</div>
+      <div class="ponto-kpi-sub">Carga da escala</div>
+    </div>
+
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Banco / Saldo Mensal</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-fees"/></svg>
+      </div>
+      <div class="ponto-kpi-value">
+        <span class="ponto-balance-badge {% if timesheet.total_balance_minutes > 0 %}positive{% elif timesheet.total_balance_minutes < 0 %}negative{% else %}neutral{% endif %}" style="font-size:18px;padding:3px 10px;">
+          {{ timesheet.total_balance_str }}
+        </span>
+      </div>
+      <div class="ponto-kpi-sub {% if timesheet.total_balance_minutes > 0 %}positive{% elif timesheet.total_balance_minutes < 0 %}negative{% else %}neutral{% endif %}">
+        {% if timesheet.total_balance_minutes > 0 %}Crédito acumulado{% elif timesheet.total_balance_minutes < 0 %}Débito a compensar{% else %}Jornada pontual{% endif %}
+      </div>
+    </div>
+
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Dias Trabalhados</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-team"/></svg>
+      </div>
+      <div class="ponto-kpi-value">{{ timesheet.days_worked_count }}</div>
+      <div class="ponto-kpi-sub">Presenças apuradas</div>
+    </div>
+
+    <div class="ponto-kpi-card">
+      <div class="ponto-kpi-header">
+        <span class="ponto-kpi-title">Atrasos &amp; Faltas</span>
+        <svg class="icon ponto-kpi-icon" aria-hidden="true"><use href="#i-audit"/></svg>
+      </div>
+      <div class="ponto-kpi-value" style="color:{% if timesheet.absences_count %}#f43f5e{% else %}#10b981{% endif %};">
+        {{ timesheet.absences_count }} <span style="font-size:12px;color:var(--muted);font-weight:400;">faltas</span>
+      </div>
+      <div class="ponto-kpi-sub">{{ timesheet.delays_count }} atraso{{ timesheet.delays_count|pluralize }}</div>
+    </div>
+  </div>
+
+  <!-- Tabela Espelho da Equipe -->
+  <div class="ponto-panel">
+    <div class="ponto-panel-header">
+      <h2>
+        <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-tasks"/></svg>
+        Espelho de Ponto Individual · {{ selected_member.user.get_full_name|default:selected_member.user.email }}
+      </h2>
+      <a href="{% url 'ponto:manual_punch_create' %}?member_id={{ selected_member.id }}" class="button button-secondary" style="font-size:11px;padding:4px 10px;">
+        <svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#i-plus"/></svg>
+        Incluir Batida Manual
+      </a>
+    </div>
+
+    <div class="ponto-table-wrap">
+      <table class="ponto-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Dia</th>
+            <th>Entrada 1</th>
+            <th>Saída 1</th>
+            <th>Entrada 2</th>
+            <th>Saída 2</th>
+            <th>Horas Trab.</th>
+            <th>Previsto</th>
+            <th>Saldo (+/-)</th>
+            <th>Situação</th>
+            <th>Ações do Gestor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for day in timesheet.days %}
+          <tr class="{% if day.is_today %}is-today{% elif day.is_weekend %}is-weekend{% endif %}">
+            <td><strong>{{ day.date|date:"d/m/Y" }}</strong></td>
+            <td>{{ day.weekday_name }}</td>
+            <td>{{ day.entry_1|default:"-" }}</td>
+            <td>{{ day.exit_1|default:"-" }}</td>
+            <td>{{ day.entry_2|default:"-" }}</td>
+            <td>{{ day.exit_2|default:"-" }}</td>
+            <td><strong style="color:#fff;">{{ day.worked_str|default:"00:00" }}</strong></td>
+            <td>{{ day.expected_str|default:"00:00" }}</td>
+            <td>
+              <span class="ponto-balance-badge {% if day.balance_minutes > 0 %}positive{% elif day.balance_minutes < 0 %}negative{% else %}neutral{% endif %}">
+                {{ day.balance_str }}
+              </span>
+            </td>
+            <td>
+              <span class="ponto-status-badge {{ day.status_badge_class }}" style="font-size:10px;padding:2px 8px;">
+                {{ day.status_label }}
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'ponto:manual_punch_create' %}?member_id={{ selected_member.id }}&date={{ day.date|date:'Y-m-d' }}" class="button button-secondary" style="font-size:10px;padding:2px 6px;" title="Incluir marcação retroativa ou ajuste">
+                Ajustar Batida
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

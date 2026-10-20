@@ -1,0 +1,124 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-ponto.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ponto-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Ponto &amp; Frequência</span>
+      <h1>Atestados Médicos &amp; Ajustes</h1>
+      <p>Acompanhamento de pedidos de justificativa, atestados e ajustes manuais com fluxo de aprovação.</p>
+    </div>
+    <div class="heading-actions">
+      <a href="{% url 'ponto:adjustment_create' %}" class="button button-primary">
+        <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+        Nova Solicitação / Atestado
+      </a>
+    </div>
+  </div>
+
+  {% include 'ponto/includes/ponto_subtabs.html' with active_tab='adjustments' %}
+
+  <!-- Tabela de Solicitações -->
+  <div class="ponto-panel">
+    <div class="ponto-panel-header">
+      <h2>
+        <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-documents"/></svg>
+        Histórico de Solicitações
+      </h2>
+      <span style="font-size:11px;color:var(--muted);">{{ requests|length }} solicitação{{ requests|length|pluralize:"ões" }}</span>
+    </div>
+
+    <div class="ponto-table-wrap">
+      <table class="ponto-table">
+        <thead>
+          <tr>
+            <th>Data Solicitada</th>
+            {% if can_manage_ponto %}<th>Colaborador</th>{% endif %}
+            <th>Tipo</th>
+            <th>Horário / Batida</th>
+            <th>Motivo</th>
+            <th>Comprovante</th>
+            <th>Status</th>
+            {% if can_manage_ponto %}<th>Ação Gerencial</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in requests %}
+          <tr>
+            <td><strong>{{ req.date|date:"d/m/Y" }}</strong></td>
+            {% if can_manage_ponto %}
+            <td>
+              <strong>{{ req.membership.user.get_full_name|default:req.membership.user.email }}</strong>
+              <div style="font-size:10px;color:var(--muted);">{{ req.membership.job_title|default:req.membership.get_role_display }}</div>
+            </td>
+            {% endif %}
+            <td><span class="ponto-status-badge ponto-status-lunch" style="font-size:10px;">{{ req.get_request_type_display }}</span></td>
+            <td>
+              {% if req.suggested_time %}
+              {{ req.suggested_time|time:"H:i" }} ({{ req.get_suggested_record_type_display|default:"Batida" }})
+              {% else %}
+              -
+              {% endif %}
+            </td>
+            <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ req.reason }}">
+              {{ req.reason }}
+            </td>
+            <td>
+              {% if req.attachment %}
+              <a href="{{ req.attachment.url }}" target="_blank" class="button button-secondary" style="font-size:10px;padding:2px 8px;">
+                Ver Anexo
+              </a>
+              {% elif req.attachment_base64 %}
+              <a href="{{ req.attachment_base64 }}" target="_blank" class="button button-secondary" style="font-size:10px;padding:2px 8px;">
+                Ver Imagem
+              </a>
+              {% else %}
+              <span style="color:var(--muted);font-size:11px;">Sem anexo</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="ponto-balance-badge {% if req.status == 'approved' %}positive{% elif req.status == 'rejected' %}negative{% else %}neutral{% endif %}">
+                {{ req.get_status_display }}
+              </span>
+            </td>
+            {% if can_manage_ponto %}
+            <td>
+              {% if req.status == 'pending' %}
+              <div style="display:flex;gap:6px;">
+                <form action="{% url 'ponto:adjustment_decide' req.id %}" method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="approve">
+                  <button type="submit" class="button button-primary" style="font-size:10px;padding:3px 8px;background:#10b981;border-color:#10b981;">Aprovar</button>
+                </form>
+                <form action="{% url 'ponto:adjustment_decide' req.id %}" method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="reject">
+                  <button type="submit" class="button button-secondary" style="font-size:10px;padding:3px 8px;color:#f43f5e;border-color:rgba(244,63,94,0.4);">Rejeitar</button>
+                </form>
+              </div>
+              {% else %}
+              <span style="font-size:10px;color:var(--muted);">
+                Revisado por {{ req.reviewed_by.user.first_name|default:"Gestor" }} em {{ req.reviewed_at|date:"d/m/Y H:i" }}
+              </span>
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="{% if can_manage_ponto %}8{% else %}6{% endif %}" style="text-align:center;padding:24px;color:var(--muted);">
+              Nenhuma solicitação de ajuste ou atestado cadastrada até o momento.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

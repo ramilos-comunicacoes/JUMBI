@@ -1,0 +1,167 @@
+{% extends 'legal/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/jumbi-ponto.css' %}">
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="ponto-workspace">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Ponto Eletrônico Inteligente</span>
+      <h1>Reconhecimento Facial</h1>
+      <p>Posicione seu rosto na câmera. O registro é autenticado em tempo real com carimbo de tempo e hash SHA-256 (Portaria 671 MTP).</p>
+    </div>
+    <div class="heading-actions">
+      <a href="{% url 'ponto:my_timesheet' %}" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-tasks"/></svg>
+        Meu Espelho de Ponto
+      </a>
+      <a href="{% url 'ponto:adjustment_create' %}" class="button button-secondary">
+        <svg class="icon" aria-hidden="true"><use href="#i-documents"/></svg>
+        Enviar Atestado / Ajuste
+      </a>
+    </div>
+  </div>
+
+  {% include 'ponto/includes/ponto_subtabs.html' with active_tab='clock_in' %}
+
+  <!-- Layout Central Kiosk -->
+  <div style="max-width: 640px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 16px;">
+    
+    <!-- Relógio em Tempo Real -->
+    <div class="ponto-panel" style="text-align: center; padding: 18px 24px;">
+      <div class="ponto-digital-clock" style="margin: 0;">
+        <div id="pontoLiveClock" class="ponto-digital-time">--:--:--</div>
+        <div id="pontoLiveDate" class="ponto-digital-date">Carregando data...</div>
+      </div>
+      <div style="margin-top: 8px; font-size: 11px; color: var(--muted);">
+        Jornada Vigente: <strong>{{ schedule.name|default:"Padrão 44h Semanais" }}</strong> · Tolerância: <strong>{{ schedule.tolerance_minutes|default:10 }} min</strong>
+      </div>
+    </div>
+
+    <!-- Câmera & Reconhecimento Facial -->
+    <div class="ponto-panel">
+      <div class="ponto-panel-header">
+        <h2>
+          <svg class="icon" aria-hidden="true" style="width:16px;height:16px;color:var(--primary);"><use href="#i-ponto"/></svg>
+          Terminal Biométrico Facial (Google MediaPipe)
+        </h2>
+        <span class="ponto-status-badge ponto-status-working" style="font-size:10px;">Câmera Ativa</span>
+      </div>
+      <div class="ponto-panel-body" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+        
+        <!-- Video Box -->
+        <div class="ponto-camera-box">
+          <video id="pontoCameraVideo" class="ponto-video" autoplay playsinline muted></video>
+          <canvas id="pontoOverlayCanvas" class="ponto-canvas"></canvas>
+          
+          <div class="ponto-hud-overlay">
+            <div id="pontoFaceOval" class="ponto-face-oval scanning"></div>
+            <div id="pontoHudBadge" class="ponto-hud-badge">
+              <span class="dot"></span>
+              <span id="pontoHudBadgeText">Posicione seu rosto dentro da moldura...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seletor de Tipo de Batida -->
+        <div style="width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <label for="punchRecordType" style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted);">
+              Tipo de Registro Sugerido:
+            </label>
+            <span style="font-size: 11px; color: var(--primary);">Próximo previsto pelo sistema</span>
+          </div>
+          
+          <select id="punchRecordType" class="input" style="width: 100%; font-weight: 600; padding: 10px 14px;">
+            <option value="entry_1" {% if next_record_type == 'entry_1' %}selected{% endif %}>Entrada Matutina (Início do Expediente)</option>
+            <option value="exit_1" {% if next_record_type == 'exit_1' %}selected{% endif %}>Saída para Almoço / Intervalo</option>
+            <option value="entry_2" {% if next_record_type == 'entry_2' %}selected{% endif %}>Retorno do Almoço / Intervalo</option>
+            <option value="exit_2" {% if next_record_type == 'exit_2' %}selected{% endif %}>Saída Definitiva (Fim do Expediente)</option>
+            <option value="entry_extra" {% if next_record_type == 'entry_extra' %}selected{% endif %}>Início de Horas Extras</option>
+            <option value="exit_extra" {% if next_record_type == 'exit_extra' %}selected{% endif %}>Fim de Horas Extras</option>
+          </select>
+
+          <!-- Botão Principal de Bater Ponto -->
+          <button type="button" id="btnSubmitPunch" class="button button-primary" data-next-type="{{ next_record_type }}" style="width: 100%; padding: 14px 20px; font-size: 14px; font-weight: 800; justify-content: center; gap: 10px; box-shadow: 0 4px 18px rgba(245, 160, 0, 0.25);">
+            <svg class="icon" aria-hidden="true" style="width:20px;height:20px;"><use href="#i-ponto"/></svg>
+            <span>Registrar Ponto Facial Agora</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Batidas Registradas Hoje -->
+    <div class="ponto-panel">
+      <div class="ponto-panel-header">
+        <h3>
+          <svg class="icon" aria-hidden="true" style="width:15px;height:15px;color:var(--primary);"><use href="#i-tasks"/></svg>
+          Minhas Batidas de Hoje ({% now "d/m/Y" %})
+        </h3>
+        <span style="font-size: 11px; color: var(--muted);">{{ today_punches|length }} registro{{ today_punches|length|pluralize }}</span>
+      </div>
+      <div class="ponto-panel-body">
+        <div class="ponto-today-timeline">
+          
+          <div class="ponto-punch-slot {% if today_summary.entry_1 %}filled{% elif next_record_type == 'entry_1' %}current{% endif %}">
+            <div class="ponto-slot-label">Entrada 1</div>
+            <div class="ponto-slot-time">{{ today_summary.entry_1|default:"--:--" }}</div>
+            <div class="ponto-slot-source">{% if today_summary.entry_1 %}Facial OK{% else %}Pendente{% endif %}</div>
+          </div>
+
+          <div class="ponto-punch-slot {% if today_summary.exit_1 %}filled{% elif next_record_type == 'exit_1' %}current{% endif %}">
+            <div class="ponto-slot-label">Saída Almoço</div>
+            <div class="ponto-slot-time">{{ today_summary.exit_1|default:"--:--" }}</div>
+            <div class="ponto-slot-source">{% if today_summary.exit_1 %}Facial OK{% else %}Pendente{% endif %}</div>
+          </div>
+
+          <div class="ponto-punch-slot {% if today_summary.entry_2 %}filled{% elif next_record_type == 'entry_2' %}current{% endif %}">
+            <div class="ponto-slot-label">Retorno Almoço</div>
+            <div class="ponto-slot-time">{{ today_summary.entry_2|default:"--:--" }}</div>
+            <div class="ponto-slot-source">{% if today_summary.entry_2 %}Facial OK{% else %}Pendente{% endif %}</div>
+          </div>
+
+          <div class="ponto-punch-slot {% if today_summary.exit_2 %}filled{% elif next_record_type == 'exit_2' %}current{% endif %}">
+            <div class="ponto-slot-label">Saída 2</div>
+            <div class="ponto-slot-time">{{ today_summary.exit_2|default:"--:--" }}</div>
+            <div class="ponto-slot-source">{% if today_summary.exit_2 %}Facial OK{% else %}Pendente{% endif %}</div>
+          </div>
+
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border-soft);font-size:11px;color:var(--muted);">
+          <span>Horas trabalhadas hoje: <strong style="color:#fff;">{{ today_summary.worked_str|default:"00:00" }}</strong></span>
+          <span>Saldo de hoje: 
+            <span class="ponto-balance-badge {% if today_summary.balance_minutes > 0 %}positive{% elif today_summary.balance_minutes < 0 %}negative{% else %}neutral{% endif %}">
+              {{ today_summary.balance_str|default:"00:00" }}
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aviso Legal & Segurança -->
+    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px 16px; font-size: 11px; color: var(--muted); display: flex; align-items: flex-start; gap: 10px;">
+      <svg class="icon" aria-hidden="true" style="width:18px;height:18px;color:var(--primary);flex-shrink:0;margin-top:2px;"><use href="#i-security"/></svg>
+      <div>
+        <strong style="color:#fff;">Segurança &amp; Conformidade MTP</strong><br>
+        Este sistema opera em conformidade com a <strong>Portaria MTP nº 671/2021 (REP-P)</strong>. Todas as marcações são assinadas digitalmente com algoritmo <strong>SHA-256</strong>, registrando coordenadas geográficas e metadados de auditoria invioláveis.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% include 'ponto/includes/receipt_modal.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<!-- Google MediaPipe Face Detection Scripts (Free & Open Source) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
+<script src="{% static 'js/jumbi-ponto.js' %}"></script>
+{% endblock %}
