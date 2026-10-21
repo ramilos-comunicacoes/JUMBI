@@ -8,42 +8,165 @@
   gap: 14px;
 }
 
-/* Subtabs de Navegação */
-.ponto-subtabs {
+/* Subtabs Didáticas Modulares (Uso Pessoal vs Gestão) */
+.ponto-subtabs-modular {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-soft, rgba(255, 255, 255, 0.07));
+  border-radius: 14px;
+}
+
+.ponto-subtabs-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.ponto-cluster-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid var(--border-soft, #202b3d);
-  padding-bottom: 10px;
-  margin-bottom: 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  padding-left: 2px;
 }
-.ponto-subtabs::-webkit-scrollbar { display: none; }
 
-.ponto-tab-btn {
+.ponto-cluster-pill {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(245, 160, 0, 0.15);
+  color: #f5a000;
+  text-transform: uppercase;
+}
+
+.ponto-cluster-pill.admin-pill {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.ponto-cluster-hint {
+  font-size: 10px;
+  color: var(--muted, #94a3b8);
+}
+
+.ponto-cluster-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ponto-tab-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 11px;
+  padding: 7px 13px;
+  border-radius: 9px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--muted, #94a3b8);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-soft, rgba(255, 255, 255, 0.06));
   text-decoration: none;
-  background: transparent;
-  border: 1px solid transparent;
-  transition: all .15s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
-.ponto-tab-btn:hover {
+
+.ponto-tab-action-btn:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14);
 }
-.ponto-tab-btn.is-active {
-  color: var(--primary, #f5a000);
-  background: rgba(245, 160, 0, 0.12);
-  border-color: rgba(245, 160, 0, 0.28);
+
+.ponto-tab-action-btn.is-active {
+  color: #f5a000;
+  background: rgba(245, 160, 0, 0.14);
+  border-color: rgba(245, 160, 0, 0.35);
+}
+
+.ponto-tab-action-btn .icon {
+  width: 13px;
+  height: 13px;
+  opacity: 0.85;
+}
+
+.ponto-btn-bater {
+  font-weight: 700;
+  color: #f5a000;
+  background: rgba(245, 160, 0, 0.1);
+  border-color: rgba(245, 160, 0, 0.25);
+}
+
+.ponto-btn-bater:hover {
+  background: rgba(245, 160, 0, 0.2);
+  border-color: rgba(245, 160, 0, 0.45);
+}
+
+.ponto-btn-bater .icon {
+  opacity: 1;
+}
+
+.ponto-badge-count {
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 10px;
+  padding: 1px 6px;
+  background: #f5a000;
+  color: #0b1320;
+  margin-left: 4px;
+}
+
+/* Didactic Section Headers inside Ponto */
+.ponto-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 8px;
+  padding: 4px 2px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ponto-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ponto-section-title h2 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  color: #fff;
+}
+
+.ponto-role-tag {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(245, 160, 0, 0.15);
+  color: #f5a000;
+  text-transform: uppercase;
+}
+
+.ponto-role-tag.admin-tag {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.ponto-quick-punch {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 8px;
 }
 
 /* KPI Banner / Cards */

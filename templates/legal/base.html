@@ -45,7 +45,42 @@
     <div class="sidebar-bottom"><p class="sidebar-auto-hint">Passe o mouse para abrir.<br>Use Tab para navegar pelo teclado.</p><button class="sidebar-collapse" data-sidebar-toggle aria-label="Recolher menu lateral" aria-expanded="true" aria-controls="main-sidebar"><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg><span>Recolher menu</span></button></div>
   </aside>
   <div class="app-main">
-    <header class="topbar"><div class="topbar-location"><button class="icon-button mobile-only" data-sidebar-open aria-label="Abrir menu" aria-expanded="false" aria-controls="main-sidebar"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button><span class="topbar-product">{{ organization.system_title|default:"JUMBI" }}</span><span class="breadcrumb-divider">/</span><span>{{ page_title|default:"Visão geral" }}</span></div><div class="topbar-actions">{% if organization and membership.role != "client" %}<a class="icon-button topbar-search" href="{% url 'discovery:search' %}" aria-label="Buscar no escritório" title="Busca unificada"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg></a><a class="icon-button notification-link" href="{% url 'notifications:inbox' %}" aria-label="Notificações{% if notification_count %}: {{ notification_count }} não lidas{% endif %}" title="Central de notificações"><svg class="icon" aria-hidden="true"><use href="#i-notifications"/></svg>{% if notification_count %}<span class="notification-dot" aria-hidden="true">{{ notification_count }}</span>{% endif %}</a>{% endif %}<span class="today-label">{% now "d M Y" %}</span><button class="icon-button theme-toggle" data-theme-toggle aria-label="Alternar tema" title="Alternar tema"><svg class="icon" aria-hidden="true"><use href="#i-sun"/></svg></button><div class="account"><a class="avatar" href="{% url 'core:password_change' %}" aria-label="Minha conta e senha">{{ request.user.first_name|default:request.user.email|slice:":1"|upper }}</a><div class="account-copy"><strong>{{ request.user.get_full_name|default:request.user.email }}</strong><a href="{% url 'core:password_change' %}">{{ membership.get_role_display|default:"Minha conta" }}</a></div></div><form action="{% url 'core:logout' %}" method="post" class="logout-form">{% csrf_token %}<button class="icon-button" title="Sair da conta" aria-label="Sair da conta"><svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg></button></form></div></header>
+    <header class="topbar">
+      <div class="topbar-leading">
+        <button class="icon-button mobile-only" data-sidebar-open aria-label="Abrir menu" aria-expanded="false" aria-controls="main-sidebar"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button>
+        <div class="topbar-quick-actions" aria-label="Atalhos rápidos do sistema">
+          <a href="{% url 'ponto:clock_in' %}" class="topbar-shortcut-btn topbar-ponto-btn" title="Bater Ponto Facial com IA (Google MediaPipe)"><svg class="icon"><use href="#i-ponto"/></svg><span>Bater Ponto</span></a>
+          {% if can_edit or membership.role != "client" %}
+          <a href="{% url 'legal:create' 'deadlines' %}" class="topbar-shortcut-btn" title="Registrar Prazo"><svg class="icon"><use href="#i-deadlines"/></svg><span>+ Prazo</span></a>
+          <a href="{% url 'legal:create' 'matters' %}" class="topbar-shortcut-btn" title="Nova Pasta Jurídica"><svg class="icon"><use href="#i-matters"/></svg><span>+ Pasta</span></a>
+          <a href="{% url 'legal:create' 'tasks' %}" class="topbar-shortcut-btn" title="Criar Tarefa"><svg class="icon"><use href="#i-tasks"/></svg><span>+ Tarefa</span></a>
+          {% endif %}
+        </div>
+        <a href="{% url 'discovery:search' %}" class="topbar-search-trigger" title="Busca Rápida de Processos, Pessoas e Documentos (Ctrl+K)">
+          <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+          <span class="search-placeholder">Buscar no escritório...</span>
+          <kbd class="search-kbd">Ctrl+K</kbd>
+        </a>
+      </div>
+      <div class="topbar-actions">
+        {% if organization and membership.role != "client" %}
+        <a class="icon-button notification-link" href="{% url 'notifications:inbox' %}" aria-label="Notificações{% if notification_count %}: {{ notification_count }} não lidas{% endif %}" title="Central de notificações"><svg class="icon" aria-hidden="true"><use href="#i-notifications"/></svg>{% if notification_count %}<span class="notification-dot" aria-hidden="true">{{ notification_count }}</span>{% endif %}</a>
+        {% endif %}
+        <span class="today-label">{% now "d M Y" %}</span>
+        <button class="icon-button theme-toggle" data-theme-toggle aria-label="Alternar tema" title="Alternar tema"><svg class="icon" aria-hidden="true"><use href="#i-sun"/></svg></button>
+        <div class="account">
+          <a class="avatar" href="{% url 'core:password_change' %}" aria-label="Minha conta e senha">{{ request.user.first_name|default:request.user.email|slice:":1"|upper }}</a>
+          <div class="account-copy">
+            <strong>{{ request.user.get_full_name|default:request.user.email }}</strong>
+            <a href="{% url 'core:password_change' %}">{{ membership.get_role_display|default:"Minha conta" }}</a>
+          </div>
+        </div>
+        <form action="{% url 'core:logout' %}" method="post" class="logout-form">
+          {% csrf_token %}
+          <button class="icon-button" title="Sair da conta" aria-label="Sair da conta"><svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg></button>
+        </form>
+      </div>
+    </header>
     <main id="main-content" class="page-content" tabindex="-1">
       {% if messages %}<div class="message-stack" aria-live="polite">{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}"><span>{{ message }}</span><button type="button" class="icon-button" data-dismiss-message aria-label="Dispensar aviso"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>{% endfor %}</div>{% endif %}
       {% if is_demo %}<div class="alert demo-banner"><svg class="icon" aria-hidden="true"><use href="#i-audit"/></svg>Ambiente de demonstração · As pessoas, demandas e valores exibidos são fictícios.</div>{% endif %}{% block content %}{% endblock %}

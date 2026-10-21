@@ -176,6 +176,12 @@
               <div class="chart-track"><span style="height:{{ month.height }}%"></span></div>
               <small>{{ month.label }}</small>
             </div>
+            {% empty %}
+            <div class="dashboard-empty-feed" style="flex: 1; align-self: center;">
+              <svg class="icon"><use href="#i-matters"/></svg>
+              <strong>Sem histórico recente</strong>
+              <p>O volume de novas pastas dos últimos 6 meses aparecerá aqui.</p>
+            </div>
             {% endfor %}
           </div>
         </section>
@@ -190,7 +196,11 @@
               <progress value="{{ item.percent }}" max="100" aria-label="{{ item.label }}: {{ item.count }} pastas">{{ item.percent }}%</progress>
             </a>
             {% empty %}
-            <p class="dashboard-empty">Selecione áreas de atuação nas preferências do escritório.</p>
+            <div class="dashboard-empty-feed" style="grid-column: 1 / -1;">
+              <svg class="icon"><use href="#i-matters"/></svg>
+              <strong>Sem nichos configurados</strong>
+              <p>Selecione áreas de atuação nas preferências do escritório.</p>
+            </div>
             {% endfor %}
           </div>
         </section>
@@ -199,10 +209,10 @@
         <section class="panel">
           <div class="panel-heading"><div><span class="section-kicker">CAIXA · MÊS ATUAL</span><h2>Financeiro</h2></div></div>
           <div class="dashboard-financial">
-            <div><span>Receitas recebidas</span><strong>R$ {{ monthly_received|floatformat:'2g' }}</strong></div>
-            <div><span>Despesas pagas</span><strong>R$ {{ monthly_expenses|floatformat:'2g' }}</strong></div>
-            <p>Baixas líquidas no mês.</p>
-            <a href="{% url 'legal:list' 'finance' %}?niche={{ niche }}" class="text-link" style="margin-top:8px;display:inline-block;">Abrir financeiro →</a>
+            <div class="dashboard-financial-row"><span>Receitas recebidas</span><strong>R$ {{ monthly_received|floatformat:'2g' }}</strong></div>
+            <div class="dashboard-financial-row"><span>Despesas pagas</span><strong>R$ {{ monthly_expenses|floatformat:'2g' }}</strong></div>
+            <p class="dashboard-financial-note">Baixas líquidas no mês.</p>
+            <a href="{% url 'legal:list' 'finance' %}?niche={{ niche }}" class="text-link dashboard-financial-link">Abrir financeiro →</a>
           </div>
         </section>
         {% endif %}
@@ -215,7 +225,7 @@
         <div class="panel-heading"><div><span class="section-kicker">EVOLUÇÃO COM DIREÇÃO</span><h2>Metas de desempenho</h2></div><a href="{% url 'performance:list' %}" class="text-link">Acompanhar metas →</a></div>
         <div class="dashboard-goals" aria-label="Metas do período">
           {% for card in goal_cards %}
-          <a class="panel dashboard-goal" href="{% url 'performance:list' %}">
+          <a class="dashboard-goal" href="{% url 'performance:list' %}">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <span class="badge">{{ card.goal.get_metric_display }}</span>
               <span class="goal-percent">{{ card.percent }}%</span>
@@ -226,10 +236,13 @@
             <div class="goal-period"><span>{{ card.state }}</span><span>Até {{ card.goal.ends_on|date:'d/m' }}</span></div>
           </a>
           {% empty %}
-          <div class="panel dashboard-goal-empty">
-            <svg class="icon"><use href="#i-goals"/></svg>
-            <div><h3>Defina o próximo objetivo.</h3><p>Acompanhe entregas, novas pastas e receitas.</p></div>
-            {% if can_manage %}<a class="button button-secondary" href="{% url 'performance:create' %}">Cadastrar meta</a>{% endif %}
+          <div class="dashboard-goal-empty-wrapper">
+            <div class="dashboard-empty-feed">
+              <svg class="icon"><use href="#i-goals"/></svg>
+              <strong>Defina o próximo objetivo</strong>
+              <p>Acompanhe entregas, novas pastas e receitas de forma transparente.</p>
+              {% if can_manage %}<a class="button button-secondary button-goal-action" href="{% url 'performance:create' %}">Cadastrar meta</a>{% endif %}
+            </div>
           </div>
           {% endfor %}
         </div>

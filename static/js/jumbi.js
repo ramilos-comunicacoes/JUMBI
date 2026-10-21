@@ -305,4 +305,15 @@
       card.style.setProperty('--glow-y', (event.clientY - bounds.top) + 'px');
     }, { passive: true });
   });
+
+  // Global Ctrl+K / Cmd+K Search Shortcut
+  document.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      const searchTrigger = document.querySelector('.topbar-search-trigger, .topbar-search');
+      if (searchTrigger) {
+        event.preventDefault();
+        searchTrigger.click();
+      }
+    }
+  });
 })();

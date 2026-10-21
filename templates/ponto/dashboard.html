@@ -37,6 +37,18 @@
 
   {% include 'ponto/includes/ponto_subtabs.html' with active_tab='dashboard' %}
 
+  <!-- Resumo Didático Individual -->
+  <div class="ponto-section-header">
+    <div class="ponto-section-title">
+      <span class="ponto-role-tag">USO PESSOAL</span>
+      <h2>Meu Expediente Hoje ({% now "d/m/Y" %})</h2>
+    </div>
+    <a href="{% url 'ponto:clock_in' %}" class="button button-primary ponto-quick-punch">
+      <svg class="icon" aria-hidden="true"><use href="#i-ponto"/></svg>
+      <span>Bater Ponto Facial</span>
+    </a>
+  </div>
+
   <!-- KPI Cards Row -->
   <div class="ponto-kpi-grid">
     <div class="ponto-kpi-card">
