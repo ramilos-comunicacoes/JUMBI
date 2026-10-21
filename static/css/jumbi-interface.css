@@ -1,11 +1,48 @@
-/* Adapted from Navie Hospedagens' section, glass and navigation patterns.
-   Uses JUMBI office tokens and native controls; no runtime CDN dependencies. */
-.app-body.j-office-shell{--control-bg:color-mix(in srgb,var(--bg) 70%,var(--surface-soft));--scroll-thumb:transparent}
-/* Hide scrollbars across the entire application while preserving smooth mousewheel/touch scrolling */
+/* JUMBI Master Interface Polish & Spacing System
+   Incorporates high-end tokens and layout geometry from djumbi.nabio.pro.
+   Strict edge-collision prevention (zero words touching borders),
+   luxury glassmorphic depth, comfortable symmetrical padding,
+   and zero lateral overflow / scrollbar suppression across site & system. */
+
+:root {
+  --djumbi-primary: #f5a000;
+  --djumbi-primary-hover: #ffc04d;
+  --djumbi-accent: #0f4050;
+  --djumbi-brand-amber: #f5a000;
+  --djumbi-brand-deep: #0f4050;
+  --djumbi-bg: #0c0c10;
+  --djumbi-surface: rgba(24, 24, 28, 0.78);
+  --djumbi-surface-muted: rgba(32, 32, 38, 0.85);
+  --djumbi-border: rgba(255, 255, 255, 0.11);
+  --djumbi-border-soft: rgba(255, 255, 255, 0.07);
+  --djumbi-text: #e4e4e7;
+  --djumbi-text-muted: #94a3b8;
+  --djumbi-radius-sm: 8px;
+  --djumbi-radius-md: 12px;
+  --djumbi-radius-lg: 16px;
+  --djumbi-radius-xl: 22px;
+  --control-bg: color-mix(in srgb, var(--bg, #0c0c10) 70%, var(--surface-soft, rgba(32, 32, 38, 0.8)));
+  --scroll-thumb: transparent;
+}
+
+[data-theme="light"] {
+  --djumbi-bg: #f8fafc;
+  --djumbi-surface: rgba(255, 255, 255, 0.88);
+  --djumbi-surface-muted: #f1f5f9;
+  --djumbi-border: #cbd5e1;
+  --djumbi-border-soft: #e2e8f0;
+  --djumbi-text: #1e293b;
+  --djumbi-text-muted: #64748b;
+}
+
+/* ==========================================================================
+   1. TOTAL SCROLLBAR ELIMINATION & ZERO LATERAL OVERFLOW (SITE & SYSTEM)
+   ========================================================================== */
 html, body, *, *::before, *::after {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
+
 *::-webkit-scrollbar,
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
@@ -15,7 +52,11 @@ body::-webkit-scrollbar,
 .app-main::-webkit-scrollbar,
 .dashboard-scroll-list::-webkit-scrollbar,
 .table-scroll::-webkit-scrollbar,
-.kanban-board::-webkit-scrollbar {
+.ponto-table-wrap::-webkit-scrollbar,
+.kanban-board::-webkit-scrollbar,
+.ponto-subtabs::-webkit-scrollbar,
+.marketing-subtabs::-webkit-scrollbar,
+.module-results::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
@@ -23,168 +64,623 @@ body::-webkit-scrollbar,
   -webkit-appearance: none !important;
 }
 
-/* Eliminate horizontal / lateral scroll everywhere */
 html, body {
   overflow-x: hidden !important;
   max-width: 100vw !important;
-  width: 100%;
-}
-.app-main, .page-content, .section-workspace {
-  overflow-x: hidden;
-  max-width: 100%;
+  width: 100% !important;
+  margin: 0;
+  padding: 0;
 }
 
-.app-body.j-office-shell .topbar, .topbar {
-  background: color-mix(in srgb,var(--bg) 90%,transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border-soft);
-  min-height: 58px;
-  height: 58px;
-  padding: 0 clamp(20px, 2.5vw, 36px) !important;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.topbar-location {
-  display: flex;
-  align-items: center;
-  gap: 12px !important;
-  padding-left: 2px;
+.app-main, .page-content, .section-workspace, .public-body, .home-page {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
   min-width: 0;
-}
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px !important;
-  padding-right: 2px;
-  flex-shrink: 0;
 }
 
-.app-body.j-office-shell .page-content, .page-content {
-  padding: 20px clamp(20px, 2.5vw, 36px) 36px !important;
-  min-width: 0;
-  max-width: 1720px;
-  margin: 0 auto;
+/* ==========================================================================
+   2. AMBIENT BACKGROUND & LUXURY GLASSMORPHISM DEPTH (from djumbi)
+   ========================================================================== */
+.app-body.j-office-shell {
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--primary, #f5a000) 6%, transparent), transparent 30rem),
+    radial-gradient(circle at 12% 88%, color-mix(in srgb, var(--office-accent, #0f4050) 8%, transparent), transparent 34rem),
+    var(--bg, #0c0c10);
+  background-attachment: fixed;
+}
+
+/* ==========================================================================
+   3. TOPBAR SPACING & BREATHING ROOM
+   ========================================================================== */
+.app-body.j-office-shell .topbar,
+.topbar {
+  background: color-mix(in srgb, var(--bg, #0c0c10) 88%, transparent) !important;
+  backdrop-filter: blur(20px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(120%) !important;
+  border-bottom: 1px solid var(--border-soft, rgba(255, 255, 255, 0.08)) !important;
+  min-height: 64px !important;
+  height: 64px !important;
+  padding: 0 clamp(20px, 3vw, 42px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
   box-sizing: border-box;
 }
 
-.app-body.j-office-shell .page-heading, .page-heading {
-  padding: 16px 22px !important;
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  background: linear-gradient(110deg,var(--amber-soft),transparent 65%),var(--surface);
+.topbar-location {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-width: 0;
+  padding-left: 2px;
+}
+
+.topbar-actions {
+  display: flex !important;
+  align-items: center !important;
   gap: 16px !important;
-  margin-bottom: 18px !important;
-  align-items: center;
+  padding-right: 4px;
+  flex-shrink: 0;
 }
-.app-body.j-office-shell .page-heading>div { min-width: 0; }
-.app-body.j-office-shell .page-heading h1, .app-body.j-office-shell .kanban-title-group h1 {
-  font-size: clamp(19px,1.5vw,24px);
-  font-weight: 750;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-  color: var(--strong);
-  margin: 2px 0 4px;
-  overflow-wrap: anywhere;
-}
-.app-body.j-office-shell .page-heading p { font-size: 12px; line-height: 1.5; max-width: 72ch; color: var(--muted); margin: 0; }
-.heading-actions { gap: 10px !important; }
 
-.app-body.j-office-shell :is(.eyebrow,.section-kicker) { letter-spacing: 0.08em; font-size: 9.5px; font-weight: 750; }
-.app-body.j-office-shell :is(.panel,.stat-card) { border-radius: 14px; border-color: var(--border-soft); }
-
-.app-body.j-office-shell :is(.panel-heading,.section-heading), .panel-heading {
-  gap: 14px;
-  align-items: center;
+.account {
+  border-left: 1px solid var(--border-soft);
+  padding-left: 18px !important;
   display: flex;
-  justify-content: space-between;
-  padding: 16px 22px !important;
-  min-height: auto;
-  border-bottom: 1px solid var(--border-soft);
+  align-items: center;
+  gap: 12px !important;
 }
-.panel-heading-actions {
+
+/* ==========================================================================
+   4. SIDEBAR SPACING & NO-EDGE COLLISION
+   ========================================================================== */
+.app-body.j-office-shell .sidebar,
+.sidebar {
+  padding: 0 10px 18px !important;
+  box-sizing: border-box;
+}
+
+.sidebar-brand {
+  height: 82px !important;
+  min-height: 82px !important;
+  padding: 14px 16px !important;
+  margin: 0 4px 8px !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar .workspace {
+  padding: 14px 14px !important;
+  margin: 0 4px 12px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-soft);
+  min-height: 64px;
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-left: auto;
-  padding-right: 2px;
 }
-.panel-heading .text-link {
-  padding: 4px 8px;
-  border-radius: 8px;
+
+.nav-group-label {
+  margin: 16px 14px 8px !important;
+  font-size: 10px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sidebar .nav-link {
+  min-height: 42px !important;
+  padding: 9px 14px !important;
+  margin: 2px 4px !important;
+  border-radius: 10px !important;
+  gap: 12px !important;
+  font-size: 13px !important;
+}
+
+.sidebar .sidebar-bottom {
+  padding: 16px 12px 10px !important;
+  margin-top: auto;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* ==========================================================================
+   5. PAGE CONTENT & HERO HEADINGS (GENEROUS PADDING, ZERO BORDER GLUING)
+   ========================================================================== */
+.app-body.j-office-shell .page-content,
+.page-content {
+  padding: clamp(20px, 2.6vw, 36px) clamp(20px, 3vw, 44px) 50px !important;
+  min-width: 0 !important;
+  max-width: 1720px !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+}
+
+.app-body.j-office-shell .page-heading,
+.page-heading,
+.module-heading {
+  padding: clamp(16px, 2vw, 24px) clamp(20px, 2.5vw, 30px) !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 55%),
+    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--primary, #f5a000) 12%, transparent), transparent 22rem),
+    var(--surface, rgba(24, 24, 28, 0.75)) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.08), 0 16px 36px rgba(0, 0, 0, 0.12) !important;
+  backdrop-filter: blur(18px) saturate(115%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(115%) !important;
+  gap: 20px !important;
+  margin-bottom: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.app-body.j-office-shell .page-heading > div,
+.module-heading > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.app-body.j-office-shell .page-heading h1,
+.page-heading h1,
+.module-heading h1 {
+  font-size: clamp(20px, 2.2vw, 28px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.2 !important;
+  color: var(--strong, #fff) !important;
+  margin: 0 0 6px 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.app-body.j-office-shell .page-heading p,
+.page-heading p,
+.module-heading p {
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  max-width: 78ch !important;
+  color: var(--muted) !important;
+  margin: 0 !important;
+}
+
+.heading-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  padding-right: 2px !important;
+}
+
+/* ==========================================================================
+   6. PANELS, CARDS & CONTAINERS (PROPORTIONAL INNER PADDING)
+   ========================================================================== */
+.app-body.j-office-shell .panel,
+.panel,
+.ponto-panel,
+.marketing-panel,
+.card,
+.content-card {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.04), transparent 46%),
+    var(--surface, rgba(24, 24, 28, 0.78)) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.06), 0 16px 38px rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: blur(16px) saturate(115%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(115%) !important;
+}
+
+.app-body.j-office-shell .panel-heading,
+.panel-heading,
+.panel-header,
+.ponto-panel-header,
+.marketing-panel-header {
+  padding: 16px 24px !important;
+  min-height: 54px !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  background: rgba(255, 255, 255, 0.015) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+}
+
+.panel-heading h2, .panel-header h2, .ponto-panel-header h2, .marketing-panel-header h2,
+.panel-heading h3, .panel-header h3, .ponto-panel-header h3, .marketing-panel-header h3 {
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.015em !important;
+  line-height: 1.3 !important;
+  color: var(--strong, #fff) !important;
+  margin: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.app-body.j-office-shell .panel-body,
+.panel-body,
+.ponto-panel-body,
+.marketing-panel-body {
+  padding: 22px 24px !important;
+}
+
+/* ==========================================================================
+   7. STAT & KPI CARDS (HIGH DENSITY WITH COMFORTABLE BREATHING ROOM)
+   ========================================================================== */
+.stats-grid,
+.dashboard-metrics,
+.ponto-kpi-grid,
+.marketing-kpi-grid,
+.module-metrics,
+.ops-stat-grid {
+  gap: 16px !important;
+  margin-bottom: 22px !important;
+}
+
+.app-body.j-office-shell .stat-card,
+.stat-card,
+.ponto-kpi-card,
+.marketing-kpi-card,
+.module-metric,
+.ops-stat-card {
+  padding: 18px 22px !important;
+  min-height: 116px !important;
+  border-radius: 16px !important;
+  border: 1px solid var(--border-soft) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.05), transparent 50%),
+    var(--surface, rgba(24, 24, 28, 0.75)) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.06), 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.stat-number, .ponto-kpi-value, .module-metric strong {
+  font-size: clamp(22px, 2.2vw, 30px) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.1 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: #fff !important;
+  margin: 4px 0 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.app-body.j-office-shell .panel-heading h2 { font-size: 14px; letter-spacing: -0.015em; line-height: 1.3; color: var(--strong); margin: 0; }
-.app-body.j-office-shell .panel-heading p { line-height: 1.5; max-width: 72ch; font-size: 12px; margin: 2px 0 0; }
-.app-body.j-office-shell :is(.stat-card,.task-card,.kanban-card){transition:border-color .18s ease,box-shadow .18s ease}
-@media(hover:hover){.app-body.j-office-shell :is(a.stat-card,.task-card,.kanban-card):hover{border-color:var(--amber-border);box-shadow:0 6px 24px #00000012}}
-.app-body.j-office-shell .page-content :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=color]),select,textarea){border:1px solid var(--border);border-radius:9px;background-color:var(--control-bg);color:var(--text);min-width:0;max-width:100%;min-height:40px;padding:8px 12px;font:inherit;font-size:12.5px;line-height:1.45;box-shadow:inset 0 1px 3px #00000006;transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease}
-.app-body.j-office-shell .page-content select:not([multiple]){appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:15px;padding-right:34px;cursor:pointer}
-.app-body.j-office-shell select option{background:var(--bg);color:var(--text)}
-.app-body.j-office-shell .page-content :is(input,select,textarea):focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-color:var(--primary);box-shadow:0 0 0 4px var(--amber-soft)}
-.app-body.j-office-shell :is(input,textarea)::placeholder{color:var(--muted);opacity:.8}
-.app-body.j-office-shell :is(input,select,textarea):disabled{opacity:.6;cursor:not-allowed}
-.app-body.j-office-shell .form-field>label{font-size:11.5px;font-weight:650;line-height:1.4;margin-bottom:6px;color:var(--text)}
-.app-body.j-office-shell .field-help{font-size:11.5px;line-height:1.55;color:var(--muted)}
-.app-body.j-office-shell .board-filters-compact{background:var(--surface);border-color:var(--border-soft);padding:12px 16px;margin-bottom:14px}
-.app-body.j-office-shell .page-content :is(.directory-search-control,.search-field) input{padding-left:38px}
-.app-body.j-office-shell .sidebar .nav-link.is-active .icon{color:inherit}
-.app-body.j-office-shell .button{border-radius:9px;gap:7px;min-height:38px;padding:6px 14px;font-size:12px;line-height:1.4;white-space:normal;text-align:center}
-.app-body.j-office-shell .table-scroll{max-width:100%;max-height:calc(100vh - 250px);overflow-y:auto;overflow-x:auto;overscroll-behavior-x:contain;border-radius:12px;border:1px solid var(--border-soft)}
-.app-body.j-office-shell .table-scroll thead{background:var(--surface-soft);position:sticky;top:0;z-index:3}
-.app-body.j-office-shell .table-scroll th{position:sticky;top:0;z-index:3;background:var(--surface-soft);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:9.5px;font-weight:700;letter-spacing:.06em;line-height:1.4;text-transform:uppercase;color:var(--muted);padding:12px 18px !important}
-.app-body.j-office-shell .table-scroll td{padding:13px 18px !important;font-size:12px}
-.app-body.j-office-shell .table-scroll tbody tr{transition:background .15s ease}.app-body.j-office-shell .table-scroll tbody tr:hover{background:var(--amber-soft)}
-.scroll-assist{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:6px 0;color:var(--muted);font-size:11px}.scroll-assist[hidden]{display:none}.scroll-assist span{margin-right:auto;line-height:1.5}.scroll-assist button{height:32px;width:34px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);cursor:pointer;font-size:16px}.scroll-assist button:disabled{opacity:.35;cursor:default}.scroll-assist button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 
-/* Empty states and breathing room for card interiors */
-.app-body.j-office-shell .dashboard-empty,
-.dashboard-empty {
-  padding: 30px 20px !important;
-  margin: 0 !important;
-  text-align: center !important;
+/* ==========================================================================
+   8. TABLES & LISTS (CELL PADDING, ZERO COLLISION WITH EDGES)
+   ========================================================================== */
+.table-scroll,
+.ponto-table-wrap,
+.table-wrap,
+.ledger-book {
+  border-radius: 16px !important;
+  border: 1px solid var(--border-soft) !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  background: var(--surface, rgba(24, 24, 28, 0.7)) !important;
+  box-sizing: border-box !important;
+}
+
+table, .records-table, .ponto-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  text-align: left !important;
+  font-size: 12.5px !important;
+  min-width: 600px;
+}
+
+th, .ponto-table th {
+  padding: 14px 20px !important;
+  font-size: 10.5px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--muted) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  white-space: nowrap !important;
+}
+
+td, .ponto-table td {
+  padding: 14px 20px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  color: var(--text, #e2e8f0) !important;
+  line-height: 1.55 !important;
+  vertical-align: middle !important;
+}
+
+/* Guard first and last cells so they never stick to outer table curves */
+th:first-child, td:first-child {
+  padding-left: 24px !important;
+}
+th:last-child, td:last-child {
+  padding-right: 24px !important;
+}
+
+tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.025) !important;
+}
+
+/* Data List Rows (Cards and timeline items) */
+.data-row,
+.case-entry,
+.deadline-item,
+.ledger-entry,
+.task-item,
+.ponto-member-card {
+  padding: 15px 20px !important;
+  border-radius: 14px !important;
+  gap: 16px !important;
+  box-sizing: border-box !important;
+}
+
+/* Results counters */
+.results-heading,
+.module-results-heading {
+  padding: 14px 20px !important;
+  font-size: 11.5px !important;
   color: var(--muted) !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  min-height: 84px !important;
-  line-height: 1.5 !important;
-}
-.subcol-header {
-  padding: 12px 18px !important;
-}
-.dashboard-subgrid {
-  padding: 0 18px 18px !important;
+  justify-content: space-between !important;
   gap: 16px !important;
 }
-.pipeline-empty {
-  padding: 22px 16px !important;
-  text-align: center !important;
+
+/* ==========================================================================
+   9. FILTERS & SEARCH CONTROL BARS
+   ========================================================================== */
+.filter-bar,
+.module-filters,
+.relationship-filters,
+.board-filters-compact {
+  padding: 16px 22px !important;
+  border-radius: 14px !important;
+  background: var(--surface, rgba(24, 24, 28, 0.7)) !important;
+  border: 1px solid var(--border-soft) !important;
+  gap: 14px !important;
+  margin-bottom: 18px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
 }
-.routine-checks > li.routine-empty,
-.routine-comments > li.routine-empty,
-.task-thread-empty {
-  padding: 24px 18px !important;
+
+/* Search inputs inside filter bars */
+.search-field, .module-search {
+  position: relative !important;
+  flex: 1 1 240px !important;
+  min-width: 180px !important;
+}
+
+.search-field input, .module-search input {
+  padding-left: 40px !important;
+  padding-right: 14px !important;
+}
+
+.search-field > .icon, .module-search > .icon {
+  position: absolute !important;
+  left: 14px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 17px !important;
+  height: 17px !important;
+  color: var(--muted) !important;
+  pointer-events: none !important;
+}
+
+/* ==========================================================================
+   10. FORMS, INPUTS & BUTTONS (NO CRAMPED TOUCHING)
+   ========================================================================== */
+.app-body.j-office-shell .page-content :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=color]), select, textarea),
+.input,
+input.form-control,
+select.form-control,
+textarea.form-control {
+  min-height: 43px !important;
+  padding: 10px 14px !important;
+  border-radius: 11px !important;
+  border: 1px solid var(--border) !important;
+  background-color: var(--control-bg) !important;
+  color: var(--text) !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease !important;
+}
+
+.app-body.j-office-shell .page-content select:not([multiple]) {
+  padding-right: 36px !important;
+}
+
+.form-field {
+  margin-bottom: 16px !important;
+}
+
+.form-field > label,
+label {
+  display: block !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  margin-bottom: 6px !important;
+  color: var(--text, #e2e8f0) !important;
+}
+
+.button,
+.btn {
+  min-height: 40px !important;
+  padding: 8px 18px !important;
+  border-radius: 11px !important;
+  font-size: 12.5px !important;
+  font-weight: 650 !important;
+  gap: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+  transition: all .16s ease !important;
+}
+
+.button-primary {
+  background: var(--primary, #f5a000) !important;
+  color: #000 !important;
+  border: 1px solid var(--primary, #f5a000) !important;
+  font-weight: 750 !important;
+  box-shadow: 0 4px 14px rgba(245, 160, 0, 0.22) !important;
+}
+.button-primary:hover {
+  filter: brightness(1.08) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(245, 160, 0, 0.32) !important;
+}
+
+.button-secondary {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--border-soft) !important;
+  color: var(--text, #e2e8f0) !important;
+}
+.button-secondary:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+}
+
+/* ==========================================================================
+   11. NAVIGATION SUBTABS (PONTO, MARKETING, AUDIT, WORKLOG)
+   ========================================================================== */
+.ponto-subtabs,
+.marketing-subtabs,
+.nav-subtabs {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 4px 4px 14px !important;
+  margin-bottom: 18px !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.ponto-tab-btn,
+.marketing-tab-btn,
+.nav-tab-btn {
+  padding: 8px 16px !important;
+  border-radius: 10px !important;
+  font-size: 11.5px !important;
+  font-weight: 650 !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  transition: all .15s ease !important;
+}
+
+/* ==========================================================================
+   12. EMPTY STATES (COMFORTABLE CENTERED SPACING)
+   ========================================================================== */
+.empty-state,
+.module-empty,
+.dashboard-empty {
+  padding: 44px 28px !important;
   text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 160px !important;
+  gap: 12px !important;
+  border: 1px dashed var(--border-soft) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.015) !important;
+}
+
+.empty-state p, .module-empty p, .dashboard-empty p {
+  max-width: 460px !important;
+  margin: 0 !important;
+  line-height: 1.6 !important;
   color: var(--muted) !important;
 }
-@media(min-width:981px){html[data-density=compact] .app-body.j-office-shell .page-heading{padding:10px 16px;margin-bottom:12px}html[data-density=compact] .app-body.j-office-shell .page-heading h1{font-size:20px}.app-body.j-office-shell .table-scroll td{padding-top:7px;padding-bottom:7px}}
-/* Mobile has its own spacing, field sizing and navigation affordances. */
-@media(max-width:720px){
- .app-body.j-office-shell .page-content{padding:12px 10px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
- .app-body.j-office-shell .topbar{min-height:52px;height:52px;backdrop-filter:none;background:var(--bg)}
- .app-body.j-office-shell .page-heading{display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:14px;margin-bottom:14px;border-radius:12px;background:var(--surface)}
- .app-body.j-office-shell .page-heading h1,.app-body.j-office-shell .kanban-title-group h1{font-size:20px;line-height:1.2;margin:2px 0 4px}
- .app-body.j-office-shell .page-heading p{font-size:11.5px;line-height:1.5}
- .app-body.j-office-shell .heading-actions,.app-body.j-office-shell .board-actions{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:6px;width:100%;min-width:0}
- .app-body.j-office-shell :is(.heading-actions,.board-actions)>.button{flex:1 1 110px;min-width:0;min-height:40px;font-size:11.5px}
- .app-body.j-office-shell :is(.panel,.stat-card){border-radius:12px}
- .app-body.j-office-shell .page-content :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=color]),select,textarea){min-height:42px;font-size:14px;border-radius:9px;padding-top:8px;padding-bottom:8px;box-shadow:none}
- .app-body.j-office-shell .page-content :is(input[type=checkbox],input[type=radio]){width:18px;height:18px;min-width:18px}
- .app-body.j-office-shell .button{min-height:40px;padding-top:8px;padding-bottom:8px}
- .scroll-assist{margin:6px 0 10px;gap:6px}.scroll-assist button{height:38px;width:38px;flex-shrink:0}.scroll-assist span{font-size:10.5px;max-width:180px}
+
+/* ==========================================================================
+   13. PAGINATION BAR
+   ========================================================================== */
+.pagination {
+  padding: 18px 24px !important;
+  border-top: 1px solid var(--border-soft) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
 }
-@media(prefers-reduced-motion:reduce){.app-body.j-office-shell *{scroll-behavior:auto!important;transition:none!important}}
-@media print{.scroll-assist{display:none!important}.app-body.j-office-shell .page-heading{background:none;border:0}}
+
+/* ==========================================================================
+   14. MOBILE COMPACT ADAPTATION (PRESERVES SPACING WITHOUT LATERAL OVERFLOW)
+   ========================================================================== */
+@media (max-width: 720px) {
+  .app-body.j-office-shell .page-content {
+    padding: 16px 14px 32px !important;
+  }
+  .app-body.j-office-shell .topbar {
+    min-height: 56px !important;
+    height: 56px !important;
+    padding: 0 14px !important;
+  }
+  .app-body.j-office-shell .page-heading {
+    padding: 16px 18px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+  .heading-actions {
+    width: 100% !important;
+    justify-content: stretch !important;
+  }
+  .heading-actions > * {
+    flex: 1 1 auto !important;
+  }
+  .stats-grid, .dashboard-metrics, .ponto-kpi-grid, .marketing-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+  .stat-card, .ponto-kpi-card, .marketing-kpi-card {
+    padding: 14px 16px !important;
+    min-height: 100px !important;
+  }
+  th, td {
+    padding: 10px 14px !important;
+  }
+  th:first-child, td:first-child {
+    padding-left: 16px !important;
+  }
+  th:last-child, td:last-child {
+    padding-right: 16px !important;
+  }
+}
+
+@media print {
+  .sidebar, .topbar, .app-footer, .heading-actions, .filter-bar, .pagination {
+    display: none !important;
+  }
+  .app-main {
+    margin: 0 !important;
+  }
+  .page-content {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+}

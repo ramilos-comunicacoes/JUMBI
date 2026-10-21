@@ -62,9 +62,9 @@
 .ponto-kpi-card {
   background: var(--surface, rgba(17, 24, 39, 0.7));
   border: 1px solid var(--border-soft, #202b3d);
-  border-radius: 12px;
-  padding: 14px 16px;
-  backdrop-filter: blur(12px);
+  border-radius: 14px;
+  padding: 16px 20px;
+  backdrop-filter: blur(14px);
   position: relative;
   overflow: hidden;
   transition: border-color .15s ease, transform .15s ease;
@@ -122,20 +122,20 @@
 .ponto-panel {
   background: var(--surface, rgba(17, 24, 39, 0.7));
   border: 1px solid var(--border-soft, #202b3d);
-  border-radius: 14px;
-  backdrop-filter: blur(14px);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
   overflow: hidden;
 }
 .ponto-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
+  padding: 16px 22px;
   border-bottom: 1px solid var(--border-soft, #202b3d);
   background: rgba(255, 255, 255, 0.015);
 }
 .ponto-panel-header h2, .ponto-panel-header h3 {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   color: #fff;
   margin: 0;
@@ -144,7 +144,7 @@
   gap: 8px;
 }
 .ponto-panel-body {
-  padding: 16px 18px;
+  padding: 20px 24px;
 }
 
 /* Kiosk / Câmera de Reconhecimento Facial */
@@ -394,20 +394,20 @@
 /* Tabela Espelho de Ponto */
 .ponto-table-wrap {
   overflow-x: auto;
-  border-radius: 10px;
+  border-radius: 14px;
   border: 1px solid var(--border-soft, #202b3d);
 }
 .ponto-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 12.5px;
   text-align: left;
 }
 .ponto-table th {
   background: rgba(255, 255, 255, 0.03);
-  padding: 10px 12px;
+  padding: 14px 20px;
   color: var(--muted, #94a3b8);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -415,10 +415,16 @@
   white-space: nowrap;
 }
 .ponto-table td {
-  padding: 10px 12px;
+  padding: 14px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   color: #e2e8f0;
   white-space: nowrap;
+}
+.ponto-table th:first-child, .ponto-table td:first-child {
+  padding-left: 24px;
+}
+.ponto-table th:last-child, .ponto-table td:last-child {
+  padding-right: 24px;
 }
 .ponto-table tr:hover td {
   background: rgba(255, 255, 255, 0.02);
