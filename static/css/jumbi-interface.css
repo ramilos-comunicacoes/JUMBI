@@ -776,8 +776,7 @@ label {
    12. EMPTY STATES (COMFORTABLE CENTERED SPACING)
    ========================================================================== */
 .empty-state,
-.module-empty,
-.dashboard-empty {
+.module-empty {
   padding: 44px 28px !important;
   text-align: center !important;
   display: flex !important;
@@ -789,6 +788,25 @@ label {
   border: 1px dashed var(--border-soft) !important;
   border-radius: 16px !important;
   background: rgba(255, 255, 255, 0.015) !important;
+}
+
+/* Dashboard & Card Empty States: Clean, seamless and without dashed borders */
+.dashboard-empty,
+.dashboard-card-empty,
+.dashboard-empty-feed,
+.panel-body .dashboard-empty,
+.dashboard-scroll-list .dashboard-empty {
+  padding: 32px 20px !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 90px !important;
+  gap: 8px !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--muted, #94a3b8) !important;
 }
 
 .empty-state p, .module-empty p, .dashboard-empty p {

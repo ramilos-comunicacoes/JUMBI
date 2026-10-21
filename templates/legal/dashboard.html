@@ -90,56 +90,68 @@
   <div class="dashboard-executive-grid">
     <!-- Left Column (Operational Core & Analytics) -->
     <div class="dashboard-col-main">
-      <!-- 1. Operational Deck: Deadlines & Tasks -->
-      <section class="panel dashboard-operational-panel">
-        <div class="panel-heading">
-          <div><span class="section-kicker">PRIMEIRO, O QUE PRECISA DE AÇÃO</span><h2>Organize o próximo passo</h2></div>
-          <div class="panel-heading-actions">
-            <a class="text-link" href="{% url 'legal:list' 'deadlines' %}">Prazos →</a>
-            <a class="text-link" href="{% url 'legal:kanban' %}">Kanban →</a>
-          </div>
-        </div>
-        <div class="dashboard-subgrid">
-          <!-- Upcoming Deadlines with contained scroll -->
-          <div class="dashboard-subcol">
-            <div class="subcol-header"><span>Próximos prazos</span><a class="text-link" style="font-size:10px;text-transform:none;" href="{% url 'legal:list' 'deadlines' %}">Ver todos ({{ stats.deadlines }})</a></div>
-            <div class="dashboard-scroll-list" style="max-height: 290px;">
-              {% for deadline in upcoming_deadlines %}
-              <a class="deadline-item" href="{% url 'legal:detail' deadline.matter_id %}">
-                <span class="date-tile {% if deadline.due_date < today %}date-tile-overdue{% endif %}">
-                  <strong>{{ deadline.due_date|date:'d' }}</strong>
-                  <span>{{ deadline.due_date|date:'M' }}</span>
-                </span>
-                <span class="item-main">
-                  <strong>{{ deadline.title }}</strong>
-                  <span>{{ deadline.matter }}</span>
-                </span>
-                <span class="badge {% if deadline.due_date < today %}badge-danger{% endif %}">{{ deadline.get_status_display }}</span>
-              </a>
-              {% empty %}
-              <p class="dashboard-empty">Nenhum prazo em aberto.</p>
-              {% endfor %}
+      <!-- 1. Operational Deck: Deadlines & Tasks (Side-by-Side Sibling Cards) -->
+      <div class="dashboard-operational-row">
+        <!-- Upcoming Deadlines -->
+        <section class="panel dashboard-operational-card">
+          <div class="panel-heading">
+            <div>
+              <span class="section-kicker">AUDITORIA DE PRAZOS</span>
+              <h2>Próximos prazos</h2>
             </div>
+            <a class="text-link" href="{% url 'legal:list' 'deadlines' %}">Ver todos ({{ stats.deadlines }}) →</a>
           </div>
-          <!-- Pending Tasks with contained scroll -->
-          <div class="dashboard-subcol">
-            <div class="subcol-header"><span>Próximas entregas</span><a class="text-link" style="font-size:10px;text-transform:none;" href="{% url 'legal:kanban' %}">Abrir Kanban ({{ stats.tasks }})</a></div>
-            <div class="dashboard-scroll-list" style="max-height: 290px;">
-              {% for task in pending_tasks %}
-              <a class="task-item" href="{% url 'worklog:task' task.pk %}">
-                <span class="task-indicator"><svg class="icon"><use href="#i-tasks"/></svg></span>
-                <span class="item-main">
-                  <strong>{{ task.title }}</strong>
-                  <span>{{ task.due_date|date:'d/m' }} · {{ task.get_priority_display }} · {{ task.owner.get_full_name|default:task.owner.email }}</span>
-                </span>
-              </a>
-              {% empty %}
-              <p class="dashboard-empty">Sem tarefas pendentes.</p>
-              {% endfor %}
+          <div class="dashboard-scroll-list" style="max-height: 290px;">
+            {% for deadline in upcoming_deadlines %}
+            <a class="deadline-item" href="{% url 'legal:detail' deadline.matter_id %}">
+              <span class="date-tile {% if deadline.due_date < today %}date-tile-overdue{% endif %}">
+                <strong>{{ deadline.due_date|date:'d' }}</strong>
+                <span>{{ deadline.due_date|date:'M' }}</span>
+              </span>
+              <span class="item-main">
+                <strong>{{ deadline.title }}</strong>
+                <span>{{ deadline.matter }}</span>
+              </span>
+              <span class="badge {% if deadline.due_date < today %}badge-danger{% endif %}">{{ deadline.get_status_display }}</span>
+            </a>
+            {% empty %}
+            <div class="dashboard-empty-feed">
+              <svg class="icon"><use href="#i-deadlines"/></svg>
+              <strong>Nenhum prazo em aberto</strong>
+              <p>Todos os prazos cadastrados estão rigorosamente em dia.</p>
             </div>
+            {% endfor %}
           </div>
-        </div>
-      </section>
+        </section>
+
+        <!-- Pending Tasks -->
+        <section class="panel dashboard-operational-card">
+          <div class="panel-heading">
+            <div>
+              <span class="section-kicker">FLUXO DE DEMANDAS</span>
+              <h2>Próximas entregas</h2>
+            </div>
+            <a class="text-link" href="{% url 'legal:kanban' %}">Abrir Kanban ({{ stats.tasks }}) →</a>
+          </div>
+          <div class="dashboard-scroll-list" style="max-height: 290px;">
+            {% for task in pending_tasks %}
+            <a class="task-item" href="{% url 'worklog:task' task.pk %}">
+              <span class="task-indicator"><svg class="icon"><use href="#i-tasks"/></svg></span>
+              <span class="item-main">
+                <strong>{{ task.title }}</strong>
+                <span>{{ task.due_date|date:'d/m' }} · {{ task.get_priority_display }} · {{ task.owner.get_full_name|default:task.owner.email }}</span>
+              </span>
+            </a>
+            {% empty %}
+            <div class="dashboard-empty-feed">
+              <svg class="icon"><use href="#i-tasks"/></svg>
+              <strong>Sem tarefas pendentes</strong>
+              <p>Nenhuma entrega na fila. Sua equipe concluiu todas as tarefas.</p>
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
 
       <!-- 2. Integrated Calendar (if active) -->
       {% if 'calendar' in office_preferences.dashboard_widgets and not compact_mode %}
@@ -249,7 +261,11 @@
             <span><strong>{{ item.title }}</strong><small>{{ item.starts_at|date:'H:i' }} · {{ item.get_kind_display }}</small>{% if item.location %}<small>{{ item.location }}</small>{% endif %}</span>
           </a>
           {% empty %}
-          <p class="dashboard-empty">Nenhum compromisso futuro cadastrado.</p>
+          <div class="dashboard-empty-feed">
+            <svg class="icon"><use href="#i-appointments"/></svg>
+            <strong>Sem compromissos</strong>
+            <p>Nenhum compromisso futuro na agenda.</p>
+          </div>
           {% endfor %}
         </div>
       </section>
@@ -268,7 +284,11 @@
             <span class="badge">{{ matter.get_status_display }}</span>
           </a>
           {% empty %}
-          <p class="dashboard-empty">Nenhuma pasta cadastrada.</p>
+          <div class="dashboard-empty-feed">
+            <svg class="icon"><use href="#i-matters"/></svg>
+            <strong>Nenhuma pasta recente</strong>
+            <p>Suas demandas ativas aparecerão aqui.</p>
+          </div>
           {% endfor %}
         </div>
       </section>
@@ -290,7 +310,11 @@
             {% endfor %}
           </ol>
           {% else %}
-          <p class="dashboard-empty">As próximas movimentações aparecerão aqui.</p>
+          <div class="dashboard-empty-feed">
+            <svg class="icon"><use href="#i-audit"/></svg>
+            <strong>Sem movimentações recentes</strong>
+            <p>As ações da equipe serão registradas aqui.</p>
+          </div>
           {% endif %}
         </div>
       </section>
@@ -304,7 +328,11 @@
           {% for item in routine_pending %}
           <a class="dashboard-record" href="{% url 'routines:matter' item.matter_id %}"><span><strong>{{ item.title }}</strong><small>{{ item.matter.title }}</small></span><span class="badge">{{ item.get_kind_display }}</span></a>
           {% empty %}
-          <p class="dashboard-empty">Nenhuma conferência pendente.</p>
+          <div class="dashboard-empty-feed">
+            <svg class="icon"><use href="#i-shield"/></svg>
+            <strong>Conferências em dia</strong>
+            <p>Nenhuma conferência pendente de validação.</p>
+          </div>
           {% endfor %}
         </div>
       </section>
