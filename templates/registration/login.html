@@ -1,3 +1,64 @@
 {% extends 'public/base.html' %}
-{% block title %}Entrar{% endblock %}
-{% block content %}<div class="auth-layout"><section class="auth-intro"><span class="eyebrow">BEM-VINDO AO SEU ESPAÇO DE TRABALHO</span><h1>Cada próximo passo<br>começa com <em>clareza.</em></h1><p>Acesse seu escritório e retome a rotina com pessoas, demandas e informações conectadas.</p><div class="auth-feature"><svg class="icon" aria-hidden="true"><use href="#i-matters"/></svg><div><strong>O contexto de cada demanda</strong><span>Pastas, documentos e histórico juntos.</span></div></div><div class="auth-feature"><svg class="icon" aria-hidden="true"><use href="#i-deadlines"/></svg><div><strong>A atenção no que vem a seguir</strong><span>Tarefas, compromissos e prazos à vista.</span></div></div></section><section class="panel auth-card"><div class="auth-heading"><span class="eyebrow">SEU ESCRITÓRIO ESTÁ AQUI</span><h2>Que bom ter você de volta.</h2><p>Entre com suas credenciais para continuar.</p></div><form method="post" class="auth-form">{% csrf_token %}{% include 'registration/fields.html' %}{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}<button class="button button-primary button-large full-width" type="submit">Entrar no JUMBI <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></form><div class="auth-bottom">Ainda não tem um escritório? <a href="{% url 'core:signup' %}" class="text-link">Comece aqui</a></div></section></div>{% endblock %}
+{% load static %}
+{% block title %}Entrar · JUMBI{% endblock %}
+{% block body_class %}j-login-page{% endblock %}
+
+{% block public_header %}
+<header class="public-header j-public-header j-login-header">
+  <a href="{% url 'core:home' %}" class="public-brand" aria-label="JUMBI — início">
+    <img src="{% static 'brand/logo.png' %}" class="brand-logo" alt="JUMBI Gestão Jurídica">
+  </a>
+  <nav class="public-nav" aria-label="Acesso e preferências">
+    <button class="icon-button" data-theme-toggle aria-label="Alternar tema" title="Alternar tema">
+      <svg class="icon" aria-hidden="true"><use href="#i-sun"/></svg>
+    </button>
+    <a class="text-link j-login-back" href="{% url 'core:home' %}">
+      <svg class="icon" aria-hidden="true" style="transform: rotate(180deg);"><use href="#i-arrow"/></svg> <span>Voltar ao site</span>
+    </a>
+  </nav>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="auth-layout j-auth-viewport">
+  <section class="auth-intro">
+    <span class="eyebrow">BEM-VINDO AO JUMBI</span>
+    <h1>Cada próximo passo<br>começa com <em>clareza.</em></h1>
+    <p>Acesse seu escritório e retome a rotina com pessoas, demandas e informações conectadas.</p>
+    <div class="auth-feature">
+      <svg class="icon" aria-hidden="true"><use href="#i-matters"/></svg>
+      <div><strong>O contexto de cada demanda</strong><span>Pastas, documentos e histórico juntos.</span></div>
+    </div>
+    <div class="auth-feature">
+      <svg class="icon" aria-hidden="true"><use href="#i-deadlines"/></svg>
+      <div><strong>A atenção no que vem a seguir</strong><span>Tarefas, compromissos e prazos à vista.</span></div>
+    </div>
+  </section>
+
+  <section class="panel auth-card">
+    <div class="auth-heading">
+      <span class="eyebrow">ACESSO AO SISTEMA</span>
+      <h2>Que bom ter você de volta.</h2>
+      <p>Entre com suas credenciais para continuar.</p>
+    </div>
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      {% include 'registration/fields.html' %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <button class="button button-primary button-large full-width" type="submit">
+        Entrar no JUMBI <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg>
+      </button>
+    </form>
+    <div class="auth-bottom">
+      Ainda não tem um escritório? <a href="{% url 'core:signup' %}" class="text-link">Comece aqui</a>
+    </div>
+    <div class="auth-screen-footer">
+      <span>© {% now "Y" %} JUMBI · Gestão Jurídica</span>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block public_footer %}
+{# Zero-scroll login view omits the multi-column public footer #}
+{% endblock %}

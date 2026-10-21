@@ -184,8 +184,10 @@
       const label = reducedMotion.matches ? 'Movimento reduzido' : paused ? 'Ativar efeitos' : 'Pausar efeitos';
       button.title = reducedMotion.matches ? 'Animações desativadas pela preferência de acessibilidade do dispositivo' : label;
       button.setAttribute('aria-label', button.title);
-      button.querySelector('[data-motion-label]').textContent = label;
-      button.querySelector('[data-motion-symbol]').textContent = paused ? '▷' : 'Ⅱ';
+      const labelEl = button.querySelector('[data-motion-label]');
+      if (labelEl) labelEl.textContent = label;
+      const symbolEl = button.querySelector('[data-motion-symbol]');
+      if (symbolEl) symbolEl.textContent = paused ? '▷' : 'Ⅱ';
       button.disabled = reducedMotion.matches;
     });
     if (paused) document.querySelectorAll('[data-tilt],.j-cta,.j-magnetic').forEach(el => { el.style.transform = ''; });
